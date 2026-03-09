@@ -43,18 +43,20 @@ export function validateTelegramInitData(
   }
 }
 
+type TelegramWindow = { Telegram?: { WebApp?: { initData?: string; initDataUnsafe?: { user?: TelegramUser }; ready?: () => void; expand?: () => void } } }
+
 export function isTelegramEnvironment(): boolean {
   if (typeof window === 'undefined') return false
-  return !!(window as any).Telegram?.WebApp?.initData
+  return !!(window as TelegramWindow).Telegram?.WebApp?.initData
 }
 
 export function getTelegramInitData(): string {
   if (typeof window === 'undefined') return ''
-  return (window as any).Telegram?.WebApp?.initData ?? ''
+  return (window as TelegramWindow).Telegram?.WebApp?.initData ?? ''
 }
 
 export function getTelegramUser(): TelegramUser | null {
   if (typeof window === 'undefined') return null
-  const user = (window as any).Telegram?.WebApp?.initDataUnsafe?.user
+  const user = (window as TelegramWindow).Telegram?.WebApp?.initDataUnsafe?.user
   return user ?? null
 }

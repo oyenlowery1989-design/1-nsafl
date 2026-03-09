@@ -23,7 +23,8 @@ export default function ProfilePage() {
       .then((r) => r.json())
       .then((j) => {
         if (j.success && j.data.records.length > 0) {
-          const mapped: TxDisplay[] = j.data.records.slice(0, 5).map((r: any) => {
+          interface HorizonPayment { to: string; amount?: string; asset_code?: string; created_at: string }
+          const mapped: TxDisplay[] = j.data.records.slice(0, 5).map((r: HorizonPayment) => {
             const isIncoming = r.to === stellarAddress
             return {
               label: isIncoming ? 'Deposit' : 'Send',

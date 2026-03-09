@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     )
     const data = await res.json()
     return ok({ records: data._embedded?.records ?? [] })
-  } catch (e: any) {
-    return fail(e.message, 'STELLAR_ERROR', 500)
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Unknown error', 'STELLAR_ERROR', 500)
   }
 }

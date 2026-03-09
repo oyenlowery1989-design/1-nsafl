@@ -1,5 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
+import type { TelegramUser } from '@/lib/telegram'
+
+type TelegramWindow = { Telegram?: { WebApp?: { initData?: string; ready?: () => void; expand?: () => void; initDataUnsafe?: { user?: TelegramUser } } } }
 
 const isDev =
   process.env.NODE_ENV !== 'production' &&
@@ -13,18 +16,19 @@ export default function TelegramGuard({
   const [allowed, setAllowed] = useState<boolean | null>(null)
 
   useEffect(() => {
-    if (isDev) {
-      setAllowed(true)
-      return
+    const check = () => {
+      if (isDev) { setAllowed(true); return }
+      const tg = (window as TelegramWindow).Telegram?.WebApp
+      if (tg && tg.initData) {
+        tg.ready?.()
+        tg.expand?.()
+        setAllowed(true)
+      } else {
+        setAllowed(false)
+      }
     }
-    const tg = (window as any).Telegram?.WebApp
-    if (tg && tg.initData) {
-      tg.ready()
-      tg.expand()
-      setAllowed(true)
-    } else {
-      setAllowed(false)
-    }
+    const t = setTimeout(check, 0)
+    return () => clearTimeout(t)
   }, [])
 
   if (allowed === null) {

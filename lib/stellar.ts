@@ -17,8 +17,9 @@ export async function fetchStellarBalances(address: string): Promise<StellarBala
   if (!res.ok) throw new Error(`Stellar API error: ${res.status}`)
   const data = await res.json()
 
-  return (data.balances as any[]).map((b: any) => ({
-    asset: b.asset_type === 'native' ? 'XLM' : b.asset_code,
+  interface HorizonBalance { asset_type: string; asset_code?: string; balance: string }
+  return (data.balances as HorizonBalance[]).map((b) => ({
+    asset: b.asset_type === 'native' ? 'XLM' : (b.asset_code ?? 'UNKNOWN'),
     balance: parseFloat(b.balance).toFixed(2),
     isNative: b.asset_type === 'native',
   }))

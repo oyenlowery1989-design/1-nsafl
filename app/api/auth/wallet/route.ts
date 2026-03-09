@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
 
   const supabase = createServiceClient()
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: userData } = await (supabase as any)
     .from('users')
     .upsert({ telegram_id: telegramId }, { onConflict: 'telegram_id' })
@@ -35,6 +36,7 @@ export async function POST(req: NextRequest) {
 
   if (!userData) return fail('Failed to upsert user', 'DB_ERROR', 500)
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabase as any)
     .from('wallets')
     .upsert(
