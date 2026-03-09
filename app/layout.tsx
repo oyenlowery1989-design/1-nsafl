@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import TelegramGuard from '@/components/guards/TelegramGuard'
 
 export const metadata: Metadata = {
   title: 'The Homecoming Hub',
@@ -29,7 +30,9 @@ export default function RootLayout({
         <script src="https://telegram.org/js/telegram-web-app.js" />
       </head>
       <body className="antialiased">
-        {children}
+        <TelegramGuard>
+          {children}
+        </TelegramGuard>
       </body>
     </html>
   )
