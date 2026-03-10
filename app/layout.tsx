@@ -6,8 +6,8 @@ import ErrorBoundary from '@/components/ErrorBoundary'
 import { ToastContainer } from '@/components/Toast'
 
 export const metadata: Metadata = {
-  title: 'NYSEAU Hub',
-  description: 'NYSEAU — New York Stock Exchange Access Token',
+  title: 'The Homecoming Hub',
+  description: 'CRYPTOBANK — The Homecoming Hub Telegram Mini App',
 }
 
 export default function RootLayout({

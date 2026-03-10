@@ -95,20 +95,23 @@ export default function StatsPage() {
   const showContent = useMinLoader(!!data)
 
   useEffect(() => {
-    // Fetch stats and donations in parallel
-    Promise.all([
+    // Fetch stats and donations in parallel — failures are independent
+    Promise.allSettled([
       fetch('/api/stats/funding').then((r) => r.json()),
       fetch('/api/donations').then((r) => r.json()),
       fetch('/api/game').then((r) => r.json()),
-    ])
-      .then(([statsJson, donationsJson, gameJson]) => {
-        if (statsJson.success) setData(statsJson.data)
-        else setError(statsJson.error ?? 'Failed to load stats')
+    ]).then(([statsResult, donationsResult, gameResult]) => {
+      if (statsResult.status === 'fulfilled' && statsResult.value.success)
+        setData(statsResult.value.data)
+      else
+        setError('Failed to load stats')
 
-        if (donationsJson.success) setDonationsData(donationsJson.data)
-        if (gameJson.success) setGameStats(gameJson.data)
-      })
-      .catch(() => setError('Network error — please try again'))
+      if (donationsResult.status === 'fulfilled' && donationsResult.value.success)
+        setDonationsData(donationsResult.value.data)
+
+      if (gameResult.status === 'fulfilled' && gameResult.value.success)
+        setGameStats(gameResult.value.data)
+    })
   }, [])
 
   return (

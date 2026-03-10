@@ -123,14 +123,18 @@ function MatchReport({ fixture, report }: { fixture: AflFixture; report: AflMatc
           { icon: 'person_play', label: 'Player Stats' },
           { icon: 'bar_chart',   label: 'Team Stats' },
         ].map(({ icon, label }) => (
-          <button
-            key={label}
-            disabled
-            className="flex items-center justify-center space-x-2 py-2.5 rounded-xl border border-white/8 bg-white/3 opacity-40 cursor-not-allowed"
-          >
-            <span className="material-symbols-outlined text-[#D4AF37] text-[15px]">{icon}</span>
-            <span className="text-xs font-semibold text-gray-300">{label}</span>
-          </button>
+          <div key={label} className="relative">
+            <button
+              disabled
+              className="w-full flex items-center justify-center space-x-2 py-2.5 rounded-xl border border-white/8 bg-white/3 opacity-40 cursor-not-allowed"
+            >
+              <span className="material-symbols-outlined text-[#D4AF37] text-[15px]">{icon}</span>
+              <span className="text-xs font-semibold text-gray-300">{label}</span>
+            </button>
+            <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold text-black bg-[#D4AF37] px-1.5 py-0.5 rounded-full leading-none">
+              SOON
+            </span>
+          </div>
         ))}
       </div>
     </div>

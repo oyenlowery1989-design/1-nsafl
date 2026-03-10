@@ -166,10 +166,10 @@ export async function POST(req: NextRequest) {
     // Verify transaction on Stellar Horizon
     let verified = false
     try {
-      const txRes = await fetch(`${HORIZON_URL}/transactions/${txHash}`)
+      const txRes = await fetch(`${HORIZON_URL}/transactions/${txHash}`, { signal: AbortSignal.timeout(8000) })
       if (txRes.ok) {
         // Fetch operations for this transaction to verify destination and asset
-        const opsRes = await fetch(`${HORIZON_URL}/transactions/${txHash}/operations`)
+        const opsRes = await fetch(`${HORIZON_URL}/transactions/${txHash}/operations`, { signal: AbortSignal.timeout(8000) })
         if (opsRes.ok) {
           const opsData = await opsRes.json()
           // eslint-disable-next-line @typescript-eslint/no-explicit-any

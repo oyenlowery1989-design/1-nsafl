@@ -14,6 +14,7 @@ export interface StellarBalance {
 export async function fetchStellarBalances(address: string): Promise<StellarBalance[]> {
   const res = await fetch(`${HORIZON_URL}/accounts/${address}`, {
     next: { revalidate: 30 },
+    signal: AbortSignal.timeout(8000),
   })
   if (!res.ok) throw new Error(`Stellar API error: ${res.status}`)
   const data = await res.json()
@@ -89,7 +90,7 @@ export interface StellarAccountInfo {
 
 /** Fetch lightweight account metadata — home domain, subentry count, sequence */
 export async function fetchAccountInfo(address: string): Promise<StellarAccountInfo> {
-  const res = await fetch(`${HORIZON_URL}/accounts/${address}`, { next: { revalidate: 60 } })
+  const res = await fetch(`${HORIZON_URL}/accounts/${address}`, { next: { revalidate: 60 }, signal: AbortSignal.timeout(8000) })
   if (!res.ok) throw new Error(`Stellar account not found: ${res.status}`)
   const data = await res.json()
   return {

@@ -48,7 +48,8 @@ export async function GET(req: NextRequest) {
   try {
     const cursorParam = cursor ? `&cursor=${cursor}` : ''
     const res = await fetch(
-      `${HORIZON_URL}/accounts/${address}/payments?order=desc&limit=${limit}${cursorParam}`
+      `${HORIZON_URL}/accounts/${address}/payments?order=desc&limit=${limit}${cursorParam}`,
+      { signal: AbortSignal.timeout(8000) }
     )
     const data = await res.json()
     const records: HorizonPayment[] = data._embedded?.records ?? []
