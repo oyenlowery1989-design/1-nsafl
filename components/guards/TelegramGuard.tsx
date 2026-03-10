@@ -20,11 +20,15 @@ const isDev =
   process.env.NEXT_PUBLIC_DEV_BYPASS === 'true'
 
 // Record session — returns status + whether the user has a wallet in DB
-async function recordSession(): Promise<{ status: 'ok' | 'blocked' | 'error'; hasWallet: boolean }> {
+async function recordSession(referredBy?: number | null): Promise<{ status: 'ok' | 'blocked' | 'error'; hasWallet: boolean }> {
   try {
     const res = await fetch('/api/auth/session', {
       method: 'POST',
-      headers: { 'x-telegram-init-data': getTelegramInitData() },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-telegram-init-data': getTelegramInitData(),
+      },
+      body: JSON.stringify({ referredBy: referredBy ?? null }),
     })
     const j = await res.json().catch(() => ({}))
     if (!j.success && j.code === 'BLOCKED') return { status: 'blocked', hasWallet: false }
@@ -133,10 +137,15 @@ export default function TelegramGuard({ children }: { children: React.ReactNode 
         const startParam = (tg.initDataUnsafe as Record<string, unknown>)?.start_param as string | undefined
         const urlParams = new URLSearchParams(window.location.search)
         const refParam = startParam ?? urlParams.get('tgWebAppStartParam') ?? urlParams.get('startapp') ?? null
+        let referredBy: number | null = null
         if (refParam?.startsWith('ref_')) {
-          sessionStorage.setItem('nyseau_referrer', refParam.replace('ref_', ''))
+          const parsed = parseInt(refParam.replace('ref_', ''), 10)
+          if (!isNaN(parsed)) {
+            referredBy = parsed
+            sessionStorage.setItem('nyseau_referrer', String(parsed))
+          }
         }
-        const { status, hasWallet } = await recordSession()
+        const { status, hasWallet } = await recordSession(referredBy)
         if (status === 'blocked') {
           setState('blocked')
           return

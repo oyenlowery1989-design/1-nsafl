@@ -35,6 +35,14 @@ export async function POST(req: NextRequest) {
 
   if (blockedRow) return fail('Account blocked', 'BLOCKED', 403)
 
+  // Read optional referredBy from body
+  let referredBy: number | null = null
+  try {
+    const body = await req.json().catch(() => ({}))
+    const raw = (body as { referredBy?: unknown }).referredBy
+    if (typeof raw === 'number' && !isNaN(raw) && raw !== telegramUser.id) referredBy = raw
+  } catch { /* ignore parse errors */ }
+
   // 2. Upsert user record
   const { data: upserted } = await supabase
     .from('users')
@@ -47,8 +55,23 @@ export async function POST(req: NextRequest) {
       },
       { onConflict: 'telegram_id' }
     )
-    .select('id, is_blocked')
+    .select('id, is_blocked, referred_by')
     .single()
+
+  // 2b. Save referral on first open — only if not already set and referrer exists
+  if (upserted && referredBy && upserted.referred_by === null) {
+    const { data: referrerExists } = await supabase
+      .from('users')
+      .select('telegram_id')
+      .eq('telegram_id', referredBy)
+      .maybeSingle()
+    if (referrerExists) {
+      await supabase
+        .from('users')
+        .update({ referred_by: referredBy })
+        .eq('telegram_id', telegramUser.id)
+    }
+  }
 
   // 3. Check soft-block on user row
   if (upserted?.is_blocked) return fail('Account blocked', 'BLOCKED', 403)
