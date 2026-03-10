@@ -1,12 +1,14 @@
 'use client'
 import { PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
+import TierBadge from '@/components/TierBadge'
 
 interface Props {
   balance: string
   address: string
+  xlmBalance?: string
 }
 
-export default function BalanceCard({ balance, address }: Props) {
+export default function BalanceCard({ balance, address, xlmBalance }: Props) {
   const short = `${address.slice(0, 4)}...${address.slice(-4)}`
   return (
     <div className="glass-card rounded-2xl p-6 relative overflow-hidden border border-[#D4AF37]/30 shadow-[0_8px_32px_rgba(212,175,55,0.15)]">
@@ -25,6 +27,14 @@ export default function BalanceCard({ balance, address }: Props) {
             {PRIMARY_CUSTOM_ASSET_LABEL}
           </span>
         </h2>
+        <TierBadge balance={balance} />
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/10">
+          <span className="text-xs text-gray-400 flex items-center space-x-1">
+            <span className="material-symbols-outlined text-[14px]">currency_exchange</span>
+            <span>XLM</span>
+          </span>
+          <span className="text-sm font-semibold text-gray-300">{xlmBalance ?? '0.00'}</span>
+        </div>
       </div>
     </div>
   )

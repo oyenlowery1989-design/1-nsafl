@@ -47,3 +47,28 @@ h1, h2, h3, h4, h5, h6 {
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
 }
+
+@keyframes football-throw {
+  0%   { transform: translate(-120px, 60px) rotate(0deg); opacity: 0; }
+  10%  { opacity: 1; }
+  50%  { transform: translate(0px, -30px) rotate(360deg); opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translate(120px, 60px) rotate(720deg); opacity: 0; }
+}
+
+@keyframes football-shadow {
+  0%, 100% { transform: scaleX(0.3); opacity: 0; }
+  50%      { transform: scaleX(1); opacity: 0.3; }
+}
+
+/* BottomNav center button — idle pulse (replaces animate-pulse on the icon) */
+@keyframes ball-pulse {
+  0%, 100% { transform: scale(1);    opacity: 1; }
+  50%       { transform: scale(1.12); opacity: 0.85; }
+}
+
+/* BottomNav center button — spin during long-press charge */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
