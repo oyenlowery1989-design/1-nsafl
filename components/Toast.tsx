@@ -81,6 +81,7 @@ export function ToastContainer() {
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
     const add: Listener = (item) => setToasts((prev) => [...prev.slice(-3), item])
     listeners.add(add)

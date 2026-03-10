@@ -9,6 +9,7 @@ const MIN_DISPLAY_MS = 2000
  */
 export function useMinLoader(ready: boolean): boolean {
   const [elapsed, setElapsed] = useState(false)
+  // eslint-disable-next-line react-hooks/purity
   const mountTime = useRef(Date.now())
 
   useEffect(() => {

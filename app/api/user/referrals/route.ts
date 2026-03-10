@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
 
   const supabase = createServiceClient()
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: referrals, error } = await (supabase as any)
     .from('users')
     .select('telegram_first_name, telegram_username, created_at')

@@ -66,6 +66,7 @@ export default function NoTrustlineHelp({ onTrustlineAdded }: Props) {
         },
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const tx = new TransactionBuilder(account as any, {
         fee: BASE_FEE,
         networkPassphrase: Networks.PUBLIC,

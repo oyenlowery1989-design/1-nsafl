@@ -68,7 +68,9 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
   const rafRef = useRef<number>(0)
   const kicksRef = useRef(0)
   const ballsSpawnedRef = useRef(0)
-  const sessionStartRef = useRef(Date.now())
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const sessionStartRef = useRef<number>(0)
+  if (sessionStartRef.current === 0) sessionStartRef.current = Date.now()
   const savedRef = useRef(false)
 
   const [kicks, setKicks] = useState(0)
@@ -208,9 +210,10 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
       const dx = nearest.x - tx, dy = nearest.y - ty
       const len = Math.hypot(dx, dy) || 1
       const power = 14 + Math.random() * 6
-      nearest.vx = (dx / len) * power
-      nearest.vy = (dy / len) * power - 3
-      nearest.spin = (Math.random() - 0.5) * 20
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      nearest!.vx = (dx / len) * power
+      nearest!.vy = (dy / len) * power - 3
+      nearest!.spin = (Math.random() - 0.5) * 20
       haptic.light()
     } else if (ballsRef.current.length < MAX_BALLS) {
       ballsRef.current.push(makeBall(tx, ty, true))
