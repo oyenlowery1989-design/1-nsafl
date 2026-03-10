@@ -409,7 +409,7 @@ export default function ProfilePage() {
   const tgId = liveTgUser?.id ?? telegramUserId
   const referralCode = tgId ? `ref_${tgId}` : null
   const referralLink = botUsername && referralCode
-    ? `https://t.me/${botUsername}?start=${referralCode}`
+    ? `https://t.me/${botUsername}?startapp=${referralCode}`
     : referralCode ?? ''
   const displayedReferrals = showAllReferrals ? referrals : referrals.slice(0, 5)
 
