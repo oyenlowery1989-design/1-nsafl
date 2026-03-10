@@ -92,7 +92,9 @@ function TierCard({ tier, status, balance }: TierCardProps) {
       {/* Locked summary */}
       {!isExpanded && (
         <p className="text-[11px] text-gray-500 mt-2">
-          {r?.treasury ?? `No rewards — hold ${tier.minBalance.toLocaleString()} ${PRIMARY_CUSTOM_ASSET_LABEL} to start`}
+          {r
+            ? `+${r.xlmRefundPct}% XLM Refund · ${r.gold} oz Gold · X${r.trustlineMultiplier} Trustline`
+            : `No rewards — hold ${tier.minBalance.toLocaleString()} ${PRIMARY_CUSTOM_ASSET_LABEL} to start`}
         </p>
       )}
 
@@ -101,23 +103,27 @@ function TierCard({ tier, status, balance }: TierCardProps) {
         <div className="mt-3 space-y-1.5">
           {r === null ? (
             <p className="text-xs text-gray-400">
-              Hold {tier.minBalance > 0 ? `${tier.minBalance.toLocaleString()} ` : '50 '}{PRIMARY_CUSTOM_ASSET_LABEL} to unlock Tier 1 and claim your stock exchange share.
+              Hold {tier.minBalance > 0 ? `${tier.minBalance.toLocaleString()} ` : '100 '}{PRIMARY_CUSTOM_ASSET_LABEL} to unlock Tier 1.
             </p>
           ) : (
-            <>
-              {/* Stock exchange share — primary reward */}
-              <div className="flex items-center gap-2 bg-[#D4AF37]/8 border border-[#D4AF37]/20 rounded-lg px-3 py-2">
-                <span className="material-symbols-outlined text-[#D4AF37] text-base flex-shrink-0">show_chart</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold leading-none mb-0.5">
-                    Exchange Share
-                  </p>
-                  <p className="text-sm text-[#D4AF37] font-bold truncate">
-                    {r.treasury ?? '—'}
-                  </p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {[
+                { icon: 'currency_exchange', label: 'XLM Refund',       value: `+${r.xlmRefundPct}%` },
+                { icon: 'hub',              label: 'Trustline',          value: `X${r.trustlineMultiplier}` },
+                { icon: 'diamond',          label: 'Gold',               value: `${r.gold.toLocaleString()} oz` },
+                { icon: 'toll',             label: 'Silver',             value: `${r.silver.toLocaleString()} oz` },
+                { icon: 'generating_tokens',label: 'Copper',             value: r.copper.toLocaleString() },
+                ...(r.physicalGold ? [{ icon: 'local_shipping', label: 'Physical Gold', value: '1 oz/mo forever' }] : []),
+              ].map(({ icon, label, value }) => (
+                <div key={label} className="flex items-center gap-1.5 bg-white/3 border border-white/8 rounded-lg px-2.5 py-2">
+                  <span className="material-symbols-outlined text-[#D4AF37] text-sm flex-shrink-0">{icon}</span>
+                  <div className="min-w-0">
+                    <p className="text-[9px] text-gray-500 uppercase tracking-wide leading-none">{label}</p>
+                    <p className="text-xs text-white font-semibold truncate">{value}</p>
+                  </div>
                 </div>
-              </div>
-            </>
+              ))}
+            </div>
           )}
 
           {/* FOMO prompt for next tier */}
@@ -509,10 +515,10 @@ export default function RewardsPage() {
             </div>
 
             {/* Stock exchange share for current tier */}
-            {currentTier.rewards?.treasury && (
+            {currentTier.rewards && (
               <div className="flex items-center gap-2 mt-2 mb-1">
-                <span className="material-symbols-outlined text-[#D4AF37] text-sm">trending_up</span>
-                <p className="text-sm font-bold text-[#D4AF37]">{currentTier.rewards.treasury}</p>
+                <span className="material-symbols-outlined text-[#D4AF37] text-sm">currency_exchange</span>
+                <p className="text-sm font-bold text-[#D4AF37]">+{currentTier.rewards.xlmRefundPct}% XLM Refund · X{currentTier.rewards.trustlineMultiplier} Trustline</p>
               </div>
             )}
 
@@ -551,7 +557,7 @@ export default function RewardsPage() {
         <div className="glass-card rounded-xl p-4 text-center border border-[#D4AF37]/20 bg-gradient-to-br from-[#D4AF37]/5 to-transparent">
           <p className="text-xs text-gray-300 mb-2">
             {nextTier
-              ? <>Hold <span className="text-[#D4AF37] font-bold">{toNext.toLocaleString()}</span> more {PRIMARY_CUSTOM_ASSET_LABEL} to reach <span className="font-bold" style={{ color: nextTier.color }}>{nextTier.label}</span> and unlock a larger stock exchange share{nextTier.rewards?.treasury ? ` (${nextTier.rewards.treasury})` : ''}.</>
+              ? <>Hold <span className="text-[#D4AF37] font-bold">{toNext.toLocaleString()}</span> more {PRIMARY_CUSTOM_ASSET_LABEL} to reach <span className="font-bold" style={{ color: nextTier.color }}>{nextTier.label} — {nextTier.name}</span>{nextTier.rewards ? ` and unlock +${nextTier.rewards.xlmRefundPct}% XLM Refund` : ''}.</>
               : 'You\'ve reached the top tier! Maximum stock exchange share unlocked.'}
           </p>
           <button

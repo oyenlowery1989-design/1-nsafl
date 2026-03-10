@@ -198,7 +198,7 @@ export default function BuyPage() {
               <p className="text-xs text-gray-400 mb-2">
                 Buy {toNextTier.toLocaleString()} more {PRIMARY_CUSTOM_ASSET_LABEL} to unlock{' '}
                 {nextTier.rewards
-                  ? `${nextTier.rewards.physicalBanks.toLocaleString()} physical banks, daily XLM rewards, and more`
+                  ? `+${nextTier.rewards.xlmRefundPct}% XLM Refund, ${nextTier.rewards.gold} oz Gold, and more`
                   : 'the next level of rewards'}
               </p>
               {/* Mini progress */}
