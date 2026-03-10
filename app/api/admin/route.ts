@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
       .select(`
         telegram_id, telegram_username, telegram_first_name, telegram_photo_url, telegram_phone,
         favorite_team, display_preference, opt_in_telegram_notifications, is_blocked,
-        created_at, updated_at,
+        referred_by, created_at, updated_at,
         wallets (
           id, stellar_address, label, is_primary, created_at, last_connected_at,
           wallet_balances ( nsafl_balance, xlm_balance, balance_week_ago, last_synced_at )

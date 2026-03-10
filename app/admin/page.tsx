@@ -12,7 +12,7 @@ interface User {
   telegram_id: number; telegram_username: string | null; telegram_first_name: string | null
   telegram_photo_url: string | null; telegram_phone: string | null; favorite_team: string | null
   display_preference: string; opt_in_telegram_notifications: boolean; is_blocked: boolean
-  created_at: string; updated_at: string; wallets: Wallet[]
+  referred_by: number | null; created_at: string; updated_at: string; wallets: Wallet[]
 }
 interface TeamRequest { id: string; telegram_id: number; requested_team: string; status: string; admin_note: string | null; created_at: string; resolved_at: string | null }
 interface GameSession { id: string; telegram_id: number | null; wallet_id: string | null; kicks: number; balls_spawned: number; duration_seconds: number; created_at: string }
@@ -283,6 +283,7 @@ function UserDetail({
                   { label: 'Telegram ID',   value: String(u.telegram_id) },
                   { label: 'Phone',         value: u.telegram_phone ?? '—' },
                   { label: 'Favorite Team', value: teamName(u.favorite_team) },
+                  { label: 'Invited By',    value: u.referred_by ? (() => { const r = data?.users.find(x => x.telegram_id === u.referred_by); return r ? `${r.telegram_first_name ?? ''}${r.telegram_username ? ` (@${r.telegram_username})` : ''} #${u.referred_by}` : `#${u.referred_by}` })() : '—' },
                   { label: 'Display As',    value: u.display_preference },
                   { label: 'Notifications', value: u.opt_in_telegram_notifications ? 'On' : 'Off' },
                   { label: 'Joined',        value: dt(u.created_at) },
