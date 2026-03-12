@@ -268,19 +268,12 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
         style={{ touchAction: 'none' }}
       />
 
-      {/* ── Centre overlay ── */}
-      <div className="relative z-10 flex flex-col items-center justify-center h-full pointer-events-none select-none">
-        <div className="absolute w-72 h-72 rounded-full bg-[#D4AF37]/10 blur-3xl" />
-        <div className="relative text-center space-y-3 px-8">
-          <h1 className="text-5xl font-bold text-white drop-shadow-[0_0_30px_rgba(212,175,55,0.8)]"
-            style={{ fontFamily: 'Playfair Display, serif' }}>
-            Game Zone
-          </h1>
-          <p className="text-gray-600 text-[10px] pt-1 animate-pulse">
-            Tap a ball to kick it
-          </p>
+      {/* ── Centre hint — fades after first kick ── */}
+      {kicks === 0 && (
+        <div className="relative z-10 flex flex-col items-center justify-center h-full pointer-events-none select-none">
+          <p className="text-white/20 text-[11px] animate-pulse">Tap a ball to kick it</p>
         </div>
-      </div>
+      )}
 
       {/* ── Top-left: back to hub + ball count ── */}
       <button
