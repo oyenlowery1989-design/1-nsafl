@@ -18,7 +18,6 @@ const FRICTION = 0.88
 const SPIN_DECAY = 0.96
 const TRAIL_LENGTH = 8
 const KICK_RADIUS = 100
-const LIVES_START = 3
 const PB_KEY = 'nsafl_game_pb'
 
 interface Ball {
@@ -27,6 +26,7 @@ interface Ball {
   spin: number; angle: number
   size: number; opacity: number
   trail: { x: number; y: number }[]
+  dead: boolean
 }
 
 interface Particle {
@@ -50,6 +50,7 @@ function makeBall(x: number, y: number, kicked = false): Ball {
     angle: Math.random() * 360,
     size, opacity: 0.9 + Math.random() * 0.1,
     trail: [],
+    dead: false,
   }
 }
 
@@ -83,11 +84,11 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
   const kicksRef = useRef(0)
   const sessionStartRef = useRef<number>(Date.now())
   const savedRef = useRef(false)
-  const livesRef = useRef(LIVES_START)
+  const ballsLeftRef = useRef(numBalls)
   const gameOverRef = useRef(false)
 
   const [kicks, setKicks] = useState(0)
-  const [lives, setLives] = useState(LIVES_START)
+  const [ballsLeft, setBallsLeft] = useState(numBalls)
   const [gameOver, setGameOver] = useState(false)
   const [personalBest, setPersonalBest] = useState(() => {
     if (typeof window === 'undefined') return 0
@@ -251,6 +252,8 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
 
         if (!gameOverRef.current) {
           for (const b of ballsRef.current) {
+            if (b.dead) continue
+
             b.trail.push({ x: b.x, y: b.y })
             if (b.trail.length > TRAIL_LENGTH) b.trail.shift()
             drawBall(b)
@@ -261,27 +264,25 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
             b.angle = (Math.atan2(b.vy, b.vx) * 180 / Math.PI)
             b.spin *= SPIN_DECAY
 
-            // floor — bounce + lose a life
+            // floor — ball is lost
             if (b.y + b.size * 0.3 >= H) {
-              b.y = H - b.size * 0.3
-              b.vy *= -BOUNCE
-              b.vx *= FRICTION
-              // dust
-              for (let i = 0; i < 6; i++) {
+              b.dead = true
+              // dust burst
+              for (let i = 0; i < 8; i++) {
                 particlesRef.current.push({
-                  x: b.x + (Math.random() - 0.5) * 30,
+                  x: b.x + (Math.random() - 0.5) * 40,
                   y: H - 4,
-                  vx: (Math.random() - 0.5) * 5,
-                  vy: -(Math.random() * 3 + 1),
+                  vx: (Math.random() - 0.5) * 6,
+                  vy: -(Math.random() * 4 + 1),
                   life: 1,
-                  size: 2 + Math.random() * 3,
+                  size: 3 + Math.random() * 4,
                 })
               }
-              const newLives = livesRef.current - 1
-              livesRef.current = newLives
-              setLives(newLives)
+              const remaining = ballsLeftRef.current - 1
+              ballsLeftRef.current = remaining
+              setBallsLeft(remaining)
               haptic.error()
-              if (newLives <= 0) {
+              if (remaining <= 0) {
                 gameOverRef.current = true
                 setGameOver(true)
                 const k = kicksRef.current
@@ -291,9 +292,6 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
                   setPersonalBest(k)
                 }
                 saveSession()
-              } else {
-                // keep ball bouncing with minimum velocity so it stays visible
-                if (Math.abs(b.vy) < 3) b.vy = -6
               }
             }
 
@@ -327,6 +325,7 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
     let nearest: Ball | null = null
     let nearestDist = Infinity
     for (const b of ballsRef.current) {
+      if (b.dead) continue
       const d = Math.hypot(b.x - tx, b.y - ty)
       if (d < nearestDist) { nearestDist = d; nearest = b }
     }
@@ -347,16 +346,16 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
   const restartGame = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    livesRef.current = LIVES_START
+    ballsLeftRef.current = numBalls
     gameOverRef.current = false
     kicksRef.current = 0
     savedRef.current = false
     sessionStartRef.current = Date.now()
     particlesRef.current = []
-    ballsRef.current = Array.from({ length: Math.max(1, numBalls) }, () =>
+    ballsRef.current = Array.from({ length: numBalls }, () =>
       randomBall(canvas.width, canvas.height)
     )
-    setLives(LIVES_START)
+    setBallsLeft(numBalls)
     setKicks(0)
     setGameOver(false)
   }, [numBalls])
@@ -393,11 +392,11 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
         <span className="text-white text-xs font-semibold">Hub</span>
       </button>
 
-      {/* ── Lives ── */}
-      <div className="absolute top-12 left-1/2 -translate-x-1/2 z-20 flex items-center space-x-1.5 px-3 py-1.5 rounded-full border border-white/10"
+      {/* ── Balls remaining ── */}
+      <div className="absolute top-12 left-1/2 -translate-x-1/2 z-20 flex items-center space-x-1 px-3 py-1.5 rounded-full border border-white/10"
         style={{ background: 'rgba(10,14,26,0.7)', backdropFilter: 'blur(8px)' }}>
-        {Array.from({ length: LIVES_START }).map((_, i) => (
-          <span key={i} className={`text-base ${i < lives ? 'opacity-100' : 'opacity-20'}`}>❤️</span>
+        {Array.from({ length: numBalls }).map((_, i) => (
+          <span key={i} className={`text-sm transition-opacity duration-300 ${i < ballsLeft ? 'opacity-100' : 'opacity-15'}`}>🏈</span>
         ))}
       </div>
 
