@@ -27,7 +27,6 @@ interface Ball {
   spin: number; angle: number
   size: number; opacity: number
   trail: { x: number; y: number }[]
-  dead: boolean
 }
 
 interface Particle {
@@ -51,7 +50,6 @@ function makeBall(x: number, y: number, kicked = false): Ball {
     angle: Math.random() * 360,
     size, opacity: 0.9 + Math.random() * 0.1,
     trail: [],
-    dead: false,
   }
 }
 
@@ -234,88 +232,79 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
     }
 
     function step() {
-      if (!canvas || !ctx) return
-      const W = canvas.width, H = canvas.height
+      try {
+        if (!canvas || !ctx) return
+        const W = canvas.width, H = canvas.height
 
-      ctx.fillStyle = 'rgba(10,14,26,0.38)'
-      ctx.fillRect(0, 0, W, H)
+        ctx.fillStyle = 'rgba(10,14,26,0.38)'
+        ctx.fillRect(0, 0, W, H)
 
-      // particles
-      particlesRef.current = particlesRef.current.filter(p => p.life > 0)
-      for (const p of particlesRef.current) {
-        p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life -= 0.07
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(180,120,60,${p.life * 0.5})`
-        ctx.fill()
-      }
+        // particles
+        particlesRef.current = particlesRef.current.filter(p => p.life > 0)
+        for (const p of particlesRef.current) {
+          p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life -= 0.07
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, Math.max(p.size * p.life, 0.1), 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(180,120,60,${p.life * 0.5})`
+          ctx.fill()
+        }
 
-      if (!gameOverRef.current) {
-        for (const b of ballsRef.current) {
-          if (b.dead) continue
+        if (!gameOverRef.current) {
+          for (const b of ballsRef.current) {
+            b.trail.push({ x: b.x, y: b.y })
+            if (b.trail.length > TRAIL_LENGTH) b.trail.shift()
+            drawBall(b)
 
-          b.trail.push({ x: b.x, y: b.y })
-          if (b.trail.length > TRAIL_LENGTH) b.trail.shift()
-          drawBall(b)
+            // physics
+            b.vy += GRAVITY
+            b.x += b.vx; b.y += b.vy
+            b.angle = (Math.atan2(b.vy, b.vx) * 180 / Math.PI)
+            b.spin *= SPIN_DECAY
 
-          // physics
-          b.vy += GRAVITY
-          b.x += b.vx; b.y += b.vy
-          // angle tracks velocity direction
-          b.angle = (Math.atan2(b.vy, b.vx) * 180 / Math.PI)
-          b.spin *= SPIN_DECAY
-
-          // floor — lose a life
-          if (b.y + b.size * 0.3 >= H) {
-            b.dead = true
-            // dust at floor level
-            for (let i = 0; i < 8; i++) {
-              particlesRef.current.push({
-                x: b.x + (Math.random() - 0.5) * 30,
-                y: H - 4,
-                vx: (Math.random() - 0.5) * 5,
-                vy: -(Math.random() * 4 + 1),
-                life: 1,
-                size: 3 + Math.random() * 3,
-              })
-            }
-            const newLives = livesRef.current - 1
-            livesRef.current = newLives
-            setLives(newLives)
-            haptic.error()
-            if (newLives <= 0) {
-              gameOverRef.current = true
-              setGameOver(true)
-              // save personal best
-              const k = kicksRef.current
-              const prev = parseInt(localStorage.getItem(PB_KEY) ?? '0', 10)
-              if (k > prev) {
-                localStorage.setItem(PB_KEY, String(k))
-                setPersonalBest(k)
+            // floor — bounce + lose a life
+            if (b.y + b.size * 0.3 >= H) {
+              b.y = H - b.size * 0.3
+              b.vy *= -BOUNCE
+              b.vx *= FRICTION
+              // dust
+              for (let i = 0; i < 6; i++) {
+                particlesRef.current.push({
+                  x: b.x + (Math.random() - 0.5) * 30,
+                  y: H - 4,
+                  vx: (Math.random() - 0.5) * 5,
+                  vy: -(Math.random() * 3 + 1),
+                  life: 1,
+                  size: 2 + Math.random() * 3,
+                })
               }
-              saveSession()
+              const newLives = livesRef.current - 1
+              livesRef.current = newLives
+              setLives(newLives)
+              haptic.error()
+              if (newLives <= 0) {
+                gameOverRef.current = true
+                setGameOver(true)
+                const k = kicksRef.current
+                const prev = parseInt(localStorage.getItem(PB_KEY) ?? '0', 10)
+                if (k > prev) {
+                  localStorage.setItem(PB_KEY, String(k))
+                  setPersonalBest(k)
+                }
+                saveSession()
+              } else {
+                // keep ball bouncing with minimum velocity so it stays visible
+                if (Math.abs(b.vy) < 3) b.vy = -6
+              }
             }
-          }
 
-          // walls
-          if (b.x - b.size * 0.52 <= 0) { b.x = b.size * 0.52; b.vx *= -BOUNCE }
-          if (b.x + b.size * 0.52 >= W) { b.x = W - b.size * 0.52; b.vx *= -BOUNCE }
-          if (b.y - b.size * 0.3 <= 0) {
-            b.y = b.size * 0.3; b.vy *= -BOUNCE
+            // walls
+            if (b.x - b.size * 0.52 <= 0) { b.x = b.size * 0.52; b.vx = Math.abs(b.vx) * BOUNCE }
+            if (b.x + b.size * 0.52 >= W) { b.x = W - b.size * 0.52; b.vx = -Math.abs(b.vx) * BOUNCE }
+            if (b.y - b.size * 0.3 <= 0) { b.y = b.size * 0.3; b.vy = Math.abs(b.vy) * BOUNCE }
           }
         }
-
-        // respawn dead balls after short delay when lives remain
-        if (livesRef.current > 0) {
-          const deadCount = ballsRef.current.filter(b => b.dead).length
-          const aliveCount = ballsRef.current.filter(b => !b.dead).length
-          if (aliveCount === 0 && deadCount > 0) {
-            // respawn all dead balls
-            ballsRef.current = ballsRef.current.map(b =>
-              b.dead ? randomBall(W, H) : b
-            )
-          }
-        }
+      } catch {
+        // swallow any draw error so the loop never dies
       }
 
       rafRef.current = requestAnimationFrame(step)
@@ -326,9 +315,10 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
       cancelAnimationFrame(rafRef.current)
       window.removeEventListener('resize', resize)
     }
-  }, [initBalls, saveSession, spawnDust])
+  }, [initBalls, saveSession])
 
   const handleTap = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    e.preventDefault()
     if (gameOverRef.current) return
     const rect = (e.target as HTMLCanvasElement).getBoundingClientRect()
     const tx = e.clientX - rect.left
@@ -337,7 +327,6 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
     let nearest: Ball | null = null
     let nearestDist = Infinity
     for (const b of ballsRef.current) {
-      if (b.dead) continue
       const d = Math.hypot(b.x - tx, b.y - ty)
       if (d < nearestDist) { nearestDist = d; nearest = b }
     }
