@@ -523,8 +523,6 @@ function HubView({ onPlay, totalPoints, tierPoints, tierLabel }: {
                   >
                     Play
                   </button>
-                ) : !game.comingSoon ? (
-                  <p className="text-[9px] text-gray-600 leading-snug">{game.lockReason}</p>
                 ) : null}
               </div>
             ))}
