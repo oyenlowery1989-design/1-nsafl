@@ -5,7 +5,7 @@ import { useTelegramBack } from '@/hooks/useTelegramBack'
 import { haptic } from '@/lib/telegram-ui'
 import { getTelegramInitData } from '@/lib/telegram'
 import { useWalletStore } from '@/hooks/useStore'
-import { getTierForBalance, TIERS } from '@/config/tiers'
+import { getTierForBalance } from '@/config/tiers'
 import { PRIMARY_CUSTOM_ASSET_CODE, PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
 import { getTotalPoints, getPointsFromTier } from '@/lib/points'
 import WalletGuard from '@/components/WalletGuard'
@@ -341,9 +341,8 @@ function HubView({ onPlay, totalPoints, tierPoints, tierLabel }: {
       icon: 'sports_football',
       name: `${PRIMARY_CUSTOM_ASSET_CODE} Ball`,
       description: 'Physics ball game — kick, bounce, score',
-      cost: 1,
-      unlocked: totalPoints >= 1,
-      lockReason: 'Reach Tier 1 to unlock',
+      cost: 0,
+      unlocked: true,
       onPlay,
     },
     {
@@ -511,9 +510,11 @@ function HubView({ onPlay, totalPoints, tierPoints, tierLabel }: {
                   <p className="text-[9px] text-gray-600 leading-snug mt-0.5">{game.description}</p>
                 </div>
 
-                <div className={`text-[9px] font-semibold ${game.unlocked ? 'text-[#D4AF37]/70' : 'text-gray-600'}`}>
-                  {game.cost} ball{game.cost !== 1 ? 's' : ''} to play
-                </div>
+                {game.cost > 0 && (
+                  <div className={`text-[9px] font-semibold ${game.unlocked ? 'text-[#D4AF37]/70' : 'text-gray-600'}`}>
+                    {game.cost} ball{game.cost !== 1 ? 's' : ''} to play
+                  </div>
+                )}
 
                 {game.unlocked && game.onPlay ? (
                   <button
@@ -543,7 +544,6 @@ export default function GamePage() {
   const totalPoints = getTotalPoints(balance)
   const tierPoints = getPointsFromTier(balance)
   const currentTier = getTierForBalance(balance)
-  const tierIndex = TIERS.findIndex((t) => t.id === currentTier.id)
   const tierLabel = `${currentTier.label} → ${tierPoints} ball${tierPoints !== 1 ? 's' : ''}`
 
   useTelegramBack(useCallback(() => {
