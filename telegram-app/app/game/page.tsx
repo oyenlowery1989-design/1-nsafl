@@ -214,10 +214,9 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
       nearest!.vy = (dy / len) * power - 3
       nearest!.spin = (Math.random() - 0.5) * 20
       haptic.light()
+      kicksRef.current += 1
+      setKicks(k => k + 1)
     }
-
-    kicksRef.current += 1
-    setKicks(k => k + 1)
   }, [])
 
   const fmt = (n: number) => n >= 1_000_000
