@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"E:/vibecode/1 in progress or to do/NSAFL - APP/telegram-app\" && npx tsc --noEmit 2>&1)",
+      "WebSearch",
+      "WebFetch(domain:horizon.stellar.org)"
+    ]
+  }
+}
