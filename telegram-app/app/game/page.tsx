@@ -331,7 +331,7 @@ function HubView({ onPlay, totalPoints, tierPoints, tierLabel }: {
   onPlay: () => void
   totalPoints: number
   tierPoints: number
-  tierLabel: string
+  tierLabel: string  // e.g. "Tier 1"
 }) {
   const router = useRouter()
 
@@ -382,7 +382,7 @@ function HubView({ onPlay, totalPoints, tierPoints, tierLabel }: {
         <h1 className="text-xl font-bold text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
           Game Hub
         </h1>
-        <p className="text-xs text-gray-500 mt-0.5">Earn balls to play</p>
+        <p className="text-xs text-gray-500 mt-0.5">More {PRIMARY_CUSTOM_ASSET_CODE} = more balls</p>
       </div>
 
       <div className="px-4 pt-4 space-y-4">
@@ -407,8 +407,12 @@ function HubView({ onPlay, totalPoints, tierPoints, tierLabel }: {
 
           <div className="space-y-1.5 mb-3">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-gray-400">{tierLabel}</span>
+              <span className="text-gray-400">Tier ({tierLabel})</span>
               <span className="text-white font-semibold">{tierPoints} ball{tierPoints !== 1 ? 's' : ''}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-gray-400">Base (everyone)</span>
+              <span className="text-white font-semibold">1 ball</span>
             </div>
             <div className="flex items-center justify-between text-xs">
               <span className="text-gray-400">Referrals</span>
@@ -437,7 +441,7 @@ function HubView({ onPlay, totalPoints, tierPoints, tierLabel }: {
               {
                 icon: 'workspace_premium',
                 label: 'Tier Level',
-                desc: `1 ball per tier (currently: ${tierPoints} ball${tierPoints !== 1 ? 's' : ''} from your tier)`,
+                desc: `Tier 1 = 1 ball, Tier 2 = 2 balls, etc. You have ${tierPoints} from your tier.`,
               },
               {
                 icon: 'group_add',
@@ -539,10 +543,10 @@ export default function GamePage() {
 
   const tokenBalance = useWalletStore((s) => s.tokenBalance)
   const balance = parseFloat(tokenBalance) || 0
-  const totalPoints = getTotalPoints(balance)
   const tierPoints = getPointsFromTier(balance)
+  const totalPoints = Math.max(1, getTotalPoints(balance)) // everyone gets at least 1 ball
   const currentTier = getTierForBalance(balance)
-  const tierLabel = `${currentTier.label} → ${tierPoints} ball${tierPoints !== 1 ? 's' : ''}`
+  const tierLabel = currentTier.label
 
   useTelegramBack(useCallback(() => {
     if (view === 'playing') {
@@ -555,7 +559,7 @@ export default function GamePage() {
     <WalletGuard>
       {view === 'playing' ? (
         <CanvasGame
-          numBalls={Math.max(1, totalPoints)}
+          numBalls={totalPoints}
           onBack={() => setView('hub')}
         />
       ) : (
