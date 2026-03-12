@@ -74,6 +74,7 @@ interface GameStats {
 
 type GameView = 'hub' | 'playing' | 'lucky'
 const LUCKY_BALLS_REQUIRED = 3
+const DEV_BYPASS = process.env.NEXT_PUBLIC_DEV_BYPASS === 'true'
 
 // ── Lucky Draw ────────────────────────────────────────────────────────────────
 interface Prize {
@@ -820,7 +821,7 @@ function HubView({ onPlay, onLucky, totalPoints, tierPoints, tierLabel }: {
       name: 'Lucky Draw',
       description: `Spin the wheel — win ${PRIMARY_CUSTOM_ASSET_CODE} prizes`,
       cost: LUCKY_BALLS_REQUIRED,
-      unlocked: totalPoints >= LUCKY_BALLS_REQUIRED,
+      unlocked: DEV_BYPASS || totalPoints >= LUCKY_BALLS_REQUIRED,
       onPlay: onLucky,
       lockReason: `Need ${LUCKY_BALLS_REQUIRED} balls to unlock`,
     },
