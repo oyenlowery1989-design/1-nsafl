@@ -110,19 +110,46 @@ function pickPrize(): number {
   return PRIZES.length - 1
 }
 
-function LuckyDraw({ onBack, stellarAddress }: { onBack: () => void; stellarAddress: string | null }) {
+function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void; stellarAddress: string | null; totalBalls: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rafRef = useRef<number>(0)
-  const angleRef = useRef(0)       // current wheel angle (radians)
-  const velocityRef = useRef(0)    // spin velocity
+  const angleRef = useRef(0)
   const targetAngleRef = useRef<number | null>(null)
+  const targetPrizeIdxRef = useRef<number>(0)
   const spinningRef = useRef(false)
   const [result, setResult] = useState<Prize | null>(null)
-  const [spun, setSpun] = useState(false)
   const [freeSpin, setFreeSpin] = useState(false)
   const [winCode, setWinCode] = useState<string | null>(null)
   const segCount = PRIZES.length
   const segAngle = (Math.PI * 2) / segCount
+
+  // ── Spins-per-day tracking ─────────────────────────────────────────────────
+  const LD_KEY = 'nsafl_lucky_spins'
+  const todayKey = new Date().toISOString().slice(0, 10) // "2026-03-12"
+
+  function getSpinsToday(): number {
+    try {
+      const raw = localStorage.getItem(LD_KEY)
+      const data = raw ? JSON.parse(raw) : {}
+      return data[todayKey] ?? 0
+    } catch { return 0 }
+  }
+
+  function recordSpin() {
+    try {
+      const raw = localStorage.getItem(LD_KEY)
+      const data = raw ? JSON.parse(raw) : {}
+      data[todayKey] = (data[todayKey] ?? 0) + 1
+      // prune old days
+      Object.keys(data).forEach(k => { if (k < todayKey) delete data[k] })
+      localStorage.setItem(LD_KEY, JSON.stringify(data))
+    } catch {}
+  }
+
+  const [spinsToday, setSpinsToday] = useState(() => getSpinsToday())
+  const spinsUsed = spinsToday
+  const spinsRemaining = Math.max(0, totalBalls - spinsUsed)
+  const canSpin = (DEV_BYPASS || spinsRemaining > 0) && !spinningRef.current && !freeSpin
 
   const drawWheel = useCallback((angle: number) => {
     const canvas = canvasRef.current
@@ -217,11 +244,8 @@ function LuckyDraw({ onBack, stellarAddress }: { onBack: () => void; stellarAddr
         if (Math.abs(diff) < 0.003) {
           angleRef.current = targetAngleRef.current
           spinningRef.current = false
-          velocityRef.current = 0
-          // determine winning segment: pointer is at top (angle = -π/2 relative to wheel)
-          const normalized = (((-angleRef.current) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)
-          const idx = Math.floor(normalized / segAngle) % segCount
-          setResult(PRIZES[idx])
+          // use the pre-determined prize index — no angle re-detection needed
+          setResult(PRIZES[targetPrizeIdxRef.current])
         } else {
           // ease toward target
           angleRef.current += diff * 0.04
@@ -237,6 +261,7 @@ function LuckyDraw({ onBack, stellarAddress }: { onBack: () => void; stellarAddr
   const spin = useCallback((prizeIdx: number) => {
     if (spinningRef.current) return
     setResult(null)
+    targetPrizeIdxRef.current = prizeIdx
     // calculate target angle so segment prizeIdx lands under pointer (top)
     // pointer at top = angle 0 points right, so we need -π/2 offset
     const segCenter = prizeIdx * segAngle + segAngle / 2
@@ -249,12 +274,16 @@ function LuckyDraw({ onBack, stellarAddress }: { onBack: () => void; stellarAddr
   }, [segAngle])
 
   const handleSpin = useCallback(() => {
-    if (spinningRef.current || (spun && !freeSpin)) return
+    if (!canSpin) return
     const idx = pickPrize()
-    setSpun(true)
+    if (!freeSpin) {
+      recordSpin()
+      setSpinsToday(getSpinsToday())
+    }
     setFreeSpin(false)
     spin(idx)
-  }, [spin, spun, freeSpin])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canSpin, freeSpin, spin])
 
   // handle result actions
   useEffect(() => {
@@ -262,6 +291,7 @@ function LuckyDraw({ onBack, stellarAddress }: { onBack: () => void; stellarAddr
     if (result.label === 'Free Spin') {
       haptic.success()
       setTimeout(() => { setFreeSpin(true); setResult(null) }, 2200)
+      return
     } else if (result.isNSAFL) {
       haptic.success()
       // generate a unique win code and save to DB
@@ -283,7 +313,6 @@ function LuckyDraw({ onBack, stellarAddress }: { onBack: () => void; stellarAddr
     }
   }, [result, stellarAddress])
 
-  const canSpin = !spun || freeSpin
   const isWin = result && (result.isNSAFL || result.label === '+1 Ball')
 
   return (
@@ -300,7 +329,9 @@ function LuckyDraw({ onBack, stellarAddress }: { onBack: () => void; stellarAddr
         </button>
         <div className="text-center">
           <p className="text-white font-bold text-base" style={{ fontFamily: 'Playfair Display, serif' }}>Lucky Draw</p>
-          <p className="text-[#D4AF37]/70 text-[10px]">{canSpin ? 'Tap Spin to try your luck' : 'Session complete'}</p>
+          <p className="text-[#D4AF37]/70 text-[10px]">
+            {freeSpin ? '🔄 Free spin earned!' : canSpin ? `${spinsRemaining} spin${spinsRemaining !== 1 ? 's' : ''} left today` : 'No spins left — comes back in 24h'}
+          </p>
         </div>
         <div className="w-16" />
       </div>
@@ -349,7 +380,7 @@ function LuckyDraw({ onBack, stellarAddress }: { onBack: () => void; stellarAddr
 
       {/* spin button */}
       <div className="px-4 pb-8 flex-shrink-0">
-        {canSpin ? (
+        {canSpin || freeSpin ? (
           <button
             onClick={handleSpin}
             disabled={spinningRef.current}
@@ -358,15 +389,23 @@ function LuckyDraw({ onBack, stellarAddress }: { onBack: () => void; stellarAddr
             {spinningRef.current ? 'Spinning...' : freeSpin ? '🔄 Free Spin!' : 'Spin'}
           </button>
         ) : (
-          <button
-            onClick={onBack}
-            className="w-full py-4 rounded-2xl text-sm font-semibold text-gray-300 border border-white/10 active:scale-95 transition"
-            style={{ background: 'rgba(255,255,255,0.05)' }}
-          >
-            Back to Hub
-          </button>
+          <div className="space-y-2">
+            <div className="w-full py-3 rounded-2xl border border-white/10 text-center text-xs text-gray-400"
+              style={{ background: 'rgba(255,255,255,0.04)' }}>
+              ⏳ Spins reset in 24h · get more balls for more spins
+            </div>
+            <button
+              onClick={onBack}
+              className="w-full py-3 rounded-2xl text-sm font-semibold text-gray-300 border border-white/10 active:scale-95 transition"
+              style={{ background: 'rgba(255,255,255,0.04)' }}
+            >
+              Back to Hub
+            </button>
+          </div>
         )}
-        <p className="text-center text-[10px] text-gray-600 mt-2">1 spin per session · requires 3 balls</p>
+        <p className="text-center text-[10px] text-gray-600 mt-2">
+          {totalBalls} spin{totalBalls !== 1 ? 's' : ''} per day · requires {LUCKY_BALLS_REQUIRED} balls to play
+        </p>
       </div>
     </div>
   )
@@ -1022,6 +1061,7 @@ export default function GamePage() {
         <LuckyDraw
           onBack={() => setView('hub')}
           stellarAddress={stellarAddress}
+          totalBalls={totalPoints}
         />
       ) : (
         <>
