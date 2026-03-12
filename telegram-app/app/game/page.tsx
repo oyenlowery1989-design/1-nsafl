@@ -72,7 +72,304 @@ interface GameStats {
   leaderboard: { rank: number; name: string; kicks: number }[]
 }
 
-type GameView = 'hub' | 'playing'
+type GameView = 'hub' | 'playing' | 'lucky'
+const LUCKY_BALLS_REQUIRED = 3
+
+// ── Lucky Draw ────────────────────────────────────────────────────────────────
+interface Prize {
+  label: string
+  emoji: string
+  color: string
+  weight: number
+  isNSAFL?: boolean
+  amount?: number
+}
+
+const PRIZES: Prize[] = [
+  // NSAFL prizes — shown on wheel, weight 0 = cannot land yet (enable when ready)
+  { label: '100 NSAFL', emoji: '🏆', color: '#D4AF37', weight: 0,  isNSAFL: true,  amount: 100 },
+  { label: '50 NSAFL',  emoji: '🥇', color: '#c8a030', weight: 0,  isNSAFL: true,  amount: 50  },
+  { label: '25 NSAFL',  emoji: '🥈', color: '#a0a0b0', weight: 0,  isNSAFL: true,  amount: 25  },
+  // Active prizes
+  { label: '+1 Ball',   emoji: '🎯', color: '#2e7d32', weight: 20 },
+  { label: 'Free Spin', emoji: '🔄', color: '#1565c0', weight: 20 },
+  { label: 'Top Badge', emoji: '⭐', color: '#6a1b9a', weight: 20 },
+  { label: 'Try Again', emoji: '😔', color: '#37474f', weight: 20 },
+  { label: 'Better Luck',emoji:'💨', color: '#455a64', weight: 20 },
+]
+
+// weighted random pick
+function pickPrize(): number {
+  const total = PRIZES.reduce((s, p) => s + p.weight, 0)
+  let r = Math.random() * total
+  for (let i = 0; i < PRIZES.length; i++) {
+    r -= PRIZES[i].weight
+    if (r <= 0) return i
+  }
+  return PRIZES.length - 1
+}
+
+function LuckyDraw({ onBack, stellarAddress }: { onBack: () => void; stellarAddress: string | null }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const rafRef = useRef<number>(0)
+  const angleRef = useRef(0)       // current wheel angle (radians)
+  const velocityRef = useRef(0)    // spin velocity
+  const targetAngleRef = useRef<number | null>(null)
+  const spinningRef = useRef(false)
+  const [result, setResult] = useState<Prize | null>(null)
+  const [spun, setSpun] = useState(false)
+  const [freeSpin, setFreeSpin] = useState(false)
+  const [winCode, setWinCode] = useState<string | null>(null)
+  const segCount = PRIZES.length
+  const segAngle = (Math.PI * 2) / segCount
+
+  const drawWheel = useCallback((angle: number) => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    const W = canvas.width, H = canvas.height
+    const cx = W / 2, cy = H / 2
+    const r = Math.min(W, H) * 0.38
+
+    ctx.clearRect(0, 0, W, H)
+
+    // background glow
+    const glow = ctx.createRadialGradient(cx, cy, r * 0.3, cx, cy, r * 1.2)
+    glow.addColorStop(0, 'rgba(212,175,55,0.08)')
+    glow.addColorStop(1, 'rgba(10,14,26,0)')
+    ctx.fillStyle = glow
+    ctx.fillRect(0, 0, W, H)
+
+    // segments
+    for (let i = 0; i < segCount; i++) {
+      const start = angle + i * segAngle
+      const end = start + segAngle
+      const prize = PRIZES[i]
+
+      ctx.beginPath()
+      ctx.moveTo(cx, cy)
+      ctx.arc(cx, cy, r, start, end)
+      ctx.closePath()
+      ctx.fillStyle = prize.color
+      ctx.fill()
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)'
+      ctx.lineWidth = 2
+      ctx.stroke()
+
+      // label
+      ctx.save()
+      ctx.translate(cx, cy)
+      ctx.rotate(start + segAngle / 2)
+      ctx.textAlign = 'right'
+
+      // emoji
+      ctx.font = `${r * 0.13}px serif`
+      ctx.fillText(prize.emoji, r * 0.88, r * 0.055)
+
+      // text
+      ctx.fillStyle = 'rgba(255,255,255,0.92)'
+      ctx.font = `bold ${r * 0.085}px Inter, sans-serif`
+      ctx.fillText(prize.label, r * 0.72, -r * 0.04)
+
+      ctx.restore()
+    }
+
+    // outer ring
+    ctx.beginPath()
+    ctx.arc(cx, cy, r, 0, Math.PI * 2)
+    ctx.strokeStyle = '#D4AF37'
+    ctx.lineWidth = 4
+    ctx.stroke()
+
+    // center cap
+    ctx.beginPath()
+    ctx.arc(cx, cy, r * 0.09, 0, Math.PI * 2)
+    ctx.fillStyle = '#0A0E1A'
+    ctx.fill()
+    ctx.strokeStyle = '#D4AF37'
+    ctx.lineWidth = 3
+    ctx.stroke()
+
+    // pointer (top centre)
+    const py = cy - r - 2
+    ctx.beginPath()
+    ctx.moveTo(cx, py + 22)
+    ctx.lineTo(cx - 11, py)
+    ctx.lineTo(cx + 11, py)
+    ctx.closePath()
+    ctx.fillStyle = '#D4AF37'
+    ctx.fill()
+  }, [segAngle, segCount])
+
+  // animation loop
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    canvas.width = canvas.offsetWidth
+    canvas.height = canvas.offsetHeight
+    drawWheel(0)
+
+    function tick() {
+      if (spinningRef.current && targetAngleRef.current !== null) {
+        const diff = targetAngleRef.current - angleRef.current
+        if (Math.abs(diff) < 0.003) {
+          angleRef.current = targetAngleRef.current
+          spinningRef.current = false
+          velocityRef.current = 0
+          // determine winning segment: pointer is at top (angle = -π/2 relative to wheel)
+          const normalized = (((-angleRef.current) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)
+          const idx = Math.floor(normalized / segAngle) % segCount
+          setResult(PRIZES[idx])
+        } else {
+          // ease toward target
+          angleRef.current += diff * 0.04
+        }
+      }
+      drawWheel(angleRef.current)
+      rafRef.current = requestAnimationFrame(tick)
+    }
+    rafRef.current = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafRef.current)
+  }, [drawWheel, segAngle, segCount])
+
+  const spin = useCallback((prizeIdx: number) => {
+    if (spinningRef.current) return
+    setResult(null)
+    // calculate target angle so segment prizeIdx lands under pointer (top)
+    // pointer at top = angle 0 points right, so we need -π/2 offset
+    const segCenter = prizeIdx * segAngle + segAngle / 2
+    // we want: angleRef + segCenter ≡ -π/2 (mod 2π)  → angle = -π/2 - segCenter + n*2π
+    const spins = 5 + Math.floor(Math.random() * 3) // 5–7 full rotations
+    const target = angleRef.current - (angleRef.current % (Math.PI * 2)) - (Math.PI / 2) - segCenter + spins * Math.PI * 2
+    targetAngleRef.current = target
+    spinningRef.current = true
+    haptic.medium()
+  }, [segAngle])
+
+  const handleSpin = useCallback(() => {
+    if (spinningRef.current || (spun && !freeSpin)) return
+    const idx = pickPrize()
+    setSpun(true)
+    setFreeSpin(false)
+    spin(idx)
+  }, [spin, spun, freeSpin])
+
+  // handle result actions
+  useEffect(() => {
+    if (!result) return
+    if (result.label === 'Free Spin') {
+      haptic.success()
+      setTimeout(() => { setFreeSpin(true); setResult(null) }, 2200)
+    } else if (result.isNSAFL) {
+      haptic.success()
+      // generate a unique win code and save to DB
+      const code = `WIN-${result.amount}NSAFL-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`
+      setWinCode(code)
+      fetch('/api/game/win', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-telegram-init-data': getTelegramInitData(),
+        },
+        body: JSON.stringify({ prize: result.label, amount: result.amount, code, wallet: stellarAddress }),
+        keepalive: true,
+      }).catch(() => null)
+    } else if (result.label === '+1 Ball') {
+      haptic.success()
+    } else {
+      haptic.warning()
+    }
+  }, [result, stellarAddress])
+
+  const canSpin = !spun || freeSpin
+  const isWin = result && (result.isNSAFL || result.label === '+1 Ball')
+
+  return (
+    <div className="fixed inset-0 bg-[#0A0E1A] flex flex-col overflow-hidden">
+      {/* header */}
+      <div className="flex items-center justify-between px-4 pt-12 pb-3 flex-shrink-0">
+        <button
+          onClick={onBack}
+          className="flex items-center space-x-1.5 px-3 py-2 rounded-xl border border-white/20 active:scale-95 transition"
+          style={{ backdropFilter: 'blur(12px)', background: 'rgba(255,255,255,0.08)' }}
+        >
+          <span className="material-symbols-outlined text-white text-base">arrow_back</span>
+          <span className="text-white text-xs font-semibold">Hub</span>
+        </button>
+        <div className="text-center">
+          <p className="text-white font-bold text-base" style={{ fontFamily: 'Playfair Display, serif' }}>Lucky Draw</p>
+          <p className="text-[#D4AF37]/70 text-[10px]">{canSpin ? 'Tap Spin to try your luck' : 'Session complete'}</p>
+        </div>
+        <div className="w-16" />
+      </div>
+
+      {/* wheel */}
+      <div className="flex-1 flex items-center justify-center px-4">
+        <canvas
+          ref={canvasRef}
+          className="w-full"
+          style={{ maxWidth: 360, aspectRatio: '1', touchAction: 'none' }}
+        />
+      </div>
+
+      {/* result banner */}
+      {result && (
+        <div className="px-4 mb-2 flex-shrink-0">
+          <div className={`rounded-2xl p-4 border text-center ${isWin ? 'border-[#D4AF37]/50' : 'border-white/10'}`}
+            style={{ background: isWin ? 'rgba(212,175,55,0.1)' : 'rgba(255,255,255,0.03)' }}>
+            <p className="text-3xl mb-1">{result.emoji}</p>
+            <p className={`text-base font-bold ${isWin ? 'text-[#D4AF37]' : 'text-gray-400'}`}>{result.label}</p>
+            {result.label === 'Free Spin' && (
+              <p className="text-xs text-[#D4AF37]/70 mt-1">Spinning again in a moment...</p>
+            )}
+            {result.isNSAFL && (
+              <div className="mt-3 space-y-2 text-left">
+                {winCode && (
+                  <>
+                    <p className="text-[10px] text-gray-400 text-center">Screenshot this screen, then DM <span className="text-[#D4AF37] font-bold">@NSAFL_bot</span> to claim</p>
+                    <div className="px-3 py-2 rounded-xl border border-[#D4AF37]/40 text-[11px] text-[#D4AF37] font-mono font-bold text-center tracking-widest"
+                      style={{ background: 'rgba(212,175,55,0.08)' }}>
+                      {winCode}
+                    </div>
+                  </>
+                )}
+                {stellarAddress && (
+                  <div className="px-3 py-2 rounded-xl border border-white/10 text-[9px] text-gray-400 font-mono break-all"
+                    style={{ background: 'rgba(255,255,255,0.03)' }}>
+                    Wallet: {stellarAddress}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* spin button */}
+      <div className="px-4 pb-8 flex-shrink-0">
+        {canSpin ? (
+          <button
+            onClick={handleSpin}
+            disabled={spinningRef.current}
+            className="w-full py-4 rounded-2xl text-sm font-bold text-black bg-[#D4AF37] active:scale-95 transition disabled:opacity-50"
+          >
+            {spinningRef.current ? 'Spinning...' : freeSpin ? '🔄 Free Spin!' : 'Spin'}
+          </button>
+        ) : (
+          <button
+            onClick={onBack}
+            className="w-full py-4 rounded-2xl text-sm font-semibold text-gray-300 border border-white/10 active:scale-95 transition"
+            style={{ background: 'rgba(255,255,255,0.05)' }}
+          >
+            Back to Hub
+          </button>
+        )}
+        <p className="text-center text-[10px] text-gray-600 mt-2">1 spin per session · requires 3 balls</p>
+      </div>
+    </div>
+  )
+}
 
 // ── Canvas Game ───────────────────────────────────────────────────────────────
 function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void }) {
@@ -495,8 +792,9 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
 }
 
 // ── Hub View ──────────────────────────────────────────────────────────────────
-function HubView({ onPlay, totalPoints, tierPoints, tierLabel }: {
+function HubView({ onPlay, onLucky, totalPoints, tierPoints, tierLabel }: {
   onPlay: () => void
+  onLucky: () => void
   totalPoints: number
   tierPoints: number
   tierLabel: string
@@ -520,10 +818,11 @@ function HubView({ onPlay, totalPoints, tierPoints, tierLabel }: {
       id: 'lucky',
       icon: 'casino',
       name: 'Lucky Draw',
-      description: `Spin for ${PRIMARY_CUSTOM_ASSET_CODE} prizes`,
-      cost: 3,
-      unlocked: false,
-      comingSoon: true,
+      description: `Spin the wheel — win ${PRIMARY_CUSTOM_ASSET_CODE} prizes`,
+      cost: LUCKY_BALLS_REQUIRED,
+      unlocked: totalPoints >= LUCKY_BALLS_REQUIRED,
+      onPlay: onLucky,
+      lockReason: `Need ${LUCKY_BALLS_REQUIRED} balls to unlock`,
     },
     {
       id: 'quiz',
@@ -663,7 +962,7 @@ function HubView({ onPlay, totalPoints, tierPoints, tierLabel }: {
                   </span>
                   {!game.unlocked && (
                     <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full border border-white/10 text-gray-500 uppercase tracking-wider">
-                      Soon
+                      {'lockReason' in game ? '🔒' : 'Soon'}
                     </span>
                   )}
                 </div>
@@ -700,14 +999,15 @@ export default function GamePage() {
   const [view, setView] = useState<GameView>('hub')
 
   const tokenBalance = useWalletStore((s) => s.tokenBalance)
+  const stellarAddress = useWalletStore((s) => s.stellarAddress)
   const balance = parseFloat(tokenBalance) || 0
   const tierPoints = getPointsFromTier(balance)
-  const totalPoints = 1 + getTotalPoints(balance) // 1 base + tier/referral balls
+  const totalPoints = 1 + getTotalPoints(balance)
   const currentTier = getTierForBalance(balance)
   const tierLabel = currentTier.label
 
   useTelegramBack(useCallback(() => {
-    if (view === 'playing') setView('hub')
+    if (view !== 'hub') setView('hub')
   }, [view]))
 
   return (
@@ -717,10 +1017,16 @@ export default function GamePage() {
           numBalls={totalPoints}
           onBack={() => setView('hub')}
         />
+      ) : view === 'lucky' ? (
+        <LuckyDraw
+          onBack={() => setView('hub')}
+          stellarAddress={stellarAddress}
+        />
       ) : (
         <>
           <HubView
             onPlay={() => setView('playing')}
+            onLucky={() => setView('lucky')}
             totalPoints={totalPoints}
             tierPoints={tierPoints}
             tierLabel={tierLabel}
