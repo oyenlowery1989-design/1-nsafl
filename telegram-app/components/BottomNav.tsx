@@ -14,6 +14,7 @@ export default function BottomNav() {
   const rafRef = useRef<number>(0)
   const pressStartRef = useRef(0)
   const firedRef = useRef(false)
+  const longPressReadyRef = useRef(false)
 
   const [charge, setCharge] = useState(0) // 0–1
   const [launched, setLaunched] = useState(false)
@@ -21,6 +22,7 @@ export default function BottomNav() {
   const startPress = useCallback(() => {
     pressStartRef.current = Date.now()
     firedRef.current = false
+    longPressReadyRef.current = false
     setCharge(0)
     setLaunched(false)
 
@@ -44,28 +46,29 @@ export default function BottomNav() {
       if (!firedRef.current) haptic.medium()
     }, LONG_PRESS_MS * 0.9)
 
-    // fire navigation on long press
+    // mark long press ready — actual navigation fires on pointer release
     setTimeout(() => {
       if (firedRef.current) return
-      firedRef.current = true
+      longPressReadyRef.current = true
       setLaunched(true)
       haptic.success()
       cancelAnimationFrame(rafRef.current)
       setCharge(1)
-      setTimeout(() => {
-        router.push('/game')
-        setCharge(0)
-        setLaunched(false)
-      }, 180)
     }, LONG_PRESS_MS)
   }, [router])
 
   const endPress = useCallback(() => {
     cancelAnimationFrame(rafRef.current)
     if (timerRef.current) clearTimeout(timerRef.current)
-    if (!firedRef.current) {
-      firedRef.current = true
+    if (firedRef.current) return
+    firedRef.current = true
+    if (longPressReadyRef.current) {
+      // long press completed — navigate to game
+      router.push('/game')
+    } else {
+      // short press — go home
       setCharge(0)
+      setLaunched(false)
       router.push('/')
     }
   }, [router])
