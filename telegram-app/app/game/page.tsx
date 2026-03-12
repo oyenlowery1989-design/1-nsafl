@@ -16,7 +16,6 @@ const GRAVITY = 0.18
 const BOUNCE = 0.55
 const SPIN_DECAY = 0.97
 const TRAIL_LENGTH = 10
-const MAX_BALLS = 20
 const KICK_RADIUS = 80
 
 interface Ball {
@@ -215,11 +214,6 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
       nearest!.vy = (dy / len) * power - 3
       nearest!.spin = (Math.random() - 0.5) * 20
       haptic.light()
-    } else if (ballsRef.current.length < MAX_BALLS) {
-      ballsRef.current.push(makeBall(tx, ty, true))
-      ballsSpawnedRef.current += 1
-      setBallCount(ballsRef.current.length)
-      haptic.medium()
     }
 
     kicksRef.current += 1
@@ -248,7 +242,7 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
             Game Zone
           </h1>
           <p className="text-gray-600 text-[10px] pt-1 animate-pulse">
-            Tap to kick · Tap empty space to add a ball
+            Tap a ball to kick it
           </p>
         </div>
       </div>
@@ -265,7 +259,7 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
 
       <div className="absolute top-12 right-16 z-20 px-2.5 py-1.5 rounded-full border border-white/10 text-[10px] font-semibold text-gray-400"
         style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(8px)' }}>
-        🏈 {ballCount}/{MAX_BALLS}
+        🏈 {ballCount}
       </div>
 
       {/* ── Top-right: kicks + leaderboard toggle ── */}
