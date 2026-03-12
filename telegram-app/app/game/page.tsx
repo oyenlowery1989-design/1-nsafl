@@ -81,22 +81,24 @@ interface Prize {
   label: string
   emoji: string
   color: string
-  weight: number
+  weight: number   // out of 1000 total
   isNSAFL?: boolean
+  isXLM?: boolean
   amount?: number
 }
 
+// Total weight = 1000
+// XLM: 1% | 100 NSAFL: 0.5% | 50 NSAFL: 1.5% | 25 NSAFL: 3% | rest split evenly
 const PRIZES: Prize[] = [
-  // NSAFL prizes — shown on wheel, weight 0 = cannot land yet (enable when ready)
-  { label: '100 NSAFL', emoji: '🏆', color: '#D4AF37', weight: 0,  isNSAFL: true,  amount: 100 },
-  { label: '50 NSAFL',  emoji: '🥇', color: '#c8a030', weight: 0,  isNSAFL: true,  amount: 50  },
-  { label: '25 NSAFL',  emoji: '🥈', color: '#a0a0b0', weight: 0,  isNSAFL: true,  amount: 25  },
-  // Active prizes
-  { label: '+1 Ball',   emoji: '🎯', color: '#2e7d32', weight: 20 },
-  { label: 'Free Spin', emoji: '🔄', color: '#1565c0', weight: 20 },
-  { label: 'Top Badge', emoji: '⭐', color: '#6a1b9a', weight: 20 },
-  { label: 'Try Again', emoji: '😔', color: '#37474f', weight: 20 },
-  { label: 'Better Luck',emoji:'💨', color: '#455a64', weight: 20 },
+  { label: '1 XLM',    emoji: '✨', color: '#0077b6', weight: 10,  isXLM: true,   amount: 1   },
+  { label: '100 NSAFL',emoji: '🏆', color: '#D4AF37', weight: 5,   isNSAFL: true, amount: 100 },
+  { label: '50 NSAFL', emoji: '🥇', color: '#c8a030', weight: 15,  isNSAFL: true, amount: 50  },
+  { label: '25 NSAFL', emoji: '🥈', color: '#a0a0b0', weight: 30,  isNSAFL: true, amount: 25  },
+  { label: '+1 Ball',  emoji: '🎯', color: '#2e7d32', weight: 185 },
+  { label: 'Free Spin',emoji: '🔄', color: '#1565c0', weight: 185 },
+  { label: 'Top Badge',emoji: '⭐', color: '#6a1b9a', weight: 190 },
+  { label: 'Try Again',emoji: '😔', color: '#37474f', weight: 190 },
+  { label: 'Better Luck',emoji:'💨',color: '#455a64', weight: 190 },
 ]
 
 // weighted random pick
@@ -220,18 +222,27 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
     return () => ro.disconnect()
   }, [drawWheel])
 
+  // smooth spin via ease-out cubic interpolation
+  const spinStartAngleRef = useRef(0)
+  const spinStartTimeRef = useRef(0)
+  const SPIN_DURATION_MS = 3800
+
   // RAF loop
   useEffect(() => {
     let done = false
     function tick() {
       if (done) return
-      const diff = targetAngleRef.current - angleRef.current
-      if (spinning && Math.abs(diff) > 0.01) {
-        angleRef.current += diff * 0.06
-      } else if (spinning) {
-        angleRef.current = targetAngleRef.current
-        setSpinning(false)
-        setResult(PRIZES[targetPrizeIdxRef.current])
+      if (spinning) {
+        const elapsed = Date.now() - spinStartTimeRef.current
+        const t = Math.min(elapsed / SPIN_DURATION_MS, 1)
+        // ease-out cubic: starts fast, decelerates smoothly to stop
+        const eased = 1 - Math.pow(1 - t, 3)
+        angleRef.current = spinStartAngleRef.current + eased * (targetAngleRef.current - spinStartAngleRef.current)
+        if (t >= 1) {
+          angleRef.current = targetAngleRef.current
+          setSpinning(false)
+          setResult(PRIZES[targetPrizeIdxRef.current])
+        }
       }
       drawWheel(angleRef.current)
       rafRef.current = requestAnimationFrame(tick)
@@ -245,10 +256,12 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
     if (!canSpin || spinning) return
     const idx = pickPrize()
     targetPrizeIdxRef.current = idx
-    // target angle: segment idx lands at top (pointer)
+    // target angle: segment idx lands at top (pointer), add 6–9 full rotations
     const segCenter = idx * segAngle
-    const totalRotation = (5 + Math.floor(Math.random() * 3)) * Math.PI * 2
-    targetAngleRef.current = angleRef.current + totalRotation + (Math.PI * 2 - (angleRef.current % (Math.PI * 2))) - segCenter
+    const fullRotations = (6 + Math.floor(Math.random() * 4)) * Math.PI * 2
+    spinStartAngleRef.current = angleRef.current
+    targetAngleRef.current = angleRef.current + fullRotations + (Math.PI * 2 - ((angleRef.current + fullRotations) % (Math.PI * 2))) - segCenter
+    spinStartTimeRef.current = Date.now()
     setResult(null)
     setSpinning(true)
     haptic.medium()
@@ -270,9 +283,10 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
     if (result.label === 'Free Spin') {
       haptic.success()
       setTimeout(() => { setFreeSpin(true); setResult(null) }, 2200)
-    } else if (result.isNSAFL) {
+    } else if (result.isNSAFL || result.isXLM) {
       haptic.success()
-      const code = `WIN-${result.amount}NSAFL-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`
+      const tag = result.isXLM ? `${result.amount}XLM` : `${result.amount}NSAFL`
+      const code = `WIN-${tag}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`
       setWinCode(code)
       fetch('/api/game/win', {
         method: 'POST',
@@ -287,7 +301,7 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
     }
   }, [result, stellarAddress])
 
-  const isWin = result && (result.isNSAFL || result.label === '+1 Ball')
+  const isWin = result && (result.isNSAFL || result.isXLM || result.label === '+1 Ball')
 
   return (
     <div className="fixed inset-0 bg-[#0A0E1A] flex flex-col overflow-hidden">
