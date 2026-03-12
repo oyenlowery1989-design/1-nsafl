@@ -88,17 +88,18 @@ interface Prize {
 }
 
 // Total weight = 1000
-// XLM: 1% | 100 NSAFL: 0.5% | 50 NSAFL: 1.5% | 25 NSAFL: 3% | rest split evenly
+// 1000 XLM: 1% | 100 XLM: 2% | 100 NSAFL: 3% | 50 NSAFL: 4% | 25 NSAFL: 5% | rest split evenly
 const PRIZES: Prize[] = [
-  { label: '1 XLM',    emoji: '✨', color: '#0077b6', weight: 10,  isXLM: true,   amount: 1   },
-  { label: '100 NSAFL',emoji: '🏆', color: '#D4AF37', weight: 5,   isNSAFL: true, amount: 100 },
-  { label: '50 NSAFL', emoji: '🥇', color: '#c8a030', weight: 15,  isNSAFL: true, amount: 50  },
-  { label: '25 NSAFL', emoji: '🥈', color: '#a0a0b0', weight: 30,  isNSAFL: true, amount: 25  },
-  { label: '+1 Ball',  emoji: '🎯', color: '#2e7d32', weight: 185 },
-  { label: 'Free Spin',emoji: '🔄', color: '#1565c0', weight: 185 },
-  { label: 'Top Badge',emoji: '⭐', color: '#6a1b9a', weight: 190 },
-  { label: 'Try Again',emoji: '😔', color: '#37474f', weight: 190 },
-  { label: 'Better Luck',emoji:'💨',color: '#455a64', weight: 190 },
+  { label: '1000 XLM', emoji: '💎', color: '#0077b6', weight: 10,  isXLM: true,   amount: 1000 },
+  { label: '100 XLM',  emoji: '✨', color: '#0096c7', weight: 20,  isXLM: true,   amount: 100  },
+  { label: '100 NSAFL',emoji: '🏆', color: '#D4AF37', weight: 30,  isNSAFL: true, amount: 100  },
+  { label: '50 NSAFL', emoji: '🥇', color: '#c8a030', weight: 40,  isNSAFL: true, amount: 50   },
+  { label: '25 NSAFL', emoji: '🥈', color: '#a0a0b0', weight: 50,  isNSAFL: true, amount: 25   },
+  { label: '+1 Ball',  emoji: '🎯', color: '#2e7d32', weight: 170 },
+  { label: 'Free Spin',emoji: '🔄', color: '#1565c0', weight: 170 },
+  { label: 'Top Badge',emoji: '⭐', color: '#6a1b9a', weight: 170 },
+  { label: 'Try Again',emoji: '😔', color: '#37474f', weight: 170 },
+  { label: 'Better Luck',emoji:'💨',color: '#455a64', weight: 170 },
 ]
 
 // weighted random pick
@@ -126,6 +127,14 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
   const [result, setResult] = useState<Prize | null>(null)
   const [freeSpin, setFreeSpin] = useState(false)
   const [winCode, setWinCode] = useState<string | null>(null)
+  const [recentWins, setRecentWins] = useState<{ telegram_id: number; prize: string; created_at: string }[]>([])
+
+  useEffect(() => {
+    fetch('/api/game/wins')
+      .then(r => r.json())
+      .then(j => { if (j.success) setRecentWins(j.data) })
+      .catch(() => null)
+  }, [])
 
   // ── Spins-per-day ──────────────────────────────────────────────────────────
   const LD_KEY = 'nsafl_lucky_spins'
@@ -151,58 +160,87 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
 
     ctx.clearRect(0, 0, W, H)
 
+    // outer shadow ring
+    ctx.beginPath()
+    ctx.arc(cx, cy, r + 6, 0, Math.PI * 2)
+    ctx.fillStyle = 'rgba(212,175,55,0.15)'
+    ctx.fill()
+
     for (let i = 0; i < segCount; i++) {
       const start = angle + i * segAngle - Math.PI / 2
       const end = start + segAngle
       const prize = PRIZES[i]
+      const midAngle = start + segAngle / 2
+
+      // segment fill with subtle radial gradient
+      const grad = ctx.createRadialGradient(cx, cy, r * 0.2, cx, cy, r)
+      grad.addColorStop(0, prize.color + 'dd')
+      grad.addColorStop(1, prize.color + '99')
+
       ctx.beginPath()
       ctx.moveTo(cx, cy)
       ctx.arc(cx, cy, r, start, end)
       ctx.closePath()
-      ctx.fillStyle = prize.color
+      ctx.fillStyle = grad
       ctx.fill()
-      ctx.strokeStyle = 'rgba(0,0,0,0.5)'
-      ctx.lineWidth = 2
+      ctx.strokeStyle = 'rgba(0,0,0,0.6)'
+      ctx.lineWidth = 1.5
       ctx.stroke()
 
+      // text along segment midpoint
       ctx.save()
       ctx.translate(cx, cy)
-      ctx.rotate(start + segAngle / 2)
-      ctx.font = `${r * 0.12}px serif`
-      ctx.textAlign = 'right'
-      ctx.fillText(prize.emoji, r * 0.82, r * 0.05)
+      ctx.rotate(midAngle)
+      // emoji
+      ctx.font = `${r * 0.13}px serif`
+      ctx.textAlign = 'center'
+      ctx.fillText(prize.emoji, r * 0.72, r * 0.06)
+      // label
       ctx.fillStyle = 'rgba(255,255,255,0.95)'
-      ctx.font = `bold ${r * 0.08}px Inter,sans-serif`
-      ctx.fillText(prize.label, r * 0.68, -r * 0.04)
+      ctx.font = `bold ${r * 0.085}px Inter,sans-serif`
+      ctx.shadowColor = 'rgba(0,0,0,0.8)'
+      ctx.shadowBlur = 4
+      ctx.fillText(prize.label, r * 0.72, -r * 0.07)
+      ctx.shadowBlur = 0
       ctx.restore()
     }
 
-    // ring
+    // gold outer ring
     ctx.beginPath()
     ctx.arc(cx, cy, r, 0, Math.PI * 2)
     ctx.strokeStyle = '#D4AF37'
-    ctx.lineWidth = 5
+    ctx.lineWidth = 6
     ctx.stroke()
 
-    // hub
+    // inner divider ring
     ctx.beginPath()
-    ctx.arc(cx, cy, r * 0.1, 0, Math.PI * 2)
+    ctx.arc(cx, cy, r * 0.18, 0, Math.PI * 2)
     ctx.fillStyle = '#0A0E1A'
     ctx.fill()
     ctx.strokeStyle = '#D4AF37'
     ctx.lineWidth = 3
     ctx.stroke()
 
-    // pointer at top
+    // hub dot
     ctx.beginPath()
-    ctx.moveTo(cx, cy - r - 4)
-    ctx.lineTo(cx - 12, cy - r - 26)
-    ctx.lineTo(cx + 12, cy - r - 26)
-    ctx.closePath()
+    ctx.arc(cx, cy, r * 0.07, 0, Math.PI * 2)
     ctx.fillStyle = '#D4AF37'
     ctx.fill()
+
+    // pointer triangle at top (outside ring)
+    const pSize = Math.max(14, r * 0.08)
+    ctx.beginPath()
+    ctx.moveTo(cx, cy - r + 2)
+    ctx.lineTo(cx - pSize, cy - r - pSize * 1.8)
+    ctx.lineTo(cx + pSize, cy - r - pSize * 1.8)
+    ctx.closePath()
+    ctx.fillStyle = '#D4AF37'
+    ctx.shadowColor = 'rgba(212,175,55,0.8)'
+    ctx.shadowBlur = 10
+    ctx.fill()
+    ctx.shadowBlur = 0
     ctx.strokeStyle = '#0A0E1A'
-    ctx.lineWidth = 1.5
+    ctx.lineWidth = 2
     ctx.stroke()
   }, [segAngle, segCount])
 
@@ -304,49 +342,83 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
   const isWin = result && (result.isNSAFL || result.isXLM || result.label === '+1 Ball')
 
   return (
-    <div className="fixed inset-0 bg-[#0A0E1A] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 flex flex-col overflow-hidden"
+      style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.08) 0%, #0A0E1A 60%)' }}>
+
       {/* header */}
-      <div className="flex items-center justify-between px-4 pt-12 pb-3 flex-shrink-0">
+      <div className="flex items-center justify-between px-4 pt-12 pb-2 flex-shrink-0">
         <button onClick={onBack}
           className="flex items-center space-x-1.5 px-3 py-2 rounded-xl border border-white/20 active:scale-95 transition"
-          style={{ backdropFilter: 'blur(12px)', background: 'rgba(255,255,255,0.08)' }}>
+          style={{ backdropFilter: 'blur(12px)', background: 'rgba(255,255,255,0.07)' }}>
           <span className="material-symbols-outlined text-white text-base">arrow_back</span>
           <span className="text-white text-xs font-semibold">Hub</span>
         </button>
         <div className="text-center">
-          <p className="text-white font-bold text-base" style={{ fontFamily: 'Playfair Display, serif' }}>Lucky Draw</p>
-          <p className="text-[#D4AF37]/70 text-[10px]">
-            {freeSpin ? '🔄 Free spin!' : canSpin ? `${spinsRemaining} spin${spinsRemaining !== 1 ? 's' : ''} left today` : 'No spins left today'}
+          <p className="text-[#D4AF37] font-bold text-xl tracking-wide" style={{ fontFamily: 'Playfair Display, serif' }}>
+            Lucky Draw
+          </p>
+          <p className="text-white/40 text-[10px] mt-0.5">
+            {freeSpin ? '🔄 Free spin ready!' : canSpin
+              ? `${spinsRemaining} spin${spinsRemaining !== 1 ? 's' : ''} remaining today`
+              : '⏳ No spins left today'}
           </p>
         </div>
         <div className="w-16" />
       </div>
 
-      {/* wheel */}
-      <div ref={wrapRef} className="flex-1 flex items-center justify-center px-6 py-2">
-        <canvas ref={canvasRef} style={{ touchAction: 'none', display: 'block' }} />
+      {/* recent winners ticker */}
+      {recentWins.length > 0 && (
+        <div className="px-4 mb-1 flex-shrink-0">
+          <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full border border-[#D4AF37]/20"
+            style={{ background: 'rgba(212,175,55,0.06)' }}>
+            <span className="text-[9px] text-[#D4AF37] font-bold whitespace-nowrap">🏆 LATEST WIN</span>
+            <p className="text-[9px] text-gray-400 truncate flex-1">
+              {recentWins[0].prize} · {new Date(recentWins[0].created_at).toLocaleDateString()}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* wheel — takes remaining space */}
+      <div ref={wrapRef} className="flex-1 flex items-center justify-center px-2 py-1 relative">
+        {/* glow ring behind wheel */}
+        <div className="absolute rounded-full pointer-events-none"
+          style={{
+            width: 320, height: 320,
+            background: 'radial-gradient(circle, rgba(212,175,55,0.12) 0%, transparent 70%)',
+            filter: 'blur(24px)',
+          }} />
+        <canvas ref={canvasRef} style={{ touchAction: 'none', display: 'block', position: 'relative', zIndex: 1 }} />
       </div>
 
-      {/* result */}
+      {/* result banner */}
       {result && (
         <div className="px-4 mb-2 flex-shrink-0">
-          <div className={`rounded-2xl p-4 border text-center ${isWin ? 'border-[#D4AF37]/50' : 'border-white/10'}`}
-            style={{ background: isWin ? 'rgba(212,175,55,0.1)' : 'rgba(255,255,255,0.03)' }}>
-            <p className="text-3xl mb-1">{result.emoji}</p>
-            <p className={`text-base font-bold ${isWin ? 'text-[#D4AF37]' : 'text-gray-400'}`}>{result.label}</p>
-            {result.label === 'Free Spin' && <p className="text-xs text-[#D4AF37]/70 mt-1">Spinning again in a moment...</p>}
-            {result.isNSAFL && (
+          <div className={`rounded-3xl px-5 py-4 border text-center ${isWin ? 'border-[#D4AF37]/60' : 'border-white/10'}`}
+            style={{
+              background: isWin ? 'rgba(212,175,55,0.12)' : 'rgba(255,255,255,0.03)',
+              boxShadow: isWin ? '0 0 32px rgba(212,175,55,0.2)' : 'none',
+            }}>
+            <p className="text-4xl mb-1">{result.emoji}</p>
+            <p className={`text-lg font-bold ${isWin ? 'text-[#D4AF37]' : 'text-gray-400'}`}>{result.label}</p>
+            {result.label === 'Free Spin' && (
+              <p className="text-xs text-[#D4AF37]/70 mt-1">Spinning again in a moment...</p>
+            )}
+            {(result.isNSAFL || result.isXLM) && (
               <div className="mt-3 space-y-2">
                 {winCode && (
                   <>
-                    <p className="text-[10px] text-gray-400">Screenshot & DM <span className="text-[#D4AF37] font-bold">@NSAFL_bot</span> to claim</p>
+                    <p className="text-[11px] text-gray-400">
+                      Screenshot & DM <span className="text-[#D4AF37] font-bold">@NSAFL_bot</span> to claim
+                    </p>
                     <div className="px-3 py-2 rounded-xl border border-[#D4AF37]/40 text-[11px] text-[#D4AF37] font-mono font-bold tracking-widest"
                       style={{ background: 'rgba(212,175,55,0.08)' }}>{winCode}</div>
                   </>
                 )}
                 {stellarAddress && (
-                  <div className="px-3 py-2 rounded-xl border border-white/10 text-[9px] text-gray-400 font-mono break-all"
-                    style={{ background: 'rgba(255,255,255,0.03)' }}>Wallet: {stellarAddress}</div>
+                  <p className="text-[9px] text-gray-600 font-mono break-all">
+                    {stellarAddress.slice(0, 8)}...{stellarAddress.slice(-8)}
+                  </p>
                 )}
               </div>
             )}
@@ -354,18 +426,24 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
         </div>
       )}
 
-      {/* button */}
+      {/* spin button */}
       <div className="px-4 pb-8 flex-shrink-0 space-y-2">
         {canSpin || freeSpin ? (
           <button onClick={handleSpin} disabled={spinning}
-            className="w-full py-4 rounded-2xl text-sm font-bold text-black bg-[#D4AF37] active:scale-95 transition disabled:opacity-60">
-            {spinning ? 'Spinning...' : freeSpin ? '🔄 Free Spin!' : 'Spin'}
+            className="w-full py-4 rounded-2xl text-base font-bold text-black active:scale-95 transition disabled:opacity-50"
+            style={{
+              background: spinning
+                ? '#a08020'
+                : 'linear-gradient(135deg, #D4AF37 0%, #f0d060 50%, #D4AF37 100%)',
+              boxShadow: spinning ? 'none' : '0 4px 24px rgba(212,175,55,0.4)',
+            }}>
+            {spinning ? '⏳ Spinning...' : freeSpin ? '🔄 Free Spin!' : '🎰 Spin the Wheel'}
           </button>
         ) : (
           <>
-            <div className="w-full py-3 rounded-2xl border border-white/10 text-center text-xs text-gray-400"
-              style={{ background: 'rgba(255,255,255,0.04)' }}>
-              ⏳ Spins reset in 24h · more balls = more spins
+            <div className="w-full py-3 rounded-2xl border border-white/10 text-center text-xs text-gray-500"
+              style={{ background: 'rgba(255,255,255,0.03)' }}>
+              ⏳ Spins reset in 24h · earn more balls = more spins
             </div>
             <button onClick={onBack}
               className="w-full py-3 rounded-2xl text-sm font-semibold text-gray-300 border border-white/10 active:scale-95 transition"
@@ -374,8 +452,8 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
             </button>
           </>
         )}
-        <p className="text-center text-[10px] text-gray-600">
-          {totalBalls} spin{totalBalls !== 1 ? 's' : ''} per day · requires {LUCKY_BALLS_REQUIRED} balls
+        <p className="text-center text-[10px] text-gray-700">
+          {totalBalls} spin{totalBalls !== 1 ? 's' : ''} per day · requires {LUCKY_BALLS_REQUIRED} balls to unlock
         </p>
       </div>
     </div>
