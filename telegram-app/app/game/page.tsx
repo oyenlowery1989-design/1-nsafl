@@ -12,11 +12,14 @@ import WalletGuard from '@/components/WalletGuard'
 import BottomNav from '@/components/BottomNav'
 
 // ── Physics ───────────────────────────────────────────────────────────────────
-const GRAVITY = 0.18
-const BOUNCE = 0.55
-const SPIN_DECAY = 0.97
-const TRAIL_LENGTH = 10
+const GRAVITY = 0.22
+const BOUNCE = 0.52
+const FRICTION = 0.88
+const SPIN_DECAY = 0.96
+const TRAIL_LENGTH = 8
 const KICK_RADIUS = 100
+const LIVES_START = 3
+const PB_KEY = 'nsafl_game_pb'
 
 interface Ball {
   x: number; y: number
@@ -24,27 +27,40 @@ interface Ball {
   spin: number; angle: number
   size: number; opacity: number
   trail: { x: number; y: number }[]
+  dead: boolean
+}
+
+interface Particle {
+  x: number; y: number
+  vx: number; vy: number
+  life: number // 0–1 countdown
+  size: number
 }
 
 function makeBall(x: number, y: number, kicked = false): Ball {
-  const size = 56 + Math.random() * 24
-  const speed = kicked ? 14 + Math.random() * 6 : 6 + Math.random() * 8
+  const size = 58 + Math.random() * 20
+  const speed = kicked ? 14 + Math.random() * 6 : 5 + Math.random() * 6
   const dir = kicked
-    ? -Math.PI / 2 + (Math.random() - 0.5) * 1.2
+    ? -Math.PI / 2 + (Math.random() - 0.5) * 1.0
     : Math.random() * Math.PI * 2
   return {
     x, y,
     vx: Math.cos(dir) * speed,
     vy: Math.sin(dir) * speed,
-    spin: (Math.random() - 0.5) * 14,
+    spin: 0,
     angle: Math.random() * 360,
-    size, opacity: 0.75 + Math.random() * 0.25,
+    size, opacity: 0.9 + Math.random() * 0.1,
     trail: [],
+    dead: false,
   }
 }
 
 function randomBall(w: number, h: number): Ball {
-  return makeBall(w * 0.2 + Math.random() * w * 0.6, h * 0.2 + Math.random() * h * 0.5, false)
+  return makeBall(
+    w * 0.25 + Math.random() * w * 0.5,
+    h * 0.15 + Math.random() * h * 0.4,
+    false
+  )
 }
 
 // ── Community stats shape ─────────────────────────────────────────────────────
@@ -59,25 +75,29 @@ interface GameStats {
 
 type GameView = 'hub' | 'playing'
 
-// ── Canvas Game Component ─────────────────────────────────────────────────────
+// ── Canvas Game ───────────────────────────────────────────────────────────────
 function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void }) {
   const router = useRouter()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const ballsRef = useRef<Ball[]>([])
+  const particlesRef = useRef<Particle[]>([])
   const rafRef = useRef<number>(0)
   const kicksRef = useRef(0)
-  const ballsSpawnedRef = useRef(0)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const sessionStartRef = useRef<number>(0)
-  if (sessionStartRef.current === 0) sessionStartRef.current = Date.now()
+  const sessionStartRef = useRef<number>(Date.now())
   const savedRef = useRef(false)
+  const livesRef = useRef(LIVES_START)
+  const gameOverRef = useRef(false)
 
   const [kicks, setKicks] = useState(0)
-  const [ballCount, setBallCount] = useState(numBalls)
+  const [lives, setLives] = useState(LIVES_START)
+  const [gameOver, setGameOver] = useState(false)
+  const [personalBest, setPersonalBest] = useState(() => {
+    if (typeof window === 'undefined') return 0
+    return parseInt(localStorage.getItem(PB_KEY) ?? '0', 10)
+  })
   const [communityStats, setCommunityStats] = useState<GameStats | null>(null)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
 
-  // Fetch community stats on mount
   useEffect(() => {
     fetch('/api/game')
       .then(r => r.json())
@@ -85,13 +105,11 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
       .catch(() => null)
   }, [])
 
-  // Save session stats (called on exit)
   const saveSession = useCallback(() => {
     if (savedRef.current) return
     savedRef.current = true
     const k = kicksRef.current
-    const b = ballsSpawnedRef.current
-    if (k === 0 && b === 0) return   // nothing to save
+    if (k === 0) return
     const duration = Math.round((Date.now() - sessionStartRef.current) / 1000)
     fetch('/api/game', {
       method: 'POST',
@@ -99,29 +117,37 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
         'Content-Type': 'application/json',
         'x-telegram-init-data': getTelegramInitData(),
       },
-      body: JSON.stringify({ kicks: k, ballsSpawned: b, durationSeconds: duration }),
+      body: JSON.stringify({ kicks: k, ballsSpawned: 0, durationSeconds: duration }),
       keepalive: true,
     }).catch(() => null)
   }, [])
 
-  // Wire Telegram back button WITH session save
   useTelegramBack(useCallback(() => {
     saveSession()
     router.back()
   }, [saveSession, router]))
 
-  // Also save on browser unload
   useEffect(() => {
     const handler = () => saveSession()
     window.addEventListener('pagehide', handler)
     return () => window.removeEventListener('pagehide', handler)
   }, [saveSession])
 
-  // Canvas physics loop
+  // Spawn dust particles on floor hit
+  const spawnDust = useCallback((x: number) => {
+    for (let i = 0; i < 6; i++) {
+      particlesRef.current.push({
+        x, y: 0, // y set at call site via canvas height
+        vx: (Math.random() - 0.5) * 4,
+        vy: -(Math.random() * 3 + 1),
+        life: 1,
+        size: 2 + Math.random() * 3,
+      })
+    }
+  }, [])
+
   const initBalls = useCallback((w: number, h: number) => {
-    const count = Math.max(1, numBalls)
-    ballsRef.current = Array.from({ length: count }, () => randomBall(w, h))
-    setBallCount(count)
+    ballsRef.current = Array.from({ length: Math.max(1, numBalls) }, () => randomBall(w, h))
   }, [numBalls])
 
   useEffect(() => {
@@ -139,84 +165,157 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
     resize()
     window.addEventListener('resize', resize)
 
+    function drawBall(b: Ball) {
+      if (!ctx) return
+      const rx = b.size * 0.52
+      const ry = b.size * 0.30
+
+      // trail
+      for (let i = 0; i < b.trail.length; i++) {
+        const t = b.trail[i]
+        const alpha = ((i + 1) / b.trail.length) * 0.12 * b.opacity
+        const tr = rx * (i / b.trail.length) * 0.6
+        ctx.beginPath()
+        ctx.ellipse(t.x, t.y, Math.max(tr, 1), Math.max(tr * 0.55, 1), 0, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(139,69,19,${alpha})`
+        ctx.fill()
+      }
+
+      ctx.save()
+      ctx.globalAlpha = b.opacity
+      ctx.translate(b.x, b.y)
+      // angle tracks velocity direction for realistic tumbling
+      ctx.rotate((b.angle * Math.PI) / 180)
+
+      // leather body
+      const grad = ctx.createRadialGradient(-rx * 0.28, -ry * 0.35, ry * 0.08, 0, 0, rx)
+      grad.addColorStop(0, '#d4823a')
+      grad.addColorStop(0.45, '#8b4513')
+      grad.addColorStop(1, '#4a1c08')
+      ctx.beginPath()
+      ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2)
+      ctx.fillStyle = grad
+      ctx.fill()
+
+      // outline
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)'
+      ctx.lineWidth = 1.5
+      ctx.stroke()
+
+      // highlight sheen
+      const shine = ctx.createLinearGradient(-rx * 0.3, -ry, rx * 0.3, 0)
+      shine.addColorStop(0, 'rgba(255,255,255,0.18)')
+      shine.addColorStop(1, 'rgba(255,255,255,0)')
+      ctx.beginPath()
+      ctx.ellipse(0, -ry * 0.2, rx * 0.55, ry * 0.38, 0, 0, Math.PI * 2)
+      ctx.fillStyle = shine
+      ctx.fill()
+
+      // centre seam
+      ctx.beginPath()
+      ctx.moveTo(-rx * 0.72, 0)
+      ctx.lineTo(rx * 0.72, 0)
+      ctx.strokeStyle = 'rgba(255,255,255,0.8)'
+      ctx.lineWidth = 1.2
+      ctx.stroke()
+
+      // lace stitches
+      ctx.strokeStyle = 'rgba(255,255,255,0.88)'
+      ctx.lineWidth = 1.6
+      const sh = ry * 0.42
+      for (const sx of [-rx * 0.21, -rx * 0.07, rx * 0.07, rx * 0.21]) {
+        ctx.beginPath()
+        ctx.moveTo(sx, -sh)
+        ctx.lineTo(sx, sh)
+        ctx.stroke()
+      }
+
+      ctx.restore()
+    }
+
     function step() {
       if (!canvas || !ctx) return
       const W = canvas.width, H = canvas.height
 
-      ctx.fillStyle = 'rgba(10,14,26,0.35)'
+      ctx.fillStyle = 'rgba(10,14,26,0.38)'
       ctx.fillRect(0, 0, W, H)
 
-      for (const b of ballsRef.current) {
-        b.trail.push({ x: b.x, y: b.y })
-        if (b.trail.length > TRAIL_LENGTH) b.trail.shift()
-
-        for (let i = 0; i < b.trail.length; i++) {
-          const t = b.trail[i]
-          const alpha = ((i + 1) / b.trail.length) * 0.14 * b.opacity
-          const tr = (b.size * 0.52) * (i / b.trail.length)
-          ctx.beginPath()
-          ctx.ellipse(t.x, t.y, tr, tr * 0.6, 0, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(139,69,19,${alpha})`
-          ctx.fill()
-        }
-
-        // Draw AFL ball
-        ctx.save()
-        ctx.globalAlpha = b.opacity
-        ctx.translate(b.x, b.y)
-        ctx.rotate((b.angle * Math.PI) / 180)
-
-        const rx = b.size * 0.52  // horizontal radius
-        const ry = b.size * 0.32  // vertical radius (oval shape)
-
-        // Body gradient — brown leather
-        const grad = ctx.createRadialGradient(-rx * 0.3, -ry * 0.3, ry * 0.1, 0, 0, rx)
-        grad.addColorStop(0, '#c8752a')
-        grad.addColorStop(0.5, '#8b4513')
-        grad.addColorStop(1, '#5c2d0a')
+      // particles
+      particlesRef.current = particlesRef.current.filter(p => p.life > 0)
+      for (const p of particlesRef.current) {
+        p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life -= 0.07
         ctx.beginPath()
-        ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2)
-        ctx.fillStyle = grad
+        ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(180,120,60,${p.life * 0.5})`
         ctx.fill()
+      }
 
-        // Dark outline
-        ctx.strokeStyle = 'rgba(0,0,0,0.5)'
-        ctx.lineWidth = 1.5
-        ctx.stroke()
+      if (!gameOverRef.current) {
+        for (const b of ballsRef.current) {
+          if (b.dead) continue
 
-        // White seam — horizontal centre line
-        ctx.beginPath()
-        ctx.moveTo(-rx * 0.75, 0)
-        ctx.lineTo(rx * 0.75, 0)
-        ctx.strokeStyle = 'rgba(255,255,255,0.85)'
-        ctx.lineWidth = 1.2
-        ctx.stroke()
+          b.trail.push({ x: b.x, y: b.y })
+          if (b.trail.length > TRAIL_LENGTH) b.trail.shift()
+          drawBall(b)
 
-        // White lace stitches (4 short vertical lines across centre)
-        ctx.strokeStyle = 'rgba(255,255,255,0.9)'
-        ctx.lineWidth = 1.5
-        const stitchH = ry * 0.45
-        for (const sx of [-rx * 0.22, -rx * 0.07, rx * 0.07, rx * 0.22]) {
-          ctx.beginPath()
-          ctx.moveTo(sx, -stitchH)
-          ctx.lineTo(sx, stitchH)
-          ctx.stroke()
+          // physics
+          b.vy += GRAVITY
+          b.x += b.vx; b.y += b.vy
+          // angle tracks velocity direction
+          b.angle = (Math.atan2(b.vy, b.vx) * 180 / Math.PI)
+          b.spin *= SPIN_DECAY
+
+          // floor — lose a life
+          if (b.y + b.size * 0.3 >= H) {
+            b.dead = true
+            // dust at floor level
+            for (let i = 0; i < 8; i++) {
+              particlesRef.current.push({
+                x: b.x + (Math.random() - 0.5) * 30,
+                y: H - 4,
+                vx: (Math.random() - 0.5) * 5,
+                vy: -(Math.random() * 4 + 1),
+                life: 1,
+                size: 3 + Math.random() * 3,
+              })
+            }
+            const newLives = livesRef.current - 1
+            livesRef.current = newLives
+            setLives(newLives)
+            haptic.error()
+            if (newLives <= 0) {
+              gameOverRef.current = true
+              setGameOver(true)
+              // save personal best
+              const k = kicksRef.current
+              const prev = parseInt(localStorage.getItem(PB_KEY) ?? '0', 10)
+              if (k > prev) {
+                localStorage.setItem(PB_KEY, String(k))
+                setPersonalBest(k)
+              }
+              saveSession()
+            }
+          }
+
+          // walls
+          if (b.x - b.size * 0.52 <= 0) { b.x = b.size * 0.52; b.vx *= -BOUNCE }
+          if (b.x + b.size * 0.52 >= W) { b.x = W - b.size * 0.52; b.vx *= -BOUNCE }
+          if (b.y - b.size * 0.3 <= 0) {
+            b.y = b.size * 0.3; b.vy *= -BOUNCE
+          }
         }
 
-        ctx.restore()
-
-        b.vy += GRAVITY
-        b.x += b.vx; b.y += b.vy
-        b.angle += b.spin
-        b.spin *= SPIN_DECAY
-
-        if (b.y + b.size / 2 >= H) {
-          b.y = H - b.size / 2; b.vy *= -BOUNCE; b.vx *= 0.9; b.spin *= -0.5
-          if (Math.abs(b.vy) < 1.5) b.vy = -2 - Math.random() * 3
+        // respawn dead balls after short delay when lives remain
+        if (livesRef.current > 0) {
+          const deadCount = ballsRef.current.filter(b => b.dead).length
+          const aliveCount = ballsRef.current.filter(b => !b.dead).length
+          if (aliveCount === 0 && deadCount > 0) {
+            // respawn all dead balls
+            ballsRef.current = ballsRef.current.map(b =>
+              b.dead ? randomBall(W, H) : b
+            )
+          }
         }
-        if (b.x - b.size / 2 <= 0) { b.x = b.size / 2; b.vx *= -BOUNCE }
-        if (b.x + b.size / 2 >= W) { b.x = W - b.size / 2; b.vx *= -BOUNCE }
-        if (b.y - b.size / 2 <= 0) { b.y = b.size / 2; b.vy *= -BOUNCE }
       }
 
       rafRef.current = requestAnimationFrame(step)
@@ -227,9 +326,10 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
       cancelAnimationFrame(rafRef.current)
       window.removeEventListener('resize', resize)
     }
-  }, [initBalls])
+  }, [initBalls, saveSession, spawnDust])
 
   const handleTap = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (gameOverRef.current) return
     const rect = (e.target as HTMLCanvasElement).getBoundingClientRect()
     const tx = e.clientX - rect.left
     const ty = e.clientY - rect.top
@@ -237,6 +337,7 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
     let nearest: Ball | null = null
     let nearestDist = Infinity
     for (const b of ballsRef.current) {
+      if (b.dead) continue
       const d = Math.hypot(b.x - tx, b.y - ty)
       if (d < nearestDist) { nearestDist = d; nearest = b }
     }
@@ -244,20 +345,38 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
     if (nearest && nearestDist <= KICK_RADIUS) {
       const dx = nearest.x - tx, dy = nearest.y - ty
       const len = Math.hypot(dx, dy) || 1
-      const power = 14 + Math.random() * 6
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      nearest!.vx = (dx / len) * power
-      nearest!.vy = (dy / len) * power - 3
-      nearest!.spin = (Math.random() - 0.5) * 20
+      const power = 15 + Math.random() * 5
+      nearest.vx = (dx / len) * power
+      nearest.vy = (dy / len) * power - 4
+      nearest.spin = (Math.random() - 0.5) * 18
       haptic.light()
       kicksRef.current += 1
       setKicks(k => k + 1)
     }
   }, [])
 
+  const restartGame = useCallback(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    livesRef.current = LIVES_START
+    gameOverRef.current = false
+    kicksRef.current = 0
+    savedRef.current = false
+    sessionStartRef.current = Date.now()
+    particlesRef.current = []
+    ballsRef.current = Array.from({ length: Math.max(1, numBalls) }, () =>
+      randomBall(canvas.width, canvas.height)
+    )
+    setLives(LIVES_START)
+    setKicks(0)
+    setGameOver(false)
+  }, [numBalls])
+
   const fmt = (n: number) => n >= 1_000_000
     ? `${(n / 1_000_000).toFixed(1)}M`
     : n >= 1_000 ? `${(n / 1_000).toFixed(1)}K` : String(n)
+
+  const isNewPB = gameOver && kicks > 0 && kicks >= personalBest
 
   return (
     <div className="fixed inset-0 bg-[#0A0E1A] overflow-hidden">
@@ -268,39 +387,44 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
         style={{ touchAction: 'none' }}
       />
 
-      {/* ── Centre hint — fades after first kick ── */}
-      {kicks === 0 && (
+      {/* hint */}
+      {kicks === 0 && !gameOver && (
         <div className="relative z-10 flex flex-col items-center justify-center h-full pointer-events-none select-none">
-          <p className="text-white/20 text-[11px] animate-pulse">Tap a ball to kick it</p>
+          <p className="text-white/20 text-[11px] animate-pulse">Tap a ball to kick it — don't let it hit the ground!</p>
         </div>
       )}
 
-      {/* ── Top-left: back to hub + ball count ── */}
+      {/* ── Back button ── */}
       <button
         onClick={() => { saveSession(); onBack() }}
-        className="absolute top-12 left-4 z-20 flex items-center space-x-1.5 px-3 py-2 rounded-xl border border-white/10 hover:bg-white/10 transition active:scale-95"
-        style={{ backdropFilter: 'blur(12px)', background: 'rgba(255,255,255,0.05)' }}
+        className="absolute top-12 left-4 z-20 flex items-center space-x-1.5 px-3 py-2 rounded-xl border border-white/20 active:scale-95 transition"
+        style={{ backdropFilter: 'blur(12px)', background: 'rgba(255,255,255,0.08)' }}
       >
         <span className="material-symbols-outlined text-white text-base">arrow_back</span>
-        <span className="text-white text-xs font-medium">Back to Hub</span>
+        <span className="text-white text-xs font-semibold">Hub</span>
       </button>
 
-      <div className="absolute top-12 right-16 z-20 px-2.5 py-1.5 rounded-full border border-white/10 text-[10px] font-semibold text-gray-400"
-        style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(8px)' }}>
-        🏈 {ballCount}
+      {/* ── Lives ── */}
+      <div className="absolute top-12 left-1/2 -translate-x-1/2 z-20 flex items-center space-x-1.5 px-3 py-1.5 rounded-full border border-white/10"
+        style={{ background: 'rgba(10,14,26,0.7)', backdropFilter: 'blur(8px)' }}>
+        {Array.from({ length: LIVES_START }).map((_, i) => (
+          <span key={i} className={`text-base ${i < lives ? 'opacity-100' : 'opacity-20'}`}>❤️</span>
+        ))}
       </div>
 
-      {/* ── Top-right: kicks + leaderboard toggle ── */}
+      {/* ── Kick counter ── */}
       {kicks > 0 && (
         <div className="absolute top-12 right-4 z-20 px-3 py-1.5 rounded-full border border-[#D4AF37]/30 text-[11px] font-bold text-[#D4AF37]"
           style={{ background: 'rgba(212,175,55,0.1)', backdropFilter: 'blur(8px)' }}>
           ⚡ {kicks}
+          {personalBest > 0 && <span className="text-[9px] text-[#D4AF37]/50 ml-1">/ {personalBest} PB</span>}
         </div>
       )}
 
+      {/* ── Leaderboard toggle ── */}
       <button
         onClick={() => setShowLeaderboard(v => !v)}
-        className="absolute top-24 right-4 z-20 w-9 h-9 rounded-xl flex items-center justify-center border border-white/10 hover:bg-white/10 transition"
+        className="absolute top-24 right-4 z-20 w-9 h-9 rounded-xl flex items-center justify-center border border-white/10 transition active:scale-95"
         style={{ backdropFilter: 'blur(12px)', background: 'rgba(255,255,255,0.05)' }}
       >
         <span className="material-symbols-outlined text-[#D4AF37] text-lg">emoji_events</span>
@@ -336,12 +460,46 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
               ))
             )}
           </div>
-          {kicks > 0 && (
-            <div className="px-4 py-2 border-t border-white/10 text-center">
-              <p className="text-[10px] text-[#D4AF37]">Your session: {kicks} kicks</p>
-              <p className="text-[9px] text-gray-500">Saved when you leave</p>
+        </div>
+      )}
+
+      {/* ── Game Over overlay ── */}
+      {gameOver && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center"
+          style={{ background: 'rgba(10,14,26,0.88)', backdropFilter: 'blur(8px)' }}>
+          <div className="text-center px-8 space-y-5">
+            <div className="text-5xl">{isNewPB ? '🏆' : '🏈'}</div>
+            <div>
+              <p className="text-white font-bold text-2xl" style={{ fontFamily: 'Playfair Display, serif' }}>
+                {isNewPB ? 'New Best!' : 'Game Over'}
+              </p>
+              <p className="text-gray-400 text-sm mt-1">You kicked the ball {kicks} time{kicks !== 1 ? 's' : ''}</p>
             </div>
-          )}
+            {isNewPB && (
+              <div className="px-4 py-2 rounded-xl border border-[#D4AF37]/40 text-[#D4AF37] text-xs font-bold"
+                style={{ background: 'rgba(212,175,55,0.1)' }}>
+                🎉 Personal Best: {kicks} kicks
+              </div>
+            )}
+            {!isNewPB && personalBest > 0 && (
+              <p className="text-gray-500 text-xs">Personal best: {personalBest} kicks</p>
+            )}
+            <div className="flex flex-col space-y-2 pt-2">
+              <button
+                onClick={restartGame}
+                className="w-full py-3 rounded-xl text-sm font-bold text-black bg-[#D4AF37] active:scale-95 transition"
+              >
+                Play Again
+              </button>
+              <button
+                onClick={() => { onBack() }}
+                className="w-full py-2.5 rounded-xl text-sm font-semibold text-gray-300 border border-white/10 active:scale-95 transition"
+                style={{ background: 'rgba(255,255,255,0.05)' }}
+              >
+                Back to Hub
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -353,16 +511,19 @@ function HubView({ onPlay, totalPoints, tierPoints, tierLabel }: {
   onPlay: () => void
   totalPoints: number
   tierPoints: number
-  tierLabel: string  // e.g. "Tier 1"
+  tierLabel: string
 }) {
   const router = useRouter()
+  const personalBest = typeof window !== 'undefined'
+    ? parseInt(localStorage.getItem(PB_KEY) ?? '0', 10)
+    : 0
 
   const games = [
     {
       id: 'ball',
       icon: 'sports_football',
       name: `${PRIMARY_CUSTOM_ASSET_CODE} Ball`,
-      description: 'Physics ball game — kick, bounce, score',
+      description: 'Keep the ball in the air — don\'t let it hit the ground',
       cost: 0,
       unlocked: true,
       onPlay,
@@ -398,17 +559,16 @@ function HubView({ onPlay, totalPoints, tierPoints, tierLabel }: {
 
   return (
     <div className="min-h-screen bg-[#0A0E1A] pb-28">
-      {/* Header */}
       <div className="sticky top-0 z-40 px-4 pt-3 pb-2 border-b border-white/5"
         style={{ background: 'rgba(10,14,26,0.95)', backdropFilter: 'blur(20px)' }}>
         <h1 className="text-xl font-bold text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
           Game Hub
         </h1>
-        <p className="text-xs text-gray-500 mt-0.5">More {PRIMARY_CUSTOM_ASSET_CODE} = more balls</p>
+        <p className="text-xs text-gray-500 mt-0.5">More {PRIMARY_CUSTOM_ASSET_CODE} = more balls in the game</p>
       </div>
 
       <div className="px-4 pt-4 space-y-4">
-        {/* Points card */}
+        {/* Balls card */}
         <div className="rounded-2xl p-4 border border-[#D4AF37]/30"
           style={{ background: 'rgba(212,175,55,0.06)', backdropFilter: 'blur(12px)' }}>
           <div className="flex items-start justify-between mb-3">
@@ -418,57 +578,58 @@ function HubView({ onPlay, totalPoints, tierPoints, tierLabel }: {
                 <span className="text-5xl font-bold text-[#D4AF37]" style={{ fontFamily: 'Playfair Display, serif' }}>
                   {totalPoints}
                 </span>
-                <span className="text-2xl">🏈</span>
+                <span className="text-xl">🏈</span>
               </div>
+              <p className="text-[10px] text-gray-500 mt-1">
+                {totalPoints === 1 ? 'You start each round with 1 ball' : `You start each round with ${totalPoints} balls`}
+              </p>
             </div>
-            <span className="material-symbols-outlined text-[#D4AF37] text-3xl mt-1"
-              style={{ fontVariationSettings: "'FILL' 1" }}>
-              workspace_premium
-            </span>
+            {personalBest > 0 && (
+              <div className="text-right">
+                <p className="text-[9px] text-gray-500 uppercase tracking-wider">Best</p>
+                <p className="text-lg font-bold text-[#D4AF37]">{personalBest} ⚡</p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-1.5 mb-3">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-gray-400">Tier ({tierLabel})</span>
-              <span className="text-white font-semibold">{tierPoints} ball{tierPoints !== 1 ? 's' : ''}</span>
-            </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-gray-400">Base (everyone)</span>
+              <span className="text-gray-400">Base (all players)</span>
               <span className="text-white font-semibold">1 ball</span>
             </div>
             <div className="flex items-center justify-between text-xs">
+              <span className="text-gray-400">Tier ({tierLabel})</span>
+              <span className="text-white font-semibold">+{tierPoints} ball{tierPoints !== 1 ? 's' : ''}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
               <span className="text-gray-400">Referrals</span>
-              <span className="text-gray-500">0 balls</span>
+              <span className="text-gray-500">+0 balls</span>
             </div>
           </div>
-
-          <p className="text-[10px] text-gray-500 leading-relaxed mb-3">
-            Hold more {PRIMARY_CUSTOM_ASSET_CODE} or complete tasks to earn more balls
-          </p>
 
           <button
             onClick={() => { haptic.light(); router.push('/buy') }}
             className="w-full py-2.5 rounded-xl text-xs font-bold text-black bg-[#D4AF37] active:scale-95 transition"
           >
-            Buy {PRIMARY_CUSTOM_ASSET_LABEL}
+            Buy {PRIMARY_CUSTOM_ASSET_LABEL} for more balls
           </button>
         </div>
 
         {/* How to earn */}
         <div className="rounded-2xl p-4 border border-white/10"
           style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(12px)' }}>
-          <p className="text-xs font-bold text-white mb-3">How to earn balls</p>
+          <p className="text-xs font-bold text-white mb-3">How to earn more balls</p>
           <div className="space-y-3">
             {[
               {
                 icon: 'workspace_premium',
                 label: 'Tier Level',
-                desc: `Tier 1 = 1 ball, Tier 2 = 2 balls, etc. You have ${tierPoints} from your tier.`,
+                desc: `Tier 1 = +1 ball, Tier 2 = +2, etc. You get +${tierPoints} from ${tierLabel}.`,
               },
               {
                 icon: 'group_add',
                 label: 'Referrals',
-                desc: '1 ball per person you bring (coming soon)',
+                desc: '+1 ball per person you bring (coming soon)',
                 muted: true,
               },
               {
@@ -500,56 +661,43 @@ function HubView({ onPlay, totalPoints, tierPoints, tierLabel }: {
               <div
                 key={game.id}
                 className={`rounded-2xl p-3.5 border flex flex-col space-y-2 ${
-                  game.unlocked
-                    ? 'border-[#D4AF37]/25'
-                    : 'border-white/8 opacity-60'
+                  game.unlocked ? 'border-[#D4AF37]/25' : 'border-white/8 opacity-60'
                 }`}
                 style={{
-                  background: game.unlocked
-                    ? 'rgba(212,175,55,0.05)'
-                    : 'rgba(255,255,255,0.02)',
+                  background: game.unlocked ? 'rgba(212,175,55,0.05)' : 'rgba(255,255,255,0.02)',
                   backdropFilter: 'blur(12px)',
                 }}
               >
                 <div className="flex items-start justify-between">
-                  <span
-                    className={`material-symbols-outlined text-2xl ${game.unlocked ? 'text-[#D4AF37]' : 'text-gray-600'}`}
-                    style={{ fontVariationSettings: "'FILL' 1" }}
-                  >
+                  <span className={`material-symbols-outlined text-2xl ${game.unlocked ? 'text-[#D4AF37]' : 'text-gray-600'}`}
+                    style={{ fontVariationSettings: "'FILL' 1" }}>
                     {game.icon}
                   </span>
-                  {game.unlocked ? null : (
-                    game.comingSoon ? (
-                      <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full border border-white/10 text-gray-500 uppercase tracking-wider">
-                        Soon
-                      </span>
-                    ) : (
-                      <span className="material-symbols-outlined text-gray-600 text-base">lock</span>
-                    )
+                  {!game.unlocked && (
+                    <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full border border-white/10 text-gray-500 uppercase tracking-wider">
+                      Soon
+                    </span>
                   )}
                 </div>
-
                 <div>
                   <p className={`text-xs font-bold leading-tight ${game.unlocked ? 'text-white' : 'text-gray-500'}`}>
                     {game.name}
                   </p>
                   <p className="text-[9px] text-gray-600 leading-snug mt-0.5">{game.description}</p>
                 </div>
-
                 {game.cost > 0 && (
-                  <div className={`text-[9px] font-semibold ${game.unlocked ? 'text-[#D4AF37]/70' : 'text-gray-600'}`}>
-                    {game.cost} ball{game.cost !== 1 ? 's' : ''} to play
+                  <div className="text-[9px] font-semibold text-gray-600">
+                    {game.cost} balls to play
                   </div>
                 )}
-
-                {game.unlocked && game.onPlay ? (
+                {game.unlocked && game.onPlay && (
                   <button
                     onClick={() => { haptic.medium(); game.onPlay!() }}
                     className="w-full py-2 rounded-xl text-[11px] font-bold text-black bg-[#D4AF37] active:scale-95 transition"
                   >
                     Play
                   </button>
-                ) : null}
+                )}
               </div>
             ))}
           </div>
@@ -566,15 +714,12 @@ export default function GamePage() {
   const tokenBalance = useWalletStore((s) => s.tokenBalance)
   const balance = parseFloat(tokenBalance) || 0
   const tierPoints = getPointsFromTier(balance)
-  const totalPoints = Math.max(1, getTotalPoints(balance)) // everyone gets at least 1 ball
+  const totalPoints = Math.max(1, getTotalPoints(balance))
   const currentTier = getTierForBalance(balance)
   const tierLabel = currentTier.label
 
   useTelegramBack(useCallback(() => {
-    if (view === 'playing') {
-      setView('hub')
-    }
-    // When in hub, let Telegram handle back naturally
+    if (view === 'playing') setView('hub')
   }, [view]))
 
   return (
