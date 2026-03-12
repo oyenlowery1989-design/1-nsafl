@@ -1,4 +1,4 @@
-# Design System — CRYPTOBANK Homecoming Hub
+# Design System — NSAFL Homecoming Hub
 
 > Single source of truth for all UI decisions. Match this EXACTLY before adding any creative touches.
 > Extracted directly from the official HTML reference files in the project root.
@@ -243,7 +243,7 @@
       <p className="text-xs text-gray-400">Position • Club</p>
       <div className="flex items-center mt-1 space-x-2">
         {/* badge */}
-        <span className="text-[10px] text-gray-500">Est: 25k $CRYPTOBANK</span>
+        <span className="text-[10px] text-gray-500">Est: 25k $NSAFL</span>
       </div>
     </div>
   </div>

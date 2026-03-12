@@ -71,7 +71,7 @@ const { setWallet, setBalances, disconnect } = useWalletStore()
 
 // Important field names
 stellarAddress  // NOT "address"
-nsaflBalance    // NOT "cryptobankBalance"
+nsaflBalance    // NOT "nsaflBalance"
 xlmBalance
 isConnected
 telegramUserId
@@ -92,7 +92,7 @@ if (!isValidStellarAddress(addr)) { /* error */ }
 
 // Fetch all shown asset balances in one call
 const balances = await fetchAllShownBalances(address)
-// returns: { 'XLM': '10.00', 'CRYPTOBANK': '500.00', ... }
+// returns: { 'XLM': '10.00', 'NSAFL': '500.00', ... }
 
 // Asset configs from env
 SHOWN_ASSET_CONFIGS  // [{ code, issuer, label }]
@@ -116,7 +116,7 @@ const res2 = await fetch(`/api/stellar/transactions?address=${addr}&limit=15&cur
 `.env.local`:
 ```
 # Format: XLM (native) or CODE:ISSUER (custom)
-NEXT_PUBLIC_SHOWN_ASSETS=XLM,CRYPTOBANK:GAWZCHDWMK43M6MZ2AX7AX52M7M5JLBJYTOEO3SV4LIMI6HJVJRYSY2Z,TOKEN2:ISSUER2
+NEXT_PUBLIC_SHOWN_ASSETS=XLM,NSAFL:GAWZCHDWMK43M6MZ2AX7AX52M7M5JLBJYTOEO3SV4LIMI6HJVJRYSY2Z,TOKEN2:ISSUER2
 ```
 
 ---

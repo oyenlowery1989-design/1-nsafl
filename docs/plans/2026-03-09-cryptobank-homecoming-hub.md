@@ -1,8 +1,8 @@
-# CRYPTOBANK Homecoming Hub Implementation Plan
+# NSAFL Homecoming Hub Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Build a production-ready Next.js 16 Telegram Mini App that lets users connect their Stellar wallet, view their $CRYPTOBANK balance, track AFL player homecomings, see AFL fixtures, claim tiered rewards, and view movement stats.
+**Goal:** Build a production-ready Next.js 16 Telegram Mini App that lets users connect their Stellar wallet, view their $NSAFL balance, track AFL player homecomings, see AFL fixtures, claim tiered rewards, and view movement stats.
 
 **Architecture:** Next.js 16 App Router with Tailwind v4, Zustand for client state, Supabase for persistence, and Stellar Horizon REST API for real-time balances. All routes are guarded by `TelegramGuard` — a server-side component that validates Telegram `initData` HMAC-SHA256. In dev, `NEXT_PUBLIC_DEV_BYPASS=true` skips validation.
 
@@ -163,7 +163,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'The Homecoming Hub',
-  description: 'CRYPTOBANK AFL Movement',
+  description: 'NSAFL AFL Movement',
 }
 
 export default function RootLayout({
@@ -221,9 +221,9 @@ NEXT_PUBLIC_SUPABASE_URL=https://vrqlxguhfndrqiipisyi.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<paste anon key here>
 SUPABASE_SERVICE_ROLE_KEY=<paste service role key here>
 TELEGRAM_BOT_TOKEN=8719214894:AAG5mKLOtXi7mMo7Pk9vJrK1giU2sQHj3D4
-NEXT_PUBLIC_PRIMARY_ASSET_CODE=CRYPTOBANK
+NEXT_PUBLIC_PRIMARY_ASSET_CODE=NSAFL
 NEXT_PUBLIC_PRIMARY_ASSET_ISSUER=GAWZCHDWMK43M6MZ2AX7AX52M7M5JLBJYTOEO3SV4LIMI6HJVJRYSY2Z
-NEXT_PUBLIC_SHOWN_ASSETS=CRYPTOBANK,XLM
+NEXT_PUBLIC_SHOWN_ASSETS=NSAFL,XLM
 NEXT_PUBLIC_DEV_BYPASS=true
 NEXT_PUBLIC_HORIZON_URL=https://horizon.stellar.org
 NEXT_PUBLIC_DIRECT_BUY_XLM_ADDRESS=
@@ -234,7 +234,7 @@ NEXT_PUBLIC_DIRECT_BUY_XLM_ADDRESS=
 ```ts
 // src/lib/constants.ts
 export const PRIMARY_CUSTOM_ASSET_CODE =
-  process.env.NEXT_PUBLIC_PRIMARY_ASSET_CODE ?? 'CRYPTOBANK'
+  process.env.NEXT_PUBLIC_PRIMARY_ASSET_CODE ?? 'NSAFL'
 
 export const PRIMARY_CUSTOM_ASSET_LABEL = `$${PRIMARY_CUSTOM_ASSET_CODE}`
 

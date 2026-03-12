@@ -10,9 +10,9 @@ Edit `telegram-app/.env.local` and update these values:
 
 | Variable | Current (dev) | Action |
 |---|---|---|
-| `NEXT_PUBLIC_PRIMARY_ASSET_CODE` | `CRYPTOBANK` | Change to real token ticker |
+| `NEXT_PUBLIC_PRIMARY_ASSET_CODE` | `NSAFL` | Change to real token ticker |
 | `NEXT_PUBLIC_PRIMARY_ASSET_ISSUER` | `GAWZCHDWMK43M6MZ2AX7AX52M7M5JLBJYTOEO3SV4LIMI6HJVJRYSY2Z` | Change to real issuer address |
-| `NEXT_PUBLIC_SHOWN_ASSETS` | `CRYPTOBANK,XLM` | Change to match real token ticker |
+| `NEXT_PUBLIC_SHOWN_ASSETS` | `NSAFL,XLM` | Change to match real token ticker |
 | `NEXT_PUBLIC_DIRECT_BUY_XLM_ADDRESS` | (your XLM address) | Confirm this is the correct receiving wallet |
 | `NEXT_PUBLIC_DEV_BYPASS` | `true` | **Set to `false`** for production |
 | `ADMIN_SECRET_TOKEN` | (your secret) | Confirm this is set and strong |
@@ -32,8 +32,8 @@ The LOBSTR and SCOPULY links have the asset code and issuer baked in as string l
 
 ```ts
 // BEFORE (hardcoded):
-const LOBSTR_URL = `https://lobstr.co/trade/CRYPTOBANK:GAWZC.../XLM`
-const SCOPULY_URL = `https://scopuly.com/trade/CRYPTOBANK-XLM-GAWZC...`
+const LOBSTR_URL = `https://lobstr.co/trade/NSAFL:GAWZC.../XLM`
+const SCOPULY_URL = `https://scopuly.com/trade/NSAFL-XLM-GAWZC...`
 
 // AFTER (use env-driven constants):
 import { PRIMARY_CUSTOM_ASSET_CODE, PRIMARY_CUSTOM_ASSET_ISSUER } from '@/lib/constants'
@@ -79,7 +79,7 @@ The field `nsaflBalance` is a legacy name from the old token. If you want a clea
 **File:** `telegram-app/app/api/buy/direct/route.ts` line ~14
 
 ```ts
-const XLM_TO_CRYPTOBANK_RATE = 100  // hardcoded
+const XLM_TO_NSAFL_RATE = 100  // hardcoded
 ```
 
 Update this to the real rate, or replace with a live Horizon price fetch if you want it dynamic.

@@ -25,7 +25,7 @@ Run this before every deployment. Mark all items ✅ before going live.
 
 ## Dashboard
 
-- [ ] Balance card shows CRYPTOBANK balance
+- [ ] Balance card shows NSAFL balance
 - [ ] Balance card shows XLM balance
 - [ ] All SHOWN_ASSETS appear (configured in env)
 - [ ] AFL Pulse section renders

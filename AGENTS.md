@@ -1,9 +1,9 @@
-# AGENTS.md — CRYPTOBANK Homecoming Hub
+# AGENTS.md — NSAFL Homecoming Hub
 
 ## All Agents
 
 ### Project Context
-This is a Telegram Mini App (Next.js 16, React 19, TypeScript) for the CRYPTOBANK Stellar token ecosystem. App code lives in `telegram-app/` — there is NO `src/` directory.
+This is a Telegram Mini App (Next.js 16, React 19, TypeScript) for the NSAFL Stellar token ecosystem. App code lives in `telegram-app/` — there is NO `src/` directory.
 
 ### Path Alias
 `@/` maps to `telegram-app/` root. Example: `@/lib/constants` = `telegram-app/lib/constants.ts`.
