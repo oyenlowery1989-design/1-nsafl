@@ -152,21 +152,57 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
 
         for (let i = 0; i < b.trail.length; i++) {
           const t = b.trail[i]
-          const alpha = ((i + 1) / b.trail.length) * 0.18 * b.opacity
+          const alpha = ((i + 1) / b.trail.length) * 0.14 * b.opacity
+          const tr = (b.size * 0.52) * (i / b.trail.length)
           ctx.beginPath()
-          ctx.arc(t.x, t.y, (b.size / 2) * (i / b.trail.length), 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(212,175,55,${alpha})`
+          ctx.ellipse(t.x, t.y, tr, tr * 0.6, 0, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(139,69,19,${alpha})`
           ctx.fill()
         }
 
+        // Draw AFL ball
         ctx.save()
         ctx.globalAlpha = b.opacity
         ctx.translate(b.x, b.y)
         ctx.rotate((b.angle * Math.PI) / 180)
-        ctx.font = `${b.size}px serif`
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.fillText('🏈', 0, 0)
+
+        const rx = b.size * 0.52  // horizontal radius
+        const ry = b.size * 0.32  // vertical radius (oval shape)
+
+        // Body gradient — brown leather
+        const grad = ctx.createRadialGradient(-rx * 0.3, -ry * 0.3, ry * 0.1, 0, 0, rx)
+        grad.addColorStop(0, '#c8752a')
+        grad.addColorStop(0.5, '#8b4513')
+        grad.addColorStop(1, '#5c2d0a')
+        ctx.beginPath()
+        ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2)
+        ctx.fillStyle = grad
+        ctx.fill()
+
+        // Dark outline
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)'
+        ctx.lineWidth = 1.5
+        ctx.stroke()
+
+        // White seam — horizontal centre line
+        ctx.beginPath()
+        ctx.moveTo(-rx * 0.75, 0)
+        ctx.lineTo(rx * 0.75, 0)
+        ctx.strokeStyle = 'rgba(255,255,255,0.85)'
+        ctx.lineWidth = 1.2
+        ctx.stroke()
+
+        // White lace stitches (4 short vertical lines across centre)
+        ctx.strokeStyle = 'rgba(255,255,255,0.9)'
+        ctx.lineWidth = 1.5
+        const stitchH = ry * 0.45
+        for (const sx of [-rx * 0.22, -rx * 0.07, rx * 0.07, rx * 0.22]) {
+          ctx.beginPath()
+          ctx.moveTo(sx, -stitchH)
+          ctx.lineTo(sx, stitchH)
+          ctx.stroke()
+        }
+
         ctx.restore()
 
         b.vy += GRAVITY
