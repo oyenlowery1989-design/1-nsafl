@@ -714,7 +714,7 @@ export default function GamePage() {
   const tokenBalance = useWalletStore((s) => s.tokenBalance)
   const balance = parseFloat(tokenBalance) || 0
   const tierPoints = getPointsFromTier(balance)
-  const totalPoints = Math.max(1, getTotalPoints(balance))
+  const totalPoints = 1 + getTotalPoints(balance) // 1 base + tier/referral balls
   const currentTier = getTierForBalance(balance)
   const tierLabel = currentTier.label
 
