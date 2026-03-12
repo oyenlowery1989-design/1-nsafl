@@ -111,198 +111,172 @@ function pickPrize(): number {
 }
 
 function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void; stellarAddress: string | null; totalBalls: number }) {
+  const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rafRef = useRef<number>(0)
   const angleRef = useRef(0)
-  const targetAngleRef = useRef<number | null>(null)
-  const targetPrizeIdxRef = useRef<number>(0)
-  const spinningRef = useRef(false)
-  const [result, setResult] = useState<Prize | null>(null)
-  const [freeSpin, setFreeSpin] = useState(false)
-  const [winCode, setWinCode] = useState<string | null>(null)
+  const targetAngleRef = useRef(0)
+  const targetPrizeIdxRef = useRef(0)
   const segCount = PRIZES.length
   const segAngle = (Math.PI * 2) / segCount
 
-  // ── Spins-per-day tracking ─────────────────────────────────────────────────
+  const [spinning, setSpinning] = useState(false)
+  const [result, setResult] = useState<Prize | null>(null)
+  const [freeSpin, setFreeSpin] = useState(false)
+  const [winCode, setWinCode] = useState<string | null>(null)
+
+  // ── Spins-per-day ──────────────────────────────────────────────────────────
   const LD_KEY = 'nsafl_lucky_spins'
-  const todayKey = new Date().toISOString().slice(0, 10) // "2026-03-12"
+  const todayKey = new Date().toISOString().slice(0, 10)
 
-  function getSpinsToday(): number {
-    try {
-      const raw = localStorage.getItem(LD_KEY)
-      const data = raw ? JSON.parse(raw) : {}
-      return data[todayKey] ?? 0
-    } catch { return 0 }
-  }
-
-  function recordSpin() {
-    try {
-      const raw = localStorage.getItem(LD_KEY)
-      const data = raw ? JSON.parse(raw) : {}
-      data[todayKey] = (data[todayKey] ?? 0) + 1
-      // prune old days
-      Object.keys(data).forEach(k => { if (k < todayKey) delete data[k] })
-      localStorage.setItem(LD_KEY, JSON.stringify(data))
-    } catch {}
-  }
+  const getSpinsToday = useCallback(() => {
+    try { return JSON.parse(localStorage.getItem(LD_KEY) ?? '{}')[todayKey] ?? 0 } catch { return 0 }
+  }, [todayKey])
 
   const [spinsToday, setSpinsToday] = useState(() => getSpinsToday())
-  const spinsUsed = spinsToday
-  const spinsRemaining = Math.max(0, totalBalls - spinsUsed)
-  const canSpin = (DEV_BYPASS || spinsRemaining > 0) && !spinningRef.current && !freeSpin
+  const spinsRemaining = DEV_BYPASS ? 99 : Math.max(0, totalBalls - spinsToday)
+  const canSpin = spinsRemaining > 0 && !spinning
 
+  // ── Draw ───────────────────────────────────────────────────────────────────
   const drawWheel = useCallback((angle: number) => {
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!canvas || canvas.width === 0) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
     const W = canvas.width, H = canvas.height
     const cx = W / 2, cy = H / 2
-    const r = Math.min(W, H) * 0.38
+    const r = Math.min(W, H) * 0.42
 
     ctx.clearRect(0, 0, W, H)
 
-    // background glow
-    const glow = ctx.createRadialGradient(cx, cy, r * 0.3, cx, cy, r * 1.2)
-    glow.addColorStop(0, 'rgba(212,175,55,0.08)')
-    glow.addColorStop(1, 'rgba(10,14,26,0)')
-    ctx.fillStyle = glow
-    ctx.fillRect(0, 0, W, H)
-
-    // segments
     for (let i = 0; i < segCount; i++) {
-      const start = angle + i * segAngle
+      const start = angle + i * segAngle - Math.PI / 2
       const end = start + segAngle
       const prize = PRIZES[i]
-
       ctx.beginPath()
       ctx.moveTo(cx, cy)
       ctx.arc(cx, cy, r, start, end)
       ctx.closePath()
       ctx.fillStyle = prize.color
       ctx.fill()
-      ctx.strokeStyle = 'rgba(0,0,0,0.4)'
+      ctx.strokeStyle = 'rgba(0,0,0,0.5)'
       ctx.lineWidth = 2
       ctx.stroke()
 
-      // label
       ctx.save()
       ctx.translate(cx, cy)
       ctx.rotate(start + segAngle / 2)
+      ctx.font = `${r * 0.12}px serif`
       ctx.textAlign = 'right'
-
-      // emoji
-      ctx.font = `${r * 0.13}px serif`
-      ctx.fillText(prize.emoji, r * 0.88, r * 0.055)
-
-      // text
-      ctx.fillStyle = 'rgba(255,255,255,0.92)'
-      ctx.font = `bold ${r * 0.085}px Inter, sans-serif`
-      ctx.fillText(prize.label, r * 0.72, -r * 0.04)
-
+      ctx.fillText(prize.emoji, r * 0.82, r * 0.05)
+      ctx.fillStyle = 'rgba(255,255,255,0.95)'
+      ctx.font = `bold ${r * 0.08}px Inter,sans-serif`
+      ctx.fillText(prize.label, r * 0.68, -r * 0.04)
       ctx.restore()
     }
 
-    // outer ring
+    // ring
     ctx.beginPath()
     ctx.arc(cx, cy, r, 0, Math.PI * 2)
     ctx.strokeStyle = '#D4AF37'
-    ctx.lineWidth = 4
+    ctx.lineWidth = 5
     ctx.stroke()
 
-    // center cap
+    // hub
     ctx.beginPath()
-    ctx.arc(cx, cy, r * 0.09, 0, Math.PI * 2)
+    ctx.arc(cx, cy, r * 0.1, 0, Math.PI * 2)
     ctx.fillStyle = '#0A0E1A'
     ctx.fill()
     ctx.strokeStyle = '#D4AF37'
     ctx.lineWidth = 3
     ctx.stroke()
 
-    // pointer (top centre)
-    const py = cy - r - 2
+    // pointer at top
     ctx.beginPath()
-    ctx.moveTo(cx, py + 22)
-    ctx.lineTo(cx - 11, py)
-    ctx.lineTo(cx + 11, py)
+    ctx.moveTo(cx, cy - r - 4)
+    ctx.lineTo(cx - 12, cy - r - 26)
+    ctx.lineTo(cx + 12, cy - r - 26)
     ctx.closePath()
     ctx.fillStyle = '#D4AF37'
     ctx.fill()
+    ctx.strokeStyle = '#0A0E1A'
+    ctx.lineWidth = 1.5
+    ctx.stroke()
   }, [segAngle, segCount])
 
-  // animation loop
+  // size canvas once the wrapper has dimensions
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    canvas.width = canvas.offsetWidth
-    canvas.height = canvas.offsetHeight
-    drawWheel(0)
+    const wrap = wrapRef.current
+    if (!wrap) return
+    const ro = new ResizeObserver(() => {
+      const canvas = canvasRef.current
+      if (!canvas) return
+      const sz = Math.min(wrap.clientWidth, wrap.clientHeight, 360)
+      canvas.width = sz
+      canvas.height = sz
+      drawWheel(angleRef.current)
+    })
+    ro.observe(wrap)
+    return () => ro.disconnect()
+  }, [drawWheel])
 
+  // RAF loop
+  useEffect(() => {
+    let done = false
     function tick() {
-      if (spinningRef.current && targetAngleRef.current !== null) {
-        const diff = targetAngleRef.current - angleRef.current
-        if (Math.abs(diff) < 0.003) {
-          angleRef.current = targetAngleRef.current
-          spinningRef.current = false
-          // use the pre-determined prize index — no angle re-detection needed
-          setResult(PRIZES[targetPrizeIdxRef.current])
-        } else {
-          // ease toward target
-          angleRef.current += diff * 0.04
-        }
+      if (done) return
+      const diff = targetAngleRef.current - angleRef.current
+      if (spinning && Math.abs(diff) > 0.01) {
+        angleRef.current += diff * 0.06
+      } else if (spinning) {
+        angleRef.current = targetAngleRef.current
+        setSpinning(false)
+        setResult(PRIZES[targetPrizeIdxRef.current])
       }
       drawWheel(angleRef.current)
       rafRef.current = requestAnimationFrame(tick)
     }
     rafRef.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(rafRef.current)
-  }, [drawWheel, segAngle, segCount])
+    return () => { done = true; cancelAnimationFrame(rafRef.current) }
+  }, [spinning, drawWheel])
 
-  const spin = useCallback((prizeIdx: number) => {
-    if (spinningRef.current) return
-    setResult(null)
-    targetPrizeIdxRef.current = prizeIdx
-    // calculate target angle so segment prizeIdx lands under pointer (top)
-    // pointer at top = angle 0 points right, so we need -π/2 offset
-    const segCenter = prizeIdx * segAngle + segAngle / 2
-    // we want: angleRef + segCenter ≡ -π/2 (mod 2π)  → angle = -π/2 - segCenter + n*2π
-    const spins = 5 + Math.floor(Math.random() * 3) // 5–7 full rotations
-    const target = angleRef.current - (angleRef.current % (Math.PI * 2)) - (Math.PI / 2) - segCenter + spins * Math.PI * 2
-    targetAngleRef.current = target
-    spinningRef.current = true
-    haptic.medium()
-  }, [segAngle])
-
+  // spin trigger
   const handleSpin = useCallback(() => {
-    if (!canSpin) return
+    if (!canSpin || spinning) return
     const idx = pickPrize()
+    targetPrizeIdxRef.current = idx
+    // target angle: segment idx lands at top (pointer)
+    const segCenter = idx * segAngle
+    const totalRotation = (5 + Math.floor(Math.random() * 3)) * Math.PI * 2
+    targetAngleRef.current = angleRef.current + totalRotation + (Math.PI * 2 - (angleRef.current % (Math.PI * 2))) - segCenter
+    setResult(null)
+    setSpinning(true)
+    haptic.medium()
     if (!freeSpin) {
-      recordSpin()
-      setSpinsToday(getSpinsToday())
+      try {
+        const data = JSON.parse(localStorage.getItem(LD_KEY) ?? '{}')
+        data[todayKey] = (data[todayKey] ?? 0) + 1
+        Object.keys(data).forEach(k => { if (k < todayKey) delete data[k] })
+        localStorage.setItem(LD_KEY, JSON.stringify(data))
+        setSpinsToday(getSpinsToday())
+      } catch {}
     }
     setFreeSpin(false)
-    spin(idx)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canSpin, freeSpin, spin])
+  }, [canSpin, spinning, freeSpin, segAngle, todayKey, getSpinsToday])
 
-  // handle result actions
+  // result effects
   useEffect(() => {
     if (!result) return
     if (result.label === 'Free Spin') {
       haptic.success()
       setTimeout(() => { setFreeSpin(true); setResult(null) }, 2200)
-      return
     } else if (result.isNSAFL) {
       haptic.success()
-      // generate a unique win code and save to DB
       const code = `WIN-${result.amount}NSAFL-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`
       setWinCode(code)
       fetch('/api/game/win', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-telegram-init-data': getTelegramInitData(),
-        },
+        headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': getTelegramInitData() },
         body: JSON.stringify({ prize: result.label, amount: result.amount, code, wallet: stellarAddress }),
         keepalive: true,
       }).catch(() => null)
@@ -319,58 +293,46 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
     <div className="fixed inset-0 bg-[#0A0E1A] flex flex-col overflow-hidden">
       {/* header */}
       <div className="flex items-center justify-between px-4 pt-12 pb-3 flex-shrink-0">
-        <button
-          onClick={onBack}
+        <button onClick={onBack}
           className="flex items-center space-x-1.5 px-3 py-2 rounded-xl border border-white/20 active:scale-95 transition"
-          style={{ backdropFilter: 'blur(12px)', background: 'rgba(255,255,255,0.08)' }}
-        >
+          style={{ backdropFilter: 'blur(12px)', background: 'rgba(255,255,255,0.08)' }}>
           <span className="material-symbols-outlined text-white text-base">arrow_back</span>
           <span className="text-white text-xs font-semibold">Hub</span>
         </button>
         <div className="text-center">
           <p className="text-white font-bold text-base" style={{ fontFamily: 'Playfair Display, serif' }}>Lucky Draw</p>
           <p className="text-[#D4AF37]/70 text-[10px]">
-            {freeSpin ? '🔄 Free spin earned!' : canSpin ? `${spinsRemaining} spin${spinsRemaining !== 1 ? 's' : ''} left today` : 'No spins left — comes back in 24h'}
+            {freeSpin ? '🔄 Free spin!' : canSpin ? `${spinsRemaining} spin${spinsRemaining !== 1 ? 's' : ''} left today` : 'No spins left today'}
           </p>
         </div>
         <div className="w-16" />
       </div>
 
       {/* wheel */}
-      <div className="flex-1 flex items-center justify-center px-4">
-        <canvas
-          ref={canvasRef}
-          className="w-full"
-          style={{ maxWidth: 360, aspectRatio: '1', touchAction: 'none' }}
-        />
+      <div ref={wrapRef} className="flex-1 flex items-center justify-center px-6 py-2">
+        <canvas ref={canvasRef} style={{ touchAction: 'none', display: 'block' }} />
       </div>
 
-      {/* result banner */}
+      {/* result */}
       {result && (
         <div className="px-4 mb-2 flex-shrink-0">
           <div className={`rounded-2xl p-4 border text-center ${isWin ? 'border-[#D4AF37]/50' : 'border-white/10'}`}
             style={{ background: isWin ? 'rgba(212,175,55,0.1)' : 'rgba(255,255,255,0.03)' }}>
             <p className="text-3xl mb-1">{result.emoji}</p>
             <p className={`text-base font-bold ${isWin ? 'text-[#D4AF37]' : 'text-gray-400'}`}>{result.label}</p>
-            {result.label === 'Free Spin' && (
-              <p className="text-xs text-[#D4AF37]/70 mt-1">Spinning again in a moment...</p>
-            )}
+            {result.label === 'Free Spin' && <p className="text-xs text-[#D4AF37]/70 mt-1">Spinning again in a moment...</p>}
             {result.isNSAFL && (
-              <div className="mt-3 space-y-2 text-left">
+              <div className="mt-3 space-y-2">
                 {winCode && (
                   <>
-                    <p className="text-[10px] text-gray-400 text-center">Screenshot this screen, then DM <span className="text-[#D4AF37] font-bold">@NSAFL_bot</span> to claim</p>
-                    <div className="px-3 py-2 rounded-xl border border-[#D4AF37]/40 text-[11px] text-[#D4AF37] font-mono font-bold text-center tracking-widest"
-                      style={{ background: 'rgba(212,175,55,0.08)' }}>
-                      {winCode}
-                    </div>
+                    <p className="text-[10px] text-gray-400">Screenshot & DM <span className="text-[#D4AF37] font-bold">@NSAFL_bot</span> to claim</p>
+                    <div className="px-3 py-2 rounded-xl border border-[#D4AF37]/40 text-[11px] text-[#D4AF37] font-mono font-bold tracking-widest"
+                      style={{ background: 'rgba(212,175,55,0.08)' }}>{winCode}</div>
                   </>
                 )}
                 {stellarAddress && (
                   <div className="px-3 py-2 rounded-xl border border-white/10 text-[9px] text-gray-400 font-mono break-all"
-                    style={{ background: 'rgba(255,255,255,0.03)' }}>
-                    Wallet: {stellarAddress}
-                  </div>
+                    style={{ background: 'rgba(255,255,255,0.03)' }}>Wallet: {stellarAddress}</div>
                 )}
               </div>
             )}
@@ -378,33 +340,28 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
         </div>
       )}
 
-      {/* spin button */}
-      <div className="px-4 pb-8 flex-shrink-0">
+      {/* button */}
+      <div className="px-4 pb-8 flex-shrink-0 space-y-2">
         {canSpin || freeSpin ? (
-          <button
-            onClick={handleSpin}
-            disabled={spinningRef.current}
-            className="w-full py-4 rounded-2xl text-sm font-bold text-black bg-[#D4AF37] active:scale-95 transition disabled:opacity-50"
-          >
-            {spinningRef.current ? 'Spinning...' : freeSpin ? '🔄 Free Spin!' : 'Spin'}
+          <button onClick={handleSpin} disabled={spinning}
+            className="w-full py-4 rounded-2xl text-sm font-bold text-black bg-[#D4AF37] active:scale-95 transition disabled:opacity-60">
+            {spinning ? 'Spinning...' : freeSpin ? '🔄 Free Spin!' : 'Spin'}
           </button>
         ) : (
-          <div className="space-y-2">
+          <>
             <div className="w-full py-3 rounded-2xl border border-white/10 text-center text-xs text-gray-400"
               style={{ background: 'rgba(255,255,255,0.04)' }}>
-              ⏳ Spins reset in 24h · get more balls for more spins
+              ⏳ Spins reset in 24h · more balls = more spins
             </div>
-            <button
-              onClick={onBack}
+            <button onClick={onBack}
               className="w-full py-3 rounded-2xl text-sm font-semibold text-gray-300 border border-white/10 active:scale-95 transition"
-              style={{ background: 'rgba(255,255,255,0.04)' }}
-            >
+              style={{ background: 'rgba(255,255,255,0.04)' }}>
               Back to Hub
             </button>
-          </div>
+          </>
         )}
-        <p className="text-center text-[10px] text-gray-600 mt-2">
-          {totalBalls} spin{totalBalls !== 1 ? 's' : ''} per day · requires {LUCKY_BALLS_REQUIRED} balls to play
+        <p className="text-center text-[10px] text-gray-600">
+          {totalBalls} spin{totalBalls !== 1 ? 's' : ''} per day · requires {LUCKY_BALLS_REQUIRED} balls
         </p>
       </div>
     </div>
