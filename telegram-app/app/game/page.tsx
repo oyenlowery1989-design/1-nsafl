@@ -17,7 +17,7 @@ const BOUNCE = 0.52
 const FRICTION = 0.88
 const SPIN_DECAY = 0.96
 const TRAIL_LENGTH = 8
-const KICK_RADIUS = 100
+const KICK_RADIUS = 160
 const PB_KEY = 'nsafl_game_pb'
 
 interface Ball {
