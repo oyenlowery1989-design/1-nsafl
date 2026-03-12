@@ -16,7 +16,7 @@ const GRAVITY = 0.18
 const BOUNCE = 0.55
 const SPIN_DECAY = 0.97
 const TRAIL_LENGTH = 10
-const KICK_RADIUS = 80
+const KICK_RADIUS = 100
 
 interface Ball {
   x: number; y: number
@@ -27,7 +27,7 @@ interface Ball {
 }
 
 function makeBall(x: number, y: number, kicked = false): Ball {
-  const size = 28 + Math.random() * 28
+  const size = 56 + Math.random() * 24
   const speed = kicked ? 14 + Math.random() * 6 : 6 + Math.random() * 8
   const dir = kicked
     ? -Math.PI / 2 + (Math.random() - 0.5) * 1.2
