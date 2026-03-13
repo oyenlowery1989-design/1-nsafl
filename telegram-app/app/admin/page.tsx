@@ -1233,6 +1233,9 @@ function AdminContent() {
           Lucky Draw
           <Icon name="open_in_new" className="text-[10px]" />
         </a>
+        <a href={`/admin/quiz?token=${token}`} className="px-3 py-1 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-medium hover:bg-purple-500/25 transition">
+          Quiz ↗
+        </a>
       </div>
 
       <div className="px-6 py-6 max-w-[1600px] mx-auto space-y-5">
