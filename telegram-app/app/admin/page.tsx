@@ -809,6 +809,15 @@ function AdminContent() {
             {t.alert && !t.badge && <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500" />}
           </button>
         ))}
+        {/* Lucky Draw wins — external page link */}
+        <a
+          href={`/admin/wins?token=${token}`}
+          className="px-4 py-3 text-xs font-semibold border-b-2 border-transparent whitespace-nowrap transition flex items-center gap-1.5 text-gray-500 hover:text-[#D4AF37] ml-auto"
+        >
+          <Icon name="emoji_events" className="text-sm" />
+          Lucky Draw
+          <Icon name="open_in_new" className="text-[10px]" />
+        </a>
       </div>
 
       <div className="px-6 py-6 max-w-[1600px] mx-auto space-y-5">
