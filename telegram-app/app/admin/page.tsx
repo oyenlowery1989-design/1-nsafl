@@ -38,6 +38,17 @@ const ago = (iso: string) => {
 const teamName = (id: string | null) => id ? (ALL_CLUBS.find(c => c.id === id)?.name ?? id) : '—'
 const num = (n: number | null | undefined) => Number(n ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })
 const shortAddr = (addr: string) => `${addr.slice(0, 4)}…${addr.slice(-6)}`
+function TgUser({ users, id }: { users: User[]; id: number | null | undefined }) {
+  if (!id) return <span className="text-gray-600">anon</span>
+  const u = users.find(x => x.telegram_id === id)
+  const name = u?.telegram_first_name ?? u?.telegram_username ?? null
+  return (
+    <span>
+      {name && <span className="font-medium text-white block">{name}{u?.telegram_username ? ` (@${u.telegram_username})` : ''}</span>}
+      <span className="text-[10px] text-gray-600 font-mono">#{id}</span>
+    </span>
+  )
+}
 
 // ── Dark UI primitives ────────────────────────────────────────────────────────
 function Badge({ children, color }: { children: React.ReactNode; color: string }) {
@@ -1313,11 +1324,11 @@ function AdminContent() {
                   <p className="text-sm text-gray-600 px-4 py-8 text-center">No pending requests</p>
                 ) : (
                   <table className="w-full">
-                    <thead><tr><Th>TG ID</Th><Th>Requested</Th><Th>When</Th><Th>Actions</Th></tr></thead>
+                    <thead><tr><Th>User</Th><Th>Requested</Th><Th>When</Th><Th>Actions</Th></tr></thead>
                     <tbody className="divide-y divide-white/4">
                       {data.teamRequests.filter(r => r.status === 'pending').map(r => (
                         <tr key={r.id} className="hover:bg-white/3">
-                          <Td mono>{r.telegram_id}</Td>
+                          <Td><TgUser users={data.users} id={r.telegram_id} /></Td>
                           <Td>{teamName(r.requested_team)}</Td>
                           <Td><span className="text-gray-500 text-xs">{ago(r.created_at)}</span></Td>
                           <Td>
@@ -1457,12 +1468,12 @@ function AdminContent() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-white/3"><tr>
-                  <Th>TG ID</Th><Th>Requested Team</Th><Th>Status</Th><Th>Admin Note</Th><Th>Requested</Th><Th>Resolved</Th><Th>Actions</Th>
+                  <Th>User</Th><Th>Requested Team</Th><Th>Status</Th><Th>Admin Note</Th><Th>Requested</Th><Th>Resolved</Th><Th>Actions</Th>
                 </tr></thead>
                 <tbody className="divide-y divide-white/4">
                   {data.teamRequests.map(r => (
                     <tr key={r.id} className="hover:bg-white/3">
-                      <Td mono><span className="text-gray-400">{r.telegram_id}</span></Td>
+                      <Td><TgUser users={data.users} id={r.telegram_id} /></Td>
                       <Td><span className="font-medium text-white">{teamName(r.requested_team)}</span></Td>
                       <Td><Badge color={r.status === 'approved' ? 'green' : r.status === 'rejected' ? 'red' : 'yellow'}>{r.status}</Badge></Td>
                       <Td><span className="text-gray-400">{r.admin_note ?? <span className="text-gray-600">—</span>}</span></Td>
@@ -1512,13 +1523,13 @@ function AdminContent() {
           <Card>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-white/3"><tr><Th>TG ID</Th><Th>Kicks</Th><Th>Balls</Th><Th>Duration</Th><Th>Stellar Address</Th><Th>When</Th></tr></thead>
+                <thead className="bg-white/3"><tr><Th>User</Th><Th>Kicks</Th><Th>Balls</Th><Th>Duration</Th><Th>Stellar Address</Th><Th>When</Th></tr></thead>
                 <tbody className="divide-y divide-white/4">
                   {data.gameSessions.map(s => {
                     const w = s.wallet_id ? walletById[s.wallet_id] : null
                     return (
                       <tr key={s.id} className="hover:bg-white/3">
-                        <Td mono><span className="text-gray-400">{s.telegram_id ?? <span className="text-gray-600">anon</span>}</span></Td>
+                        <Td><TgUser users={data.users} id={s.telegram_id} /></Td>
                         <Td><span className="font-bold text-purple-400">{s.kicks}</span></Td>
                         <Td><span className="text-gray-300">{s.balls_spawned}</span></Td>
                         <Td><span className="text-gray-400">{s.duration_seconds}s</span></Td>
