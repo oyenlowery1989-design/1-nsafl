@@ -187,23 +187,20 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
       ctx.lineWidth = 1.5
       ctx.stroke()
 
-      // text along segment midpoint — flip if in left half to avoid upside-down text
-      const normMid = ((midAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)
-      const flip = normMid > Math.PI / 2 && normMid < Math.PI * 1.5
+      // text along segment midpoint
       ctx.save()
       ctx.translate(cx, cy)
-      ctx.rotate(midAngle + (flip ? Math.PI : 0))
-      const textR = flip ? -r * 0.72 : r * 0.72
+      ctx.rotate(midAngle)
       // emoji
       ctx.font = `${r * 0.13}px serif`
       ctx.textAlign = 'center'
-      ctx.fillText(prize.emoji, textR, r * 0.06)
+      ctx.fillText(prize.emoji, r * 0.72, r * 0.06)
       // label
       ctx.fillStyle = 'rgba(255,255,255,0.95)'
       ctx.font = `bold ${r * 0.085}px Inter,sans-serif`
       ctx.shadowColor = 'rgba(0,0,0,0.8)'
       ctx.shadowBlur = 4
-      ctx.fillText(prize.label, textR, -r * 0.07)
+      ctx.fillText(prize.label, r * 0.72, -r * 0.07)
       ctx.shadowBlur = 0
       ctx.restore()
     }
