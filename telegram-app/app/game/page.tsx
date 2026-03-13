@@ -1205,10 +1205,32 @@ function HubView({ onPlay, onLucky, onQuiz, totalPoints, tierPoints, tierLabel, 
 const BONUS_BALLS_KEY = 'nsafl_bonus_balls'
 
 export default function GamePage() {
+  const router = useRouter()
   const [view, setView] = useState<GameView>('hub')
 
   const tokenBalance = useWalletStore((s) => s.tokenBalance)
   const stellarAddress = useWalletStore((s) => s.stellarAddress)
+  const setBalances = useWalletStore((s) => s.setBalances)
+
+  // Re-verify balance on every mount and on bfcache restore (back button)
+  useEffect(() => {
+    if (stellarAddress) {
+      fetch(`/api/stellar/balance?address=${stellarAddress}`)
+        .then(r => r.json())
+        .then(j => { if (j.success) setBalances(j.data.token, j.data.xlm) })
+        .catch(() => null)
+    }
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted && stellarAddress) {
+        fetch(`/api/stellar/balance?address=${stellarAddress}`)
+          .then(r => r.json())
+          .then(j => { if (j.success) setBalances(j.data.token, j.data.xlm) })
+          .catch(() => null)
+      }
+    }
+    window.addEventListener('pageshow', onPageShow)
+    return () => window.removeEventListener('pageshow', onPageShow)
+  }, [stellarAddress, setBalances])
   const balance = parseFloat(tokenBalance) || 0
   const tierPoints = getPointsFromTier(balance)
   const currentTier = getTierForBalance(balance)
@@ -1320,13 +1342,13 @@ export default function GamePage() {
           <p className="text-sm text-gray-400 max-w-[260px] leading-relaxed mb-8">
             You need at least 100 {PRIMARY_CUSTOM_ASSET_LABEL} (Tier 1) to access the Game Zone.
           </p>
-          <a
-            href="/buy"
+          <button
+            onClick={() => router.push('/buy')}
             className="w-full max-w-xs bg-[#D4AF37] text-[#0A0E1A] font-bold py-4 rounded-xl text-base flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(212,175,55,0.4)]"
           >
             <span className="material-symbols-outlined text-[20px]">shopping_cart</span>
             Buy {PRIMARY_CUSTOM_ASSET_LABEL}
-          </a>
+          </button>
         </div>
         <BottomNav />
       </WalletGuard>
