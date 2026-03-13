@@ -116,7 +116,7 @@ function pickPrize(): number {
   return PRIZES.length - 1
 }
 
-function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon }: { onBack: () => void; stellarAddress: string | null; totalBalls: number; onBallWon: () => void }) {
+function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon, initialCanSpin, initialSpinsRemaining, initialDailyLimit }: { onBack: () => void; stellarAddress: string | null; totalBalls: number; onBallWon: () => void; initialCanSpin: boolean; initialSpinsRemaining: number; initialDailyLimit: number }) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rafRef = useRef<number>(0)
@@ -140,25 +140,11 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon }: { onBack: 
       .catch(() => null)
   }, [])
 
-  // ── Spins-per-day (server-enforced) ────────────────────────────────────────
-  const [canSpin, setCanSpin] = useState(DEV_BYPASS)
-  const [spinsRemaining, setSpinsRemaining] = useState(DEV_BYPASS ? 99 : 0)
-  const [dailySpinLimit, setDailySpinLimit] = useState(DEV_BYPASS ? 99 : 0)
-  const [spinStatusLoaded, setSpinStatusLoaded] = useState(DEV_BYPASS)
-
-  useEffect(() => {
-    if (DEV_BYPASS) return
-    fetch('/api/game/win', { headers: { 'x-telegram-init-data': getTelegramInitData() } })
-      .then(r => r.json())
-      .then(j => {
-        const d = j.data ?? j
-        setCanSpin(d.canSpin ?? false)
-        setSpinsRemaining(d.spinsRemaining ?? 0)
-        setDailySpinLimit(d.dailyLimit ?? 1)
-      })
-      .catch(() => setCanSpin(false))
-      .finally(() => setSpinStatusLoaded(true))
-  }, [])
+  // ── Spins-per-day (initialised from parent, which already fetched) ──────────
+  const [canSpin, setCanSpin] = useState(initialCanSpin)
+  const [spinsRemaining, setSpinsRemaining] = useState(initialSpinsRemaining)
+  const [dailySpinLimit] = useState(initialDailyLimit)
+  const spinStatusLoaded = true
 
   // ── Draw ───────────────────────────────────────────────────────────────────
   const drawWheel = useCallback((angle: number) => {
@@ -942,7 +928,7 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
 }
 
 // ── Hub View ──────────────────────────────────────────────────────────────────
-function HubView({ onPlay, onLucky, onQuiz, totalPoints, tierPoints, tierLabel, referralBalls, bonusBalls, quizPoints }: {
+function HubView({ onPlay, onLucky, onQuiz, totalPoints, tierPoints, tierLabel, referralBalls, bonusBalls, quizPoints, luckyCanSpin, luckySpinsRemaining, luckyDailyLimit }: {
   onPlay: () => void
   onLucky: () => void
   onQuiz: () => void
@@ -952,6 +938,9 @@ function HubView({ onPlay, onLucky, onQuiz, totalPoints, tierPoints, tierLabel, 
   referralBalls: number
   bonusBalls: number
   quizPoints: number
+  luckyCanSpin: boolean
+  luckySpinsRemaining: number
+  luckyDailyLimit: number
 }) {
   const router = useRouter()
   const personalBest = typeof window !== 'undefined'
@@ -972,11 +961,15 @@ function HubView({ onPlay, onLucky, onQuiz, totalPoints, tierPoints, tierLabel, 
       id: 'lucky',
       icon: 'casino',
       name: 'Lucky Draw',
-      description: `Spin the wheel — win ${PRIMARY_CUSTOM_ASSET_CODE} prizes`,
+      description: luckyCanSpin
+        ? `${luckySpinsRemaining} of ${luckyDailyLimit} spin${luckyDailyLimit !== 1 ? 's' : ''} left today`
+        : 'No spins left today — come back tomorrow',
       cost: LUCKY_BALLS_REQUIRED,
-      unlocked: DEV_BYPASS || totalPoints >= LUCKY_BALLS_REQUIRED,
+      unlocked: (DEV_BYPASS || totalPoints >= LUCKY_BALLS_REQUIRED) && luckyCanSpin,
       onPlay: onLucky,
-      lockReason: `Need ${LUCKY_BALLS_REQUIRED} balls to unlock`,
+      lockReason: totalPoints < LUCKY_BALLS_REQUIRED
+        ? `Need ${LUCKY_BALLS_REQUIRED} balls to unlock`
+        : 'No spins remaining today',
     },
     {
       id: 'quiz',
@@ -1237,6 +1230,24 @@ export default function GamePage() {
   const [playsLeft, setPlaysLeft] = useState<Record<string, number>>({ quick: 3, standard: 3, champion: 3 })
   const [quizPoints, setQuizPoints] = useState(0)
 
+  // ── Lucky Draw spin status (fetched here so HubView can disable the button) ─
+  const [luckyCanSpin, setLuckyCanSpin] = useState(DEV_BYPASS)
+  const [luckySpinsRemaining, setLuckySpinsRemaining] = useState(DEV_BYPASS ? 99 : 0)
+  const [luckyDailyLimit, setLuckyDailyLimit] = useState(DEV_BYPASS ? 99 : 0)
+
+  useEffect(() => {
+    if (DEV_BYPASS) return
+    fetch('/api/game/win', { headers: { 'x-telegram-init-data': getTelegramInitData() } })
+      .then(r => r.json())
+      .then(j => {
+        const d = j.data ?? j
+        setLuckyCanSpin(d.canSpin ?? false)
+        setLuckySpinsRemaining(d.spinsRemaining ?? 0)
+        setLuckyDailyLimit(d.dailyLimit ?? 1)
+      })
+      .catch(() => setLuckyCanSpin(false))
+  }, [])
+
   useEffect(() => {
     fetch('/api/quiz/status', { headers: { 'x-telegram-init-data': getTelegramInitData() } })
       .then(r => r.json())
@@ -1298,6 +1309,9 @@ export default function GamePage() {
           stellarAddress={stellarAddress}
           totalBalls={totalPoints}
           onBallWon={addBonusBall}
+          initialCanSpin={luckyCanSpin}
+          initialSpinsRemaining={luckySpinsRemaining}
+          initialDailyLimit={luckyDailyLimit}
         />
       ) : view === 'quiz-pick' ? (
         <ModePicker
@@ -1332,6 +1346,9 @@ export default function GamePage() {
             bonusBalls={bonusBalls}
             tierLabel={tierLabel}
             quizPoints={quizPoints}
+            luckyCanSpin={luckyCanSpin}
+            luckySpinsRemaining={luckySpinsRemaining}
+            luckyDailyLimit={luckyDailyLimit}
           />
           <BottomNav />
         </>
