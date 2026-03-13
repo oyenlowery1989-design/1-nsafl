@@ -36,7 +36,17 @@ export async function GET(req: NextRequest) {
   if (error) return fail('Failed to fetch wins', 'DB_ERROR', 500)
 
   const total = count ?? 0
-  const pages = Math.ceil(total / limit)
+  const totalPages = Math.ceil(total / limit) || 1
 
-  return ok({ wins: wins ?? [], total, page, pages })
+  // fetch counts per payout_status for stat tiles
+  const { data: countRows } = await (supabase as any)
+    .from('lucky_draw_wins')
+    .select('payout_status')
+
+  const counts = { pending: 0, paid: 0, skipped: 0 }
+  for (const row of (countRows ?? [])) {
+    if (row.payout_status in counts) counts[row.payout_status as keyof typeof counts]++
+  }
+
+  return ok({ wins: wins ?? [], total, page, totalPages, counts })
 }
