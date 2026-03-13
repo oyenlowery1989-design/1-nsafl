@@ -319,9 +319,10 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon, initialCanSp
   // result effects
   useEffect(() => {
     if (!result) return
-    // Record every non-free spin to enforce server-side daily limit
-    if (!wasFreeSpin.current) {
-      const isWinResult = result.isNSAFL || result.isXLM
+    // Always record NSAFL/XLM wins (free spin or not — prize is real either way)
+    // For non-wins: only record if it was a paid spin (enforces daily limit count)
+    const isWinResult = result.isNSAFL || result.isXLM
+    if (isWinResult || !wasFreeSpin.current) {
       const tag = isWinResult
         ? (result.isXLM ? `${result.amount}XLM` : `${result.amount}NSAFL`)
         : result.label.replace(/\s+/g, '_').toUpperCase()
