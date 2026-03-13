@@ -85,6 +85,23 @@ export async function POST(req: NextRequest) {
 
   const supabase = createServiceClient()
 
+  // Require the user to hold the primary asset — no free rides
+  if (!IS_DEV) {
+    const { data: userRow } = await (supabase as any)
+      .from('users').select('id').eq('telegram_id', user.id).single()
+    if (userRow?.id) {
+      const { data: w } = await (supabase as any)
+        .from('wallets').select('id').eq('user_id', userRow.id).eq('is_primary', true).single()
+      if (w?.id) {
+        const { data: bal } = await (supabase as any)
+          .from('wallet_balances').select('nsafl_balance').eq('wallet_id', w.id).single()
+        if (!bal || Number(bal.nsafl_balance) === 0) {
+          return fail('No token balance — purchase required to play', 'NO_BALANCE', 403)
+        }
+      }
+    }
+  }
+
   // Server-side daily limit check
   if (!IS_DEV) {
     const today = new Date(); today.setHours(0, 0, 0, 0)

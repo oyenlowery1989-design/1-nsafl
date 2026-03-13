@@ -1296,6 +1296,33 @@ export default function GamePage() {
     else if (view !== 'hub') setView('hub')
   }, [view]))
 
+  if (balance === 0) {
+    return (
+      <WalletGuard>
+        <div className="min-h-screen bg-[#0A0E1A] flex flex-col items-center justify-center px-8 text-center">
+          <div className="relative mb-8">
+            <div className="absolute inset-0 bg-[#D4AF37]/20 rounded-full blur-2xl scale-150" />
+            <div className="relative w-24 h-24 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[52px] text-[#D4AF37]" style={{ fontVariationSettings: "'FILL' 1" }}>lock</span>
+            </div>
+          </div>
+          <h1 className="text-2xl font-bold text-white font-['Playfair_Display'] mb-3">Game Zone Locked</h1>
+          <p className="text-sm text-gray-400 max-w-[260px] leading-relaxed mb-8">
+            You need to hold {PRIMARY_CUSTOM_ASSET_LABEL} tokens to access the Game Zone.
+          </p>
+          <a
+            href="/buy"
+            className="w-full max-w-xs bg-[#D4AF37] text-[#0A0E1A] font-bold py-4 rounded-xl text-base flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(212,175,55,0.4)]"
+          >
+            <span className="material-symbols-outlined text-[20px]">shopping_cart</span>
+            Buy {PRIMARY_CUSTOM_ASSET_LABEL}
+          </a>
+        </div>
+        <BottomNav />
+      </WalletGuard>
+    )
+  }
+
   return (
     <WalletGuard>
       {view === 'playing' ? (
