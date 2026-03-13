@@ -164,6 +164,15 @@ function WinsPageInner() {
 
   useEffect(() => { fetchWins() }, [fetchWins])
 
+  // Debounce prizeInput → filterPrize (500ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilterPrize(prizeInput)
+      setPage(1)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [prizeInput])
+
   const handlePay = async (id: number, action: 'paid' | 'skipped') => {
     setPaying(id)
     setConfirmPay(null)

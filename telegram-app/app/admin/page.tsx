@@ -330,7 +330,16 @@ function UserDetail({
                           {w.last_connected_at && <div>Last used {dt(w.last_connected_at)}</div>}
                         </div>
                       </div>
-                      <p className="font-mono text-sm text-gray-200 break-all bg-black/30 rounded-lg px-3 py-2 mb-4">{w.stellar_address}</p>
+                      <div className="flex items-center gap-2 bg-black/30 rounded-lg px-3 py-2 mb-4">
+                        <p className="font-mono text-sm text-gray-200 break-all flex-1">{w.stellar_address}</p>
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(w.stellar_address); }}
+                          className="ml-1 text-gray-600 hover:text-[#D4AF37] transition shrink-0"
+                          title="Copy address"
+                        >
+                          <Icon name="content_copy" className="text-xs" />
+                        </button>
+                      </div>
                       <div className="grid grid-cols-3 gap-4">
                         <div className="bg-black/20 rounded-lg p-3">
                           <p className="text-[10px] text-gray-500 uppercase font-medium">{PRIMARY_CUSTOM_ASSET_CODE}</p>
@@ -343,7 +352,14 @@ function UserDetail({
                         <div className="bg-black/20 rounded-lg p-3">
                           <p className="text-[10px] text-gray-500 uppercase font-medium">Week Ago</p>
                           <p className="text-lg font-bold text-gray-400 mt-0.5">{num(b?.balance_week_ago)}</p>
-                          {b?.last_synced_at && <p className="text-[10px] text-gray-600 mt-0.5">synced {ago(b.last_synced_at)}</p>}
+                          {b?.last_synced_at && (
+                            <>
+                              <p className="text-[10px] text-gray-600 mt-0.5">synced {ago(b.last_synced_at)}</p>
+                              {(Date.now() - new Date(b.last_synced_at).getTime()) > 24 * 60 * 60 * 1000 && (
+                                <Badge color="yellow">Stale</Badge>
+                              )}
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -528,6 +544,7 @@ function AdminContent() {
   const [tokenInput, setTokenInput] = useState('')
   const [data, setData] = useState<AdminData | null>(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('overview')
   const [resolving, setResolving] = useState<string | null>(null)
   const [noteMap, setNoteMap] = useState<Record<string, string>>({})
@@ -569,11 +586,14 @@ function AdminContent() {
 
   const fetchData = useCallback(async (t: string) => {
     setLoading(true)
+    setError(null)
     try {
       const res = await fetch('/api/admin', { headers: { 'x-admin-token': t } })
       const j = await res.json()
       if (j.success) setData(j.data)
       else { setAuthed(false); localStorage.removeItem('admin_token') }
+    } catch (e) {
+      setError('Failed to load admin data. Check your token or try again.')
     } finally { setLoading(false) }
   }, [])
 
@@ -657,7 +677,22 @@ function AdminContent() {
     </div>
   )
 
-  // ── Loading ────────────────────────────────────────────────────────────────
+  // ── Loading / Error ────────────────────────────────────────────────────────
+  if (error) return (
+    <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center p-6">
+      <div className="bg-[#111827] border border-red-500/30 rounded-2xl p-8 w-full max-w-md text-center space-y-4">
+        <Icon name="error" className="text-4xl text-red-400" />
+        <p className="text-white font-semibold">Failed to load admin data</p>
+        <p className="text-gray-400 text-sm">{error}</p>
+        <button
+          onClick={() => fetchData(token)}
+          className="bg-[#D4AF37] text-black font-bold rounded-lg px-6 py-2.5 text-sm hover:bg-[#c9a42e] transition"
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+  )
   if (loading || !data) return (
     <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center gap-2 text-gray-500">
       <svg className="animate-spin h-5 w-5 text-[#D4AF37]" viewBox="0 0 24 24" fill="none">
