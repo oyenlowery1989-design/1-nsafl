@@ -143,6 +143,7 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon }: { onBack: 
   // ── Spins-per-day (server-enforced) ────────────────────────────────────────
   const [canSpin, setCanSpin] = useState(DEV_BYPASS)
   const [spinsRemaining, setSpinsRemaining] = useState(DEV_BYPASS ? 99 : 0)
+  const [dailySpinLimit, setDailySpinLimit] = useState(DEV_BYPASS ? 99 : 0)
   const [spinStatusLoaded, setSpinStatusLoaded] = useState(DEV_BYPASS)
 
   useEffect(() => {
@@ -153,6 +154,7 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon }: { onBack: 
         const d = j.data ?? j
         setCanSpin(d.canSpin ?? false)
         setSpinsRemaining(d.spinsRemaining ?? 0)
+        setDailySpinLimit(d.dailyLimit ?? 1)
       })
       .catch(() => setCanSpin(false))
       .finally(() => setSpinStatusLoaded(true))
@@ -319,11 +321,12 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon }: { onBack: 
     setSpinning(true)
     haptic.medium()
     if (!freeSpin) {
-      setCanSpin(false)
-      setSpinsRemaining(0)
+      const next = spinsRemaining - 1
+      setSpinsRemaining(next)
+      setCanSpin(next > 0)
     }
     setFreeSpin(false)
-  }, [canSpin, spinning, freeSpin, segAngle])
+  }, [canSpin, spinning, freeSpin, segAngle, spinsRemaining])
 
   // result effects
   useEffect(() => {
@@ -389,7 +392,7 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon }: { onBack: 
           </p>
           <p className="text-white/40 text-[10px] mt-0.5">
             {!spinStatusLoaded ? '⏳ Checking…' : freeSpin ? '🔄 Free spin ready!' : canSpin
-              ? '1 spin remaining today'
+              ? `${spinsRemaining} of ${dailySpinLimit} spin${dailySpinLimit !== 1 ? 's' : ''} remaining today`
               : '⏳ No spins left today — come back tomorrow'}
           </p>
         </div>

@@ -2,13 +2,53 @@ import { NextRequest } from 'next/server'
 import { validateTelegramInitData } from '@/lib/telegram'
 import { createServiceClient } from '@/lib/supabase-server'
 import { ok, fail } from '@/lib/api-response'
+import { getTierForBalance, TIERS } from '@/config/tiers'
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ''
 const IS_DEV = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_DEV_BYPASS === 'true'
-const DAILY_SPIN_LIMIT = 1
+
+async function getDailySpinLimit(supabase: ReturnType<typeof createServiceClient>, telegramId: number): Promise<number> {
+  // Get primary wallet → nsafl_balance
+  const { data: userRow } = await (supabase as any)
+    .from('users')
+    .select('id')
+    .eq('telegram_id', telegramId)
+    .single()
+
+  let tierIndex = 0
+  if (userRow?.id) {
+    const { data: wallet } = await (supabase as any)
+      .from('wallets')
+      .select('id')
+      .eq('user_id', userRow.id)
+      .eq('is_primary', true)
+      .single()
+
+    if (wallet?.id) {
+      const { data: balanceRow } = await (supabase as any)
+        .from('wallet_balances')
+        .select('nsafl_balance')
+        .eq('wallet_id', wallet.id)
+        .single()
+
+      if (balanceRow?.nsafl_balance != null) {
+        const tier = getTierForBalance(Number(balanceRow.nsafl_balance))
+        tierIndex = Math.max(0, TIERS.findIndex((t) => t.id === tier.id))
+      }
+    }
+  }
+
+  // Count referrals
+  const { count: referralCount } = await (supabase as any)
+    .from('users')
+    .select('telegram_id', { count: 'exact', head: true })
+    .eq('referred_by', telegramId)
+
+  // minimum 1 so everyone gets at least 1 spin
+  return Math.max(1, tierIndex + (referralCount ?? 0))
+}
 
 export async function GET(req: NextRequest) {
-  // Returns how many spins the user has used today
   const initData = req.headers.get('x-telegram-init-data') ?? ''
   const user = IS_DEV ? { id: 0 } : validateTelegramInitData(initData, BOT_TOKEN)
   if (!user) return fail('Unauthorized', 'UNAUTHORIZED')
@@ -16,18 +56,22 @@ export async function GET(req: NextRequest) {
   const supabase = createServiceClient()
   const today = new Date(); today.setHours(0, 0, 0, 0)
 
-  const { count } = await (supabase as any)
-    .from('lucky_draw_wins')
-    .select('id', { count: 'exact', head: true })
-    .eq('telegram_id', user.id)
-    .eq('prize_source', 'lucky_draw')
-    .gte('created_at', today.toISOString())
+  const [{ count }, dailyLimit] = await Promise.all([
+    (supabase as any)
+      .from('lucky_draw_wins')
+      .select('id', { count: 'exact', head: true })
+      .eq('telegram_id', user.id)
+      .eq('prize_source', 'lucky_draw')
+      .gte('created_at', today.toISOString()),
+    IS_DEV ? Promise.resolve(99) : getDailySpinLimit(supabase, user.id),
+  ])
 
   const spinsUsed = count ?? 0
   return ok({
     spinsUsed,
-    spinsRemaining: Math.max(0, DAILY_SPIN_LIMIT - spinsUsed),
-    canSpin: spinsUsed < DAILY_SPIN_LIMIT,
+    dailyLimit,
+    spinsRemaining: Math.max(0, dailyLimit - spinsUsed),
+    canSpin: spinsUsed < dailyLimit,
   })
 }
 
@@ -44,14 +88,17 @@ export async function POST(req: NextRequest) {
   // Server-side daily limit check
   if (!IS_DEV) {
     const today = new Date(); today.setHours(0, 0, 0, 0)
-    const { count } = await (supabase as any)
-      .from('lucky_draw_wins')
-      .select('id', { count: 'exact', head: true })
-      .eq('telegram_id', user.id)
-      .eq('prize_source', 'lucky_draw')
-      .gte('created_at', today.toISOString())
+    const [{ count }, dailyLimit] = await Promise.all([
+      (supabase as any)
+        .from('lucky_draw_wins')
+        .select('id', { count: 'exact', head: true })
+        .eq('telegram_id', user.id)
+        .eq('prize_source', 'lucky_draw')
+        .gte('created_at', today.toISOString()),
+      getDailySpinLimit(supabase, user.id),
+    ])
 
-    if ((count ?? 0) >= DAILY_SPIN_LIMIT) {
+    if ((count ?? 0) >= dailyLimit) {
       return fail('Daily spin limit reached', 'DAILY_LIMIT', 429)
     }
   }
