@@ -90,16 +90,16 @@ interface Prize {
 // Total weight = 1000
 // 1000 XLM: 1% | 100 XLM: 2% | 100 NSAFL: 3% | 50 NSAFL: 4% | 25 NSAFL: 5% | rest split evenly
 const PRIZES: Prize[] = [
-  { label: '1000 XLM', emoji: '💎', color: '#0077b6', weight: 10,  isXLM: true,   amount: 1000 },
-  { label: '100 XLM',  emoji: '✨', color: '#0096c7', weight: 20,  isXLM: true,   amount: 100  },
-  { label: '100 NSAFL',emoji: '🏆', color: '#D4AF37', weight: 30,  isNSAFL: true, amount: 100  },
-  { label: '50 NSAFL', emoji: '🥇', color: '#c8a030', weight: 40,  isNSAFL: true, amount: 50   },
-  { label: '25 NSAFL', emoji: '🥈', color: '#a0a0b0', weight: 50,  isNSAFL: true, amount: 25   },
-  { label: '+1 Ball',  emoji: '🎯', color: '#2e7d32', weight: 170 },
-  { label: 'Free Spin',emoji: '🔄', color: '#1565c0', weight: 170 },
-  { label: 'Top Badge',emoji: '⭐', color: '#6a1b9a', weight: 170 },
-  { label: 'Try Again',emoji: '😔', color: '#37474f', weight: 170 },
-  { label: 'Better Luck',emoji:'💨',color: '#455a64', weight: 170 },
+  { label: '1000 XLM', emoji: '💎', color: '#0a3d62', weight: 10,  isXLM: true,   amount: 1000 },
+  { label: '100 XLM',  emoji: '✨', color: '#1e6091', weight: 20,  isXLM: true,   amount: 100  },
+  { label: '100 NSAFL',emoji: '🏆', color: '#b7791f', weight: 30,  isNSAFL: true, amount: 100  },
+  { label: '50 NSAFL', emoji: '🥇', color: '#D4AF37', weight: 40,  isNSAFL: true, amount: 50   },
+  { label: '25 NSAFL', emoji: '🥈', color: '#c8a030', weight: 50,  isNSAFL: true, amount: 25   },
+  { label: '+1 Ball',  emoji: '🎯', color: '#1a5c2e', weight: 170 },
+  { label: 'Free Spin',emoji: '🔄', color: '#1a4a8a', weight: 170 },
+  { label: 'Top Badge',emoji: '⭐', color: '#4a1070', weight: 170 },
+  { label: 'Try Again',emoji: '😔', color: '#2d3748', weight: 170 },
+  { label: 'Better Luck',emoji:'💨',color: '#1a202c', weight: 170 },
 ]
 
 // weighted random pick
@@ -126,6 +126,7 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
   const [spinning, setSpinning] = useState(false)
   const [result, setResult] = useState<Prize | null>(null)
   const [freeSpin, setFreeSpin] = useState(false)
+  const [showConfetti, setShowConfetti] = useState(false)
   const [winCode, setWinCode] = useState<string | null>(null)
   const [recentWins, setRecentWins] = useState<{ telegram_id: number; prize: string; created_at: string }[]>([])
 
@@ -251,7 +252,7 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
     const ro = new ResizeObserver(() => {
       const canvas = canvasRef.current
       if (!canvas) return
-      const sz = Math.min(wrap.clientWidth, wrap.clientHeight, 360)
+      const sz = Math.min(wrap.clientWidth, wrap.clientHeight, 420)
       canvas.width = sz
       canvas.height = sz
       drawWheel(angleRef.current)
@@ -342,6 +343,11 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
     } else {
       haptic.warning()
     }
+    // confetti for any win
+    if (result.isNSAFL || result.isXLM || result.label === '+1 Ball') {
+      setShowConfetti(true)
+      setTimeout(() => setShowConfetti(false), 2500)
+    }
   }, [result, stellarAddress])
 
   const isWin = result && (result.isNSAFL || result.isXLM || result.label === '+1 Ball')
@@ -349,6 +355,20 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden"
       style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.08) 0%, #0A0E1A 60%)' }}>
+      <style>{`
+        @keyframes result-pop {
+          from { transform: scale(0.8); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        @keyframes confetti-fall {
+          0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        @keyframes spin-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
+      `}</style>
 
       {/* header */}
       <div className="flex items-center justify-between px-4 pt-12 pb-2 flex-shrink-0">
@@ -385,7 +405,7 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
       )}
 
       {/* wheel — takes remaining space */}
-      <div ref={wrapRef} className="flex-1 flex items-center justify-center px-2 py-1 relative">
+      <div ref={wrapRef} className="flex-1 flex items-center justify-center px-1 py-0 relative">
         {/* glow ring behind wheel */}
         <div className="absolute rounded-full pointer-events-none"
           style={{
@@ -396,9 +416,35 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
         <canvas ref={canvasRef} style={{ touchAction: 'none', display: 'block', position: 'relative', zIndex: 1 }} />
       </div>
 
+      {/* confetti */}
+      {showConfetti && (
+        <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 100 }}>
+          {[...Array(10)].map((_, i) => {
+            const colors = ['#D4AF37','#f0d060','#4ade80','#60a5fa','#f472b6','#a78bfa','#fb923c','#34d399']
+            const color = colors[i % colors.length]
+            const left = 5 + (i * 9.5)
+            const size = 8 + (i % 3) * 4
+            const delay = (i * 0.18).toFixed(2)
+            const duration = (1.8 + (i % 4) * 0.25).toFixed(2)
+            return (
+              <div key={i} style={{
+                position: 'absolute',
+                left: `${left}%`,
+                top: 0,
+                width: size,
+                height: size,
+                borderRadius: i % 2 === 0 ? '50%' : '2px',
+                background: color,
+                animation: `confetti-fall ${duration}s ease-in ${delay}s both`,
+              }} />
+            )
+          })}
+        </div>
+      )}
+
       {/* result banner */}
       {result && (
-        <div className="px-4 mb-2 flex-shrink-0">
+        <div className="px-4 mb-2 flex-shrink-0" style={{ animation: 'result-pop 0.3s cubic-bezier(0.34,1.56,0.64,1)' }}>
           <div className={`rounded-3xl px-5 py-4 border text-center ${isWin ? 'border-[#D4AF37]/60' : 'border-white/10'}`}
             style={{
               background: isWin ? 'rgba(212,175,55,0.12)' : 'rgba(255,255,255,0.03)',
@@ -442,7 +488,9 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
                 : 'linear-gradient(135deg, #D4AF37 0%, #f0d060 50%, #D4AF37 100%)',
               boxShadow: spinning ? 'none' : '0 4px 24px rgba(212,175,55,0.4)',
             }}>
-            {spinning ? '⏳ Spinning...' : freeSpin ? '🔄 Free Spin!' : '🎰 Spin the Wheel'}
+            <span style={spinning ? { animation: 'spin-pulse 1s ease-in-out infinite', display: 'inline-block' } : {}}>
+              {spinning ? '⏳ Spinning...' : freeSpin ? '🔄 Free Spin!' : '🎰 Spin the Wheel'}
+            </span>
           </button>
         ) : (
           <>
