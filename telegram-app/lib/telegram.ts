@@ -66,7 +66,7 @@ const REFERRAL_SHARE_TEXT =
 
 export function buildReferralLink(tgId: number | string | null | undefined, botUsername?: string): string {
   const bot = botUsername ?? process.env.NEXT_PUBLIC_BOT_USERNAME ?? 'NSAFL_bot'
-  return tgId ? `https://t.me/${bot}?startapp=ref_${tgId}` : `https://t.me/${bot}`
+  return tgId ? `https://t.me/${bot}?start=ref_${tgId}` : `https://t.me/${bot}`
 }
 
 export function shareReferralLink(referralLink: string): void {

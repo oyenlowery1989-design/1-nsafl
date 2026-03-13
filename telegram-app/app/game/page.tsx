@@ -91,18 +91,18 @@ interface Prize {
 }
 
 // Total weight = 1000
-// 1000 XLM: 1% | 100 XLM: 2% | 100 NSAFL: 3% | 50 NSAFL: 4% | 25 NSAFL: 5% | rest split evenly
+// XLM prizes disabled (0%) | 100 NSAFL: 3% | 50 NSAFL: 4% | 25 NSAFL: 5% | rest split evenly
 const PRIZES: Prize[] = [
-  { label: '1000 XLM', emoji: '💎', color: '#0a3d62', weight: 10,  isXLM: true,   amount: 1000 },
-  { label: '100 XLM',  emoji: '✨', color: '#1e6091', weight: 20,  isXLM: true,   amount: 100  },
+  { label: '1000 XLM', emoji: '💎', color: '#0a3d62', weight: 0,   isXLM: true,   amount: 1000 },
+  { label: '100 XLM',  emoji: '✨', color: '#1e6091', weight: 0,   isXLM: true,   amount: 100  },
   { label: '100 NSAFL',emoji: '🏆', color: '#b7791f', weight: 30,  isNSAFL: true, amount: 100  },
   { label: '50 NSAFL', emoji: '🥇', color: '#D4AF37', weight: 40,  isNSAFL: true, amount: 50   },
   { label: '25 NSAFL', emoji: '🥈', color: '#c8a030', weight: 50,  isNSAFL: true, amount: 25   },
-  { label: '+1 Ball',  emoji: '🎯', color: '#1a5c2e', weight: 170 },
-  { label: 'Free Spin',emoji: '🔄', color: '#1a4a8a', weight: 170 },
-  { label: 'Top Badge',emoji: '⭐', color: '#4a1070', weight: 170 },
-  { label: 'Try Again',emoji: '😔', color: '#2d3748', weight: 170 },
-  { label: 'Better Luck',emoji:'💨',color: '#1a202c', weight: 170 },
+  { label: '+1 Ball',  emoji: '🎯', color: '#1a5c2e', weight: 176 },
+  { label: 'Free Spin',emoji: '🔄', color: '#1a4a8a', weight: 176 },
+  { label: 'Top Badge',emoji: '⭐', color: '#4a1070', weight: 176 },
+  { label: 'Try Again',emoji: '😔', color: '#2d3748', weight: 176 },
+  { label: 'Better Luck',emoji:'💨',color: '#1a202c', weight: 176 },
 ]
 
 // weighted random pick

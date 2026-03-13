@@ -6,12 +6,13 @@ import TeamSelectScreen from '@/components/TeamSelectScreen'
 import BottomNav from '@/components/BottomNav'
 import NoTrustlineHelp from '@/components/NoTrustlineHelp'
 import OnboardingSlides from '@/components/OnboardingSlides'
+import ReferralWelcomeScreen from '@/components/ReferralWelcomeScreen'
 import { PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
 import { isValidStellarAddress, hasPrimaryAssetTrustline } from '@/lib/stellar'
 import { getTelegramInitData } from '@/lib/telegram'
 import { haptic } from '@/lib/telegram-ui'
 
-type Phase = 'onboarding' | 'gate' | 'connecting' | 'no-trustline' | 'celebration' | 'team-select' | 'dashboard'
+type Phase = 'referral-welcome' | 'onboarding' | 'gate' | 'connecting' | 'no-trustline' | 'celebration' | 'team-select' | 'dashboard'
 
 export default function HomePage() {
   const stellarAddress = useWalletStore((s) => s.stellarAddress)
@@ -24,10 +25,16 @@ export default function HomePage() {
   const setFavoriteTeam = useWalletStore((s) => s.setFavoriteTeam)
   const hasSeenOnboarding = useWalletStore((s) => s.hasSeenOnboarding)
   const setHasSeenOnboarding = useWalletStore((s) => s.setHasSeenOnboarding)
+  const referrerId = typeof window !== 'undefined'
+    ? parseInt(sessionStorage.getItem('nsafl_referrer') ?? '', 10) || null
+    : null
+
   const [phase, setPhase] = useState<Phase>(
-    !hasSeenOnboarding
-      ? 'onboarding'
-      : isConnected ? (favoriteTeam ? 'dashboard' : 'team-select') : 'gate'
+    !hasSeenOnboarding && referrerId
+      ? 'referral-welcome'
+      : !hasSeenOnboarding
+        ? 'onboarding'
+        : isConnected ? (favoriteTeam ? 'dashboard' : 'team-select') : 'gate'
   )
   const [inputAddress, setInputAddress] = useState('')
   const [pendingAddress, setPendingAddress] = useState('')   // address waiting on trustline
@@ -92,6 +99,15 @@ export default function HomePage() {
       setError('Connection failed. Please try again.')
       setPhase('gate')
     }
+  }
+
+  if (phase === 'referral-welcome' && referrerId) {
+    return (
+      <ReferralWelcomeScreen
+        referrerId={referrerId}
+        onContinue={() => setPhase('onboarding')}
+      />
+    )
   }
 
   if (phase === 'onboarding') {

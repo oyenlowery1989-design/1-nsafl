@@ -141,7 +141,7 @@ export default function TelegramGuard({ children }: { children: React.ReactNode 
         // (URL query params are NOT populated for ?start= deep links)
         const startParam = (tg.initDataUnsafe as Record<string, unknown>)?.start_param as string | undefined
         const urlParams = new URLSearchParams(window.location.search)
-        const refParam = startParam ?? urlParams.get('tgWebAppStartParam') ?? urlParams.get('startapp') ?? null
+        const refParam = startParam ?? urlParams.get('tgWebAppStartParam') ?? urlParams.get('startapp') ?? urlParams.get('ref') ?? null
         let referredBy: number | null = null
         if (refParam?.startsWith('ref_')) {
           const parsed = parseInt(refParam.replace('ref_', ''), 10)
