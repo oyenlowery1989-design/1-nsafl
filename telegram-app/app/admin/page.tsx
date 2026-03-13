@@ -19,9 +19,11 @@ interface GameSession { id: string; telegram_id: number | null; wallet_id: strin
 interface Donation { id: string; wallet_id: string; amount: number; asset_code: string; donation_type: string; donation_target: string | null; stellar_tx_hash: string | null; verified: boolean; created_at: string }
 interface Purchase { id: string; wallet_id: string; xlm_amount: number; token_amount: number; stellar_tx_hash: string | null; purchase_type: string; verified: boolean; created_at: string }
 interface AccessAttempt { id: string; ip: string | null; user_agent: string | null; tg_sdk_present: boolean; tg_sdk_fake: boolean; devtools_opened: boolean; screen: string | null; timezone: string | null; language: string | null; url: string | null; telegram_id: number | null; telegram_username: string | null; telegram_first_name: string | null; geo_location: string | null; created_at: string }
-interface AdminData { users: User[]; teamRequests: TeamRequest[]; gameSessions: GameSession[]; donations: Donation[]; purchases: Purchase[]; accessAttempts: AccessAttempt[] }
+interface ReferralStat { referrer_id: number; referrer_name: string | null; referrer_username: string | null; referral_count: number; last_referral_at: string }
+interface ReferredUser { telegram_id: number; telegram_first_name: string | null; telegram_username: string | null; referred_by: number | null; created_at: string }
+interface AdminData { users: User[]; teamRequests: TeamRequest[]; gameSessions: GameSession[]; donations: Donation[]; purchases: Purchase[]; accessAttempts: AccessAttempt[]; referralStats: ReferralStat[]; referredUsers: ReferredUser[] }
 
-type Tab = 'overview' | 'users' | 'requests' | 'game' | 'donations' | 'purchases' | 'access'
+type Tab = 'overview' | 'users' | 'requests' | 'game' | 'donations' | 'purchases' | 'access' | 'referrals'
 type ConfirmAction = { type: 'block' | 'delete' | 'logout'; telegramId: number } | null
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -173,19 +175,175 @@ function DonationTypeBadge({ type }: { type: string }) {
 }
 
 // ── User detail full page ─────────────────────────────────────────────────────
+// ── Activity Timeline ─────────────────────────────────────────────────────────
+interface TimelineItem {
+  date: string
+  type: 'game' | 'donation' | 'purchase' | 'team' | 'access' | 'wallet'
+  label: string
+  detail?: string
+  isAlert?: boolean
+}
+
+const TIMELINE_DOT: Record<TimelineItem['type'], string> = {
+  game:     'bg-green-500',
+  donation: 'bg-[#D4AF37]',
+  purchase: 'bg-blue-500',
+  team:     'bg-purple-500',
+  access:   'bg-gray-500',
+  wallet:   'bg-cyan-500',
+}
+
+function buildTimeline(
+  u: User,
+  userSessions: GameSession[],
+  userDonations: Donation[],
+  userPurchases: Purchase[],
+  userRequests: TeamRequest[],
+  userAccess: AccessAttempt[],
+): TimelineItem[] {
+  const items: TimelineItem[] = []
+
+  for (const w of u.wallets) {
+    items.push({
+      date: w.created_at,
+      type: 'wallet',
+      label: `Connected wallet ${shortAddr(w.stellar_address)}`,
+      detail: w.label ?? undefined,
+    })
+  }
+
+  for (const g of userSessions) {
+    items.push({
+      date: g.created_at,
+      type: 'game',
+      label: `Played a game — ${g.kicks} kicks in ${g.duration_seconds}s`,
+      detail: g.balls_spawned ? `${g.balls_spawned} balls spawned` : undefined,
+    })
+  }
+
+  for (const d of userDonations) {
+    const target = d.donation_target ?? 'General'
+    items.push({
+      date: d.created_at,
+      type: 'donation',
+      label: `Donated ${num(d.amount)} ${d.asset_code} to ${target}`,
+      detail: d.verified ? 'Verified' : 'Pending verification',
+    })
+  }
+
+  for (const p of userPurchases) {
+    items.push({
+      date: p.created_at,
+      type: 'purchase',
+      label: `Purchased ${num(p.token_amount)} ${PRIMARY_CUSTOM_ASSET_CODE} for ${num(p.xlm_amount)} XLM`,
+      detail: p.verified ? 'Verified' : 'Pending verification',
+    })
+  }
+
+  for (const r of userRequests) {
+    items.push({
+      date: r.created_at,
+      type: 'team',
+      label: `Requested team change to ${teamName(r.requested_team)} — ${r.status}`,
+      detail: r.admin_note ?? undefined,
+    })
+  }
+
+  for (const a of userAccess) {
+    const isAlert = a.devtools_opened || a.tg_sdk_fake
+    const location = a.geo_location ? ` from ${a.geo_location}` : a.ip ? ` from ${a.ip}` : ''
+    const eventLabel = a.devtools_opened
+      ? `Suspicious: DevTools opened${location}`
+      : a.tg_sdk_fake
+      ? `Suspicious: Fake SDK detected${location}`
+      : `Opened app${location}`
+    items.push({
+      date: a.created_at,
+      type: 'access',
+      label: eventLabel,
+      detail: a.screen ?? undefined,
+      isAlert,
+    })
+  }
+
+  items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  return items
+}
+
+function ActivityTimeline({
+  u, userSessions, userDonations, userPurchases, userRequests, userAccess,
+}: {
+  u: User
+  userSessions: GameSession[]
+  userDonations: Donation[]
+  userPurchases: Purchase[]
+  userRequests: TeamRequest[]
+  userAccess: AccessAttempt[]
+}) {
+  const [showAll, setShowAll] = useState(false)
+  const all = buildTimeline(u, userSessions, userDonations, userPurchases, userRequests, userAccess)
+  const visible = showAll ? all : all.slice(0, 20)
+
+  if (all.length === 0) {
+    return (
+      <section>
+        <SectionTitle icon="timeline" title="Activity Timeline" count={0} />
+        <p className="text-gray-600 text-sm">No activity recorded yet.</p>
+      </section>
+    )
+  }
+
+  return (
+    <section>
+      <SectionTitle icon="timeline" title="Activity Timeline" count={all.length} />
+      <div className="relative pl-6 border-l-2 border-white/10 space-y-0">
+        {visible.map((item, tIdx) => (
+          <div key={tIdx} className="relative pb-5">
+            <span
+              className={`absolute -left-[25px] top-1 w-3 h-3 rounded-full border-2 border-[#0a0f1e] ${item.isAlert ? 'bg-red-500' : TIMELINE_DOT[item.type]}`}
+            />
+            <div className="ml-2">
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className={`text-sm font-medium ${item.isAlert ? 'text-red-300' : 'text-gray-200'}`}>
+                  {item.label}
+                </span>
+                <span className="text-[11px] text-gray-600 shrink-0">{ago(item.date)}</span>
+              </div>
+              {item.detail && (
+                <p className="text-[11px] text-gray-500 mt-0.5">{item.detail}</p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      {all.length > 20 && (
+        <button
+          onClick={() => setShowAll(v => !v)}
+          className="mt-2 text-xs text-[#D4AF37] hover:text-yellow-300 font-semibold transition"
+        >
+          {showAll ? 'Show less' : `Show all ${all.length} events`}
+        </button>
+      )}
+    </section>
+  )
+}
+
 function UserDetail({
-  u, data,
+  u, data, token,
   onBack,
   onAction,
   onDeleteAccess,
   deletingAccessId,
+  onUserUpdated,
 }: {
   u: User
   data: AdminData
+  token: string
   onBack: () => void
   onAction: (type: 'logout' | 'block' | 'unblock' | 'delete') => void
   onDeleteAccess: (id: string) => void
   deletingAccessId: string | null
+  onUserUpdated: (telegramId: number, patch: Partial<User>) => void
 }) {
   const walletIds = new Set(u.wallets.map(w => w.id))
   const userAccess    = data.accessAttempts.filter(a => a.telegram_id === u.telegram_id)
@@ -204,8 +362,70 @@ function UserDetail({
 
   const [detailConfirm, setDetailConfirm] = useState<ConfirmAction>(null)
 
+  // ── Inline edit state ──
+  const [editingTeam, setEditingTeam] = useState(false)
+  const [teamDraft, setTeamDraft] = useState(u.favorite_team ?? '')
+  const [editingPref, setEditingPref] = useState(false)
+  const [prefDraft, setPrefDraft] = useState(u.display_preference)
+  const [editSaving, setEditSaving] = useState(false)
+  const [editToast, setEditToast] = useState<string | null>(null)
+
+  function showEditToast(msg: string) {
+    setEditToast(msg)
+    setTimeout(() => setEditToast(null), 3000)
+  }
+
+  async function saveTeam() {
+    setEditSaving(true)
+    try {
+      const res = await fetch(`/api/admin/user/${u.telegram_id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+        body: JSON.stringify({ favorite_team: teamDraft || null }),
+      })
+      const j = await res.json()
+      if (j.success) {
+        onUserUpdated(u.telegram_id, { favorite_team: teamDraft || null })
+        setEditingTeam(false)
+        showEditToast('Updated')
+      } else {
+        showEditToast('Save failed')
+      }
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
+  async function savePref() {
+    setEditSaving(true)
+    try {
+      const res = await fetch(`/api/admin/user/${u.telegram_id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+        body: JSON.stringify({ display_preference: prefDraft }),
+      })
+      const j = await res.json()
+      if (j.success) {
+        onUserUpdated(u.telegram_id, { display_preference: prefDraft })
+        setEditingPref(false)
+        showEditToast('Updated')
+      } else {
+        showEditToast('Save failed')
+      }
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#0a0f1e] text-gray-100">
+
+      {/* ── Edit toast ── */}
+      {editToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[300] bg-[#1a2235] border border-white/10 text-white text-sm px-5 py-3 rounded-xl shadow-2xl backdrop-blur-sm">
+          {editToast}
+        </div>
+      )}
 
       {/* ── Top bar ── */}
       <header className="bg-[#0d1424] border-b border-white/8 px-6 py-3 flex items-center gap-4 sticky top-0 z-20">
@@ -282,9 +502,7 @@ function UserDetail({
                 {[
                   { label: 'Telegram ID',   value: String(u.telegram_id) },
                   { label: 'Phone',         value: u.telegram_phone ?? '—' },
-                  { label: 'Favorite Team', value: teamName(u.favorite_team) },
                   { label: 'Invited By',    value: u.referred_by ? (() => { const r = data?.users.find(x => x.telegram_id === u.referred_by); return r ? `${r.telegram_first_name ?? ''}${r.telegram_username ? ` (@${r.telegram_username})` : ''} #${u.referred_by}` : `#${u.referred_by}` })() : '—' },
-                  { label: 'Display As',    value: u.display_preference },
                   { label: 'Notifications', value: u.opt_in_telegram_notifications ? 'On' : 'Off' },
                   { label: 'Joined',        value: dt(u.created_at) },
                   { label: 'Last Active',   value: lastSeen ? ago(lastSeen) : '—' },
@@ -295,6 +513,57 @@ function UserDetail({
                     <p className="text-sm text-gray-200 break-all">{f.value}</p>
                   </div>
                 ))}
+
+                {/* Editable: Favorite Team */}
+                <div>
+                  <p className="text-[10px] text-gray-500 font-medium uppercase mb-1">Favorite Team</p>
+                  {editingTeam ? (
+                    <div className="flex items-center gap-1.5">
+                      <select
+                        value={teamDraft}
+                        onChange={e => setTeamDraft(e.target.value)}
+                        className="bg-black/40 border border-white/15 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[#D4AF37]/50 flex-1 min-w-0"
+                      >
+                        <option value="">— None —</option>
+                        {ALL_CLUBS.map(c => (
+                          <option key={c.id} value={c.id}>{c.name} ({c.league})</option>
+                        ))}
+                      </select>
+                      <button onClick={saveTeam} disabled={editSaving} className="text-xs bg-[#D4AF37] text-black px-2 py-1 rounded font-bold disabled:opacity-50">Save</button>
+                      <button onClick={() => { setEditingTeam(false); setTeamDraft(u.favorite_team ?? '') }} className="text-xs bg-white/10 text-gray-400 px-2 py-1 rounded">✕</button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm text-gray-200">{teamName(u.favorite_team)}</span>
+                      <button onClick={() => setEditingTeam(true)} className="text-[10px] text-gray-500 hover:text-[#D4AF37] border border-white/10 rounded px-1.5 py-0.5 transition">Edit</button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Editable: Display As */}
+                <div>
+                  <p className="text-[10px] text-gray-500 font-medium uppercase mb-1">Display As</p>
+                  {editingPref ? (
+                    <div className="flex items-center gap-1.5">
+                      <select
+                        value={prefDraft}
+                        onChange={e => setPrefDraft(e.target.value)}
+                        className="bg-black/40 border border-white/15 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[#D4AF37]/50"
+                      >
+                        <option value="address">address</option>
+                        <option value="name">name</option>
+                        <option value="username">username</option>
+                      </select>
+                      <button onClick={savePref} disabled={editSaving} className="text-xs bg-[#D4AF37] text-black px-2 py-1 rounded font-bold disabled:opacity-50">Save</button>
+                      <button onClick={() => { setEditingPref(false); setPrefDraft(u.display_preference) }} className="text-xs bg-white/10 text-gray-400 px-2 py-1 rounded">✕</button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm text-gray-200">{u.display_preference}</span>
+                      <button onClick={() => setEditingPref(true)} className="text-[10px] text-gray-500 hover:text-[#D4AF37] border border-white/10 rounded px-1.5 py-0.5 transition">Edit</button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -309,6 +578,16 @@ function UserDetail({
           <StatTile label="Donations"    value={userDonations.length}       accent="text-green-400" />
           <StatTile label="Purchases"    value={userPurchases.length}       accent="text-orange-400" />
         </div>
+
+        {/* ── Activity Timeline ── */}
+        <ActivityTimeline
+          u={u}
+          userSessions={userSessions}
+          userDonations={userDonations}
+          userPurchases={userPurchases}
+          userRequests={userRequests}
+          userAccess={userAccess}
+        />
 
         {/* ── Wallets ── */}
         <section>
@@ -554,12 +833,18 @@ function AdminContent() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [deletingAccessId, setDeletingAccessId] = useState<string | null>(null)
   const [donationFilter, setDonationFilter] = useState<'all' | 'unverified' | 'team' | 'player' | 'general'>('all')
+  const [donationSearch, setDonationSearch] = useState('')
   const [purchaseFilter, setPurchaseFilter] = useState<'all' | 'unverified' | 'direct' | 'advanced'>('all')
+  const [purchaseSearch, setPurchaseSearch] = useState('')
+  const [verifyingId, setVerifyingId] = useState<string | null>(null)
+  const [clearLogsConfirm, setClearLogsConfirm] = useState(false)
+  const [clearingLogs, setClearingLogs] = useState(false)
   const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'active' | 'blocked'>('all')
   const [userTeamFilter, setUserTeamFilter] = useState('all')
   const [accessTimeFilter, setAccessTimeFilter] = useState<'1h' | '24h' | '7d' | 'all'>('all')
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null)
   const [toastMsg, setToastMsg] = useState<string | null>(null)
+  const [winStats, setWinStats] = useState<{ total: number; pending: number }>({ total: 0, pending: 0 })
 
   function showToast(msg: string) {
     setToastMsg(msg)
@@ -588,10 +873,17 @@ function AdminContent() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/admin', { headers: { 'x-admin-token': t } })
+      const [res, winsRes] = await Promise.all([
+        fetch('/api/admin', { headers: { 'x-admin-token': t } }),
+        fetch(`/api/admin/wins?token=${t}&limit=1`, { headers: { 'x-admin-token': t } }),
+      ])
       const j = await res.json()
       if (j.success) setData(j.data)
       else { setAuthed(false); localStorage.removeItem('admin_token') }
+      if (winsRes.ok) {
+        const wj = await winsRes.json()
+        if (wj.success) setWinStats({ total: wj.data.total ?? 0, pending: wj.data.counts?.pending ?? 0 })
+      }
     } catch (e) {
       setError('Failed to load admin data. Check your token or try again.')
     } finally { setLoading(false) }
@@ -646,6 +938,55 @@ function AdminContent() {
       const j = await res.json()
       if (j.success) { setNoteMap(m => { const n = { ...m }; delete n[requestId]; return n }); fetchData(token) }
     } finally { setResolving(null) }
+  }
+
+  async function verifyItem(type: 'donation' | 'purchase', id: string) {
+    setVerifyingId(id)
+    try {
+      const res = await fetch('/api/admin/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+        body: JSON.stringify({ type, id }),
+      })
+      const j = await res.json()
+      if (j.success) {
+        setData(prev => {
+          if (!prev) return prev
+          if (type === 'donation') {
+            return { ...prev, donations: prev.donations.map(d => d.id === id ? { ...d, verified: true } : d) }
+          } else {
+            return { ...prev, purchases: prev.purchases.map(p => p.id === id ? { ...p, verified: true } : p) }
+          }
+        })
+        showToast('Marked as verified')
+      } else {
+        showToast('Failed to verify: ' + (j.error ?? 'Unknown error'))
+      }
+    } finally {
+      setVerifyingId(null)
+    }
+  }
+
+  async function bulkDeleteOldLogs(olderThanDays: number) {
+    setClearingLogs(true)
+    try {
+      const res = await fetch('/api/admin/access/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+        body: JSON.stringify({ olderThanDays }),
+      })
+      const j = await res.json()
+      if (j.success) {
+        const cutoff = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000).toISOString()
+        setData(prev => prev ? { ...prev, accessAttempts: prev.accessAttempts.filter(a => a.created_at >= cutoff) } : prev)
+        showToast(`Deleted ${j.data.deleted} log${j.data.deleted === 1 ? '' : 's'} older than ${olderThanDays} days`)
+      } else {
+        showToast('Failed to delete logs: ' + (j.error ?? 'Unknown error'))
+      }
+    } finally {
+      setClearingLogs(false)
+      setClearLogsConfirm(false)
+    }
   }
 
   // ── Login ──────────────────────────────────────────────────────────────────
@@ -710,6 +1051,7 @@ function AdminContent() {
         <UserDetail
           u={selectedUser}
           data={data}
+          token={token}
           onBack={() => setSelectedUser(null)}
           onAction={(type) => {
             setSelectedUser(null)
@@ -717,6 +1059,13 @@ function AdminContent() {
           }}
           onDeleteAccess={deleteAccessAttempt}
           deletingAccessId={deletingAccessId}
+          onUserUpdated={(telegramId, patch) => {
+            setData(prev => prev ? {
+              ...prev,
+              users: prev.users.map(u => u.telegram_id === telegramId ? { ...u, ...patch } : u)
+            } : prev)
+            setSelectedUser(prev => prev && prev.telegram_id === telegramId ? { ...prev, ...patch } : prev)
+          }}
         />
         {/* confirmation modal can still appear on top */}
         {userAction && (
@@ -767,16 +1116,37 @@ function AdminContent() {
 
   // Donations filtered
   const filteredDonations = data.donations.filter(d => {
-    if (donationFilter === 'all') return true
-    if (donationFilter === 'unverified') return !d.verified
-    return d.donation_type === donationFilter
+    if (donationFilter !== 'all') {
+      if (donationFilter === 'unverified' && d.verified) return false
+      if (donationFilter !== 'unverified' && d.donation_type !== donationFilter) return false
+    }
+    if (donationSearch) {
+      const q = donationSearch.toLowerCase()
+      const addr = walletById[d.wallet_id]?.stellar_address ?? ''
+      if (
+        !addr.toLowerCase().includes(q) &&
+        !(d.stellar_tx_hash ?? '').toLowerCase().includes(q) &&
+        !(d.donation_target ?? '').toLowerCase().includes(q)
+      ) return false
+    }
+    return true
   })
 
   // Purchases filtered
   const filteredPurchases = data.purchases.filter(p => {
-    if (purchaseFilter === 'all') return true
-    if (purchaseFilter === 'unverified') return !p.verified
-    return p.purchase_type === purchaseFilter
+    if (purchaseFilter !== 'all') {
+      if (purchaseFilter === 'unverified' && p.verified) return false
+      if (purchaseFilter !== 'unverified' && p.purchase_type !== purchaseFilter) return false
+    }
+    if (purchaseSearch) {
+      const q = purchaseSearch.toLowerCase()
+      const addr = walletById[p.wallet_id]?.stellar_address ?? ''
+      if (
+        !addr.toLowerCase().includes(q) &&
+        !(p.stellar_tx_hash ?? '').toLowerCase().includes(q)
+      ) return false
+    }
+    return true
   })
 
   const TABS: { key: Tab; label: string; icon: string; alert?: boolean; badge?: number }[] = [
@@ -787,6 +1157,7 @@ function AdminContent() {
     { key: 'donations',  label: `Donations`,      icon: 'volunteer_activism', badge: data.donations.length },
     { key: 'purchases',  label: `Purchases`,      icon: 'shopping_cart',      badge: data.purchases.length },
     { key: 'access',     label: `Access`,         icon: 'manage_search',      alert: suspiciousAccess > 0, badge: suspiciousAccess > 0 ? suspiciousAccess : data.accessAttempts.length },
+    { key: 'referrals',  label: `Referrals`,      icon: 'group_add',          badge: data.referralStats?.length || undefined },
   ]
 
   return (
@@ -883,6 +1254,31 @@ function AdminContent() {
                   <p className={`text-2xl font-bold mt-1 ${s.accent}`}>{s.value}</p>
                 </div>
               ))}
+            </div>
+
+            {/* Lucky Draw stats tile */}
+            <div className="rounded-xl p-4 border border-[#D4AF37]/20 bg-yellow-500/5 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center shrink-0">
+                  <Icon name="casino" className="text-base text-[#D4AF37]" />
+                </div>
+                <div>
+                  <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Lucky Draw</p>
+                  <p className="text-lg font-bold text-[#D4AF37] leading-tight">{winStats.total} <span className="text-sm font-normal text-gray-400">total wins</span></p>
+                  {winStats.pending > 0 && (
+                    <p className="text-[11px] text-orange-400 font-medium">{winStats.pending} pending payout</p>
+                  )}
+                  {winStats.pending === 0 && (
+                    <p className="text-[11px] text-gray-600">No pending payouts</p>
+                  )}
+                </div>
+              </div>
+              <a
+                href={`/admin/wins?token=${token}`}
+                className="text-xs text-[#D4AF37] hover:text-yellow-300 border border-[#D4AF37]/30 rounded-lg px-3 py-1.5 hover:bg-[#D4AF37]/10 transition shrink-0 font-semibold"
+              >
+                View all →
+              </a>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -1138,6 +1534,14 @@ function AdminContent() {
         {/* ── DONATIONS ── */}
         {tab === 'donations' && (
           <div className="space-y-3">
+            {/* Search input */}
+            <input
+              type="text"
+              placeholder="Search by wallet address, TX hash, or donation target…"
+              value={donationSearch}
+              onChange={e => setDonationSearch(e.target.value)}
+              className="w-full bg-[#111827] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#D4AF37]/40"
+            />
             {/* Filter buttons */}
             <div className="flex flex-wrap gap-2 items-center">
               {(['all', 'unverified', 'team', 'player', 'general'] as const).map(f => (
@@ -1189,10 +1593,11 @@ function AdminContent() {
                               <Td>
                                 {!d.verified && (
                                   <button
-                                    onClick={() => showToast('Verification coming soon')}
-                                    className="text-xs bg-green-500/10 text-green-400 hover:bg-green-500/20 px-2 py-0.5 rounded transition whitespace-nowrap"
+                                    onClick={() => verifyItem('donation', d.id)}
+                                    disabled={verifyingId === d.id}
+                                    className="text-xs bg-green-500/10 text-green-400 hover:bg-green-500/20 px-2 py-0.5 rounded transition whitespace-nowrap disabled:opacity-40"
                                   >
-                                    Mark Verified
+                                    {verifyingId === d.id ? '…' : 'Mark Verified'}
                                   </button>
                                 )}
                               </Td>
@@ -1210,6 +1615,14 @@ function AdminContent() {
         {/* ── PURCHASES ── */}
         {tab === 'purchases' && (
           <div className="space-y-3">
+            {/* Search input */}
+            <input
+              type="text"
+              placeholder="Search by wallet address or TX hash…"
+              value={purchaseSearch}
+              onChange={e => setPurchaseSearch(e.target.value)}
+              className="w-full bg-[#111827] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#D4AF37]/40"
+            />
             {/* Filter buttons */}
             <div className="flex flex-wrap gap-2 items-center">
               {(['all', 'unverified', 'direct', 'advanced'] as const).map(f => (
@@ -1255,10 +1668,11 @@ function AdminContent() {
                               <Td>
                                 {!p.verified && (
                                   <button
-                                    onClick={() => showToast('Verification coming soon')}
-                                    className="text-xs bg-green-500/10 text-green-400 hover:bg-green-500/20 px-2 py-0.5 rounded transition whitespace-nowrap"
+                                    onClick={() => verifyItem('purchase', p.id)}
+                                    disabled={verifyingId === p.id}
+                                    className="text-xs bg-green-500/10 text-green-400 hover:bg-green-500/20 px-2 py-0.5 rounded transition whitespace-nowrap disabled:opacity-40"
                                   >
-                                    Mark Verified
+                                    {verifyingId === p.id ? '…' : 'Mark Verified'}
                                   </button>
                                 )}
                               </Td>
@@ -1287,9 +1701,29 @@ function AdminContent() {
                   {f === '1h' ? 'Last hour' : f === '24h' ? 'Last 24h' : f === '7d' ? 'Last 7d' : 'All time'}
                 </button>
               ))}
-              <div className="ml-auto flex gap-2">
+              <div className="ml-auto flex items-center gap-2">
                 {suspiciousAccess > 0 && <Badge color="red">{suspiciousAccess} suspicious</Badge>}
                 <Badge color="gray">{data.accessAttempts.length} total (last 100)</Badge>
+                {clearLogsConfirm ? (
+                  <span className="inline-flex items-center gap-1 text-xs">
+                    <span className="text-gray-400">Delete logs older than 7 days?</span>
+                    <button
+                      onClick={() => bulkDeleteOldLogs(7)}
+                      disabled={clearingLogs}
+                      className="px-2 py-0.5 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 font-semibold disabled:opacity-40"
+                    >
+                      {clearingLogs ? '…' : 'Yes'}
+                    </button>
+                    <button onClick={() => setClearLogsConfirm(false)} className="px-2 py-0.5 rounded bg-white/10 text-gray-400 hover:bg-white/20 font-semibold">No</button>
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setClearLogsConfirm(true)}
+                    className="text-xs bg-red-500/10 text-red-400 hover:bg-red-500/20 px-2.5 py-1 rounded-lg font-semibold transition"
+                  >
+                    Clear old logs
+                  </button>
+                )}
               </div>
             </div>
             <Card>

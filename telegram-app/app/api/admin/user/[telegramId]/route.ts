@@ -64,7 +64,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   const adminId = process.env.ADMIN_TELEGRAM_ID ? parseInt(process.env.ADMIN_TELEGRAM_ID, 10) : null
   if (adminId && telegramId === adminId) return fail('Cannot perform this action on the admin account', 'FORBIDDEN', 403)
 
-  const body = await req.json() as { action?: 'logout'; block?: boolean; reason?: string }
+  const body = await req.json() as { action?: 'logout'; block?: boolean; reason?: string; favorite_team?: string | null; display_preference?: string }
 
   // Logout action — remove all wallet connections, keep user row
   if (body.action === 'logout') {
@@ -82,6 +82,16 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   }
 
   const supabase = createServiceClient()
+
+  // Edit user fields (favorite_team, display_preference)
+  if (body.favorite_team !== undefined || body.display_preference !== undefined) {
+    const updatePayload: Record<string, unknown> = {}
+    if (body.favorite_team !== undefined) updatePayload.favorite_team = body.favorite_team
+    if (body.display_preference !== undefined) updatePayload.display_preference = body.display_preference
+    const { error } = await supabase.from('users').update(updatePayload).eq('telegram_id', telegramId)
+    if (error) return fail('Failed to update user', 'DB_ERROR', 500)
+    return ok({ telegramId, updated: updatePayload })
+  }
 
   await supabase
     .from('users')
