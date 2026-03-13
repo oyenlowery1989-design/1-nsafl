@@ -1224,6 +1224,15 @@ export default function GamePage() {
       .catch(() => null)
   }, [])
 
+  const [quizMode, setQuizMode] = useState<QuizMode | null>(null)
+  const [quizSessionId, setQuizSessionId] = useState<string>('')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [quizQuestions, setQuizQuestions] = useState<any[]>([])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [quizResult, setQuizResult] = useState<any>(null)
+  const [playsLeft, setPlaysLeft] = useState<Record<string, number>>({ quick: 3, standard: 3, champion: 3 })
+  const [quizPoints, setQuizPoints] = useState(0)
+
   useEffect(() => {
     fetch('/api/quiz/status', { headers: { 'x-telegram-init-data': getTelegramInitData() } })
       .then(r => r.json())
@@ -1233,13 +1242,6 @@ export default function GamePage() {
         if (d.quizPoints !== undefined) setQuizPoints(d.quizPoints)
       }).catch(() => {})
   }, [])
-
-  const [quizMode, setQuizMode] = useState<QuizMode | null>(null)
-  const [quizSessionId, setQuizSessionId] = useState<string>('')
-  const [quizQuestions, setQuizQuestions] = useState<any[]>([])
-  const [quizResult, setQuizResult] = useState<any>(null)
-  const [playsLeft, setPlaysLeft] = useState<Record<string, number>>({ quick: 3, standard: 3, champion: 3 })
-  const [quizPoints, setQuizPoints] = useState(0)
 
   const addBonusBall = useCallback(() => {
     setBonusBalls(prev => {
