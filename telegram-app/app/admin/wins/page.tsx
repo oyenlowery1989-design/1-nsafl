@@ -150,7 +150,8 @@ function WinsPageInner() {
         const body = await res.json().catch(() => ({}))
         throw new Error(body?.error ?? `HTTP ${res.status}`)
       }
-      const data: WinsApiResponse = await res.json()
+      const json = await res.json()
+      const data: WinsApiResponse = json.data ?? json
       setWins(data.wins ?? [])
       setTotal(data.total ?? 0)
       setTotalPages(data.totalPages ?? 1)
