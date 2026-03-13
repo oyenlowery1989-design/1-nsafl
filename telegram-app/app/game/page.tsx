@@ -10,6 +10,9 @@ import { PRIMARY_CUSTOM_ASSET_CODE, PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/con
 import { getTotalPoints, getPointsFromTier } from '@/lib/points'
 import WalletGuard from '@/components/WalletGuard'
 import BottomNav from '@/components/BottomNav'
+import ModePicker, { type QuizMode } from '@/components/quiz/ModePicker'
+import QuizSession from '@/components/quiz/QuizSession'
+import ResultScreen from '@/components/quiz/ResultScreen'
 
 // ── Physics ───────────────────────────────────────────────────────────────────
 const GRAVITY = 0.22
@@ -72,7 +75,7 @@ interface GameStats {
   leaderboard: { rank: number; name: string; kicks: number }[]
 }
 
-type GameView = 'hub' | 'playing' | 'lucky'
+type GameView = 'hub' | 'playing' | 'lucky' | 'quiz-pick' | 'quiz' | 'quiz-result'
 const LUCKY_BALLS_REQUIRED = 3
 const DEV_BYPASS = process.env.NEXT_PUBLIC_DEV_BYPASS === 'true'
 
@@ -935,14 +938,16 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
 }
 
 // ── Hub View ──────────────────────────────────────────────────────────────────
-function HubView({ onPlay, onLucky, totalPoints, tierPoints, tierLabel, referralBalls, bonusBalls }: {
+function HubView({ onPlay, onLucky, onQuiz, totalPoints, tierPoints, tierLabel, referralBalls, bonusBalls, quizPoints }: {
   onPlay: () => void
   onLucky: () => void
+  onQuiz: () => void
   totalPoints: number
   tierPoints: number
   tierLabel: string
   referralBalls: number
   bonusBalls: number
+  quizPoints: number
 }) {
   const router = useRouter()
   const personalBest = typeof window !== 'undefined'
@@ -1045,6 +1050,15 @@ function HubView({ onPlay, onLucky, totalPoints, tierPoints, tierLabel, referral
                 <span className="text-white font-semibold">+{bonusBalls} ball{bonusBalls !== 1 ? 's' : ''}</span>
               </div>
             )}
+            {quizPoints > 0 && (
+              <div className="flex items-center justify-between text-xs py-1 border-t border-white/5">
+                <span className="text-gray-400 flex items-center space-x-1">
+                  <span className="material-symbols-outlined text-purple-400 text-sm">quiz</span>
+                  <span>Quiz points earned</span>
+                </span>
+                <span className="font-bold text-purple-300">+{quizPoints}</span>
+              </div>
+            )}
           </div>
 
           <button
@@ -1090,6 +1104,37 @@ function HubView({ onPlay, onLucky, totalPoints, tierPoints, tierLabel, referral
                   <p className={`text-xs font-semibold ${muted ? 'text-gray-500' : 'text-white'}`}>{label}</p>
                   <p className="text-[10px] text-gray-600 leading-relaxed">{desc}</p>
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Quiz card */}
+        <div
+          onClick={onQuiz}
+          className="glass-card rounded-2xl p-5 cursor-pointer hover:bg-white/5 active:scale-[0.98] transition border border-purple-500/20"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-full bg-purple-500/15 border border-purple-500/30 flex items-center justify-center">
+                <span className="material-symbols-outlined text-purple-400 text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>quiz</span>
+              </div>
+              <div>
+                <p className="text-base font-bold text-white">AFL/WAFL Quiz</p>
+                <p className="text-xs text-gray-400">Test your footy knowledge</p>
+              </div>
+            </div>
+            <span className="material-symbols-outlined text-gray-500">chevron_right</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: 'Quick', q: '5 Q', color: 'text-blue-300' },
+              { label: 'Standard', q: '10 Q', color: 'text-[#D4AF37]' },
+              { label: 'Champion', q: '20 Q', color: 'text-purple-400' },
+            ].map(({ label, q, color }) => (
+              <div key={label} className="bg-white/3 rounded-lg py-1.5 text-center border border-white/8">
+                <p className={`text-xs font-bold ${color}`}>{label}</p>
+                <p className="text-[9px] text-gray-500">{q}</p>
               </div>
             ))}
           </div>
@@ -1179,6 +1224,23 @@ export default function GamePage() {
       .catch(() => null)
   }, [])
 
+  useEffect(() => {
+    fetch('/api/quiz/status', { headers: { 'x-telegram-init-data': getTelegramInitData() } })
+      .then(r => r.json())
+      .then(j => {
+        const d = j.data ?? j
+        if (d.playsLeft) setPlaysLeft(d.playsLeft)
+        if (d.quizPoints !== undefined) setQuizPoints(d.quizPoints)
+      }).catch(() => {})
+  }, [])
+
+  const [quizMode, setQuizMode] = useState<QuizMode | null>(null)
+  const [quizSessionId, setQuizSessionId] = useState<string>('')
+  const [quizQuestions, setQuizQuestions] = useState<any[]>([])
+  const [quizResult, setQuizResult] = useState<any>(null)
+  const [playsLeft, setPlaysLeft] = useState<Record<string, number>>({ quick: 3, standard: 3, champion: 3 })
+  const [quizPoints, setQuizPoints] = useState(0)
+
   const addBonusBall = useCallback(() => {
     setBonusBalls(prev => {
       const next = prev + 1
@@ -1189,8 +1251,32 @@ export default function GamePage() {
 
   const totalPoints = 1 + getTotalPoints(balance) + referralBalls + bonusBalls
 
+  const startQuiz = async (mode: QuizMode) => {
+    haptic.light()
+    try {
+      const res = await fetch(`/api/quiz/session?mode=${mode.id}`, {
+        headers: { 'x-telegram-init-data': getTelegramInitData() },
+      })
+      const json = await res.json()
+      const data = json.data ?? json
+      if (!res.ok) {
+        alert(data.error ?? 'Could not start quiz')
+        return
+      }
+      setQuizMode(mode)
+      setQuizSessionId(data.sessionId)
+      setQuizQuestions(data.questions)
+      setPlaysLeft(prev => ({ ...prev, [mode.id]: data.playsRemainingToday }))
+      setView('quiz')
+    } catch {
+      alert('Network error — please try again')
+    }
+  }
+
   useTelegramBack(useCallback(() => {
-    if (view !== 'hub') setView('hub')
+    if (view === 'quiz') setView('quiz-pick')
+    else if (view === 'quiz-pick' || view === 'quiz-result') setView('hub')
+    else if (view !== 'hub') setView('hub')
   }, [view]))
 
   return (
@@ -1207,16 +1293,39 @@ export default function GamePage() {
           totalBalls={totalPoints}
           onBallWon={addBonusBall}
         />
+      ) : view === 'quiz-pick' ? (
+        <ModePicker
+          playsLeft={playsLeft}
+          onSelect={startQuiz}
+          onBack={() => setView('hub')}
+        />
+      ) : view === 'quiz' && quizMode && quizSessionId ? (
+        <QuizSession
+          mode={quizMode}
+          sessionId={quizSessionId}
+          questions={quizQuestions}
+          onComplete={(result) => { setQuizResult(result); setView('quiz-result') }}
+          onBack={() => setView('hub')}
+        />
+      ) : view === 'quiz-result' && quizResult ? (
+        <ResultScreen
+          result={quizResult}
+          modeName={quizMode?.label ?? 'Quiz'}
+          onPlayAgain={() => setView('quiz-pick')}
+          onBack={() => setView('hub')}
+        />
       ) : (
         <>
           <HubView
             onPlay={() => setView('playing')}
             onLucky={() => setView('lucky')}
+            onQuiz={() => setView('quiz-pick')}
             totalPoints={totalPoints}
             tierPoints={tierPoints}
             referralBalls={referralBalls}
             bonusBalls={bonusBalls}
             tierLabel={tierLabel}
+            quizPoints={quizPoints}
           />
           <BottomNav />
         </>
