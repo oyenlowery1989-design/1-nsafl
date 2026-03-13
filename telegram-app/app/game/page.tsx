@@ -357,7 +357,7 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon }: { onBack: 
   const isWin = result && (result.isNSAFL || result.isXLM || result.label === '+1 Ball')
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden"
+    <div className="fixed inset-0 flex flex-col overflow-y-auto"
       style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.08) 0%, #0A0E1A 60%)' }}>
       <style>{`
         @keyframes result-pop {
@@ -408,8 +408,8 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon }: { onBack: 
         </div>
       )}
 
-      {/* wheel — takes remaining space */}
-      <div ref={wrapRef} className="flex-1 flex items-center justify-center px-1 py-0 relative">
+      {/* wheel */}
+      <div ref={wrapRef} className="flex items-center justify-center px-1 py-2 relative">
         {/* glow ring behind wheel */}
         <div className="absolute rounded-full pointer-events-none"
           style={{
