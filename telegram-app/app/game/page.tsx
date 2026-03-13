@@ -187,20 +187,23 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
       ctx.lineWidth = 1.5
       ctx.stroke()
 
-      // text along segment midpoint
+      // text along segment midpoint — flip if in left half to avoid upside-down text
+      const normMid = ((midAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)
+      const flip = normMid > Math.PI / 2 && normMid < Math.PI * 1.5
       ctx.save()
       ctx.translate(cx, cy)
-      ctx.rotate(midAngle)
+      ctx.rotate(midAngle + (flip ? Math.PI : 0))
+      const textR = flip ? -r * 0.72 : r * 0.72
       // emoji
       ctx.font = `${r * 0.13}px serif`
       ctx.textAlign = 'center'
-      ctx.fillText(prize.emoji, r * 0.72, r * 0.06)
+      ctx.fillText(prize.emoji, textR, r * 0.06)
       // label
       ctx.fillStyle = 'rgba(255,255,255,0.95)'
       ctx.font = `bold ${r * 0.085}px Inter,sans-serif`
       ctx.shadowColor = 'rgba(0,0,0,0.8)'
       ctx.shadowBlur = 4
-      ctx.fillText(prize.label, r * 0.72, -r * 0.07)
+      ctx.fillText(prize.label, textR, -r * 0.07)
       ctx.shadowBlur = 0
       ctx.restore()
     }
@@ -294,11 +297,16 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
     if (!canSpin || spinning) return
     const idx = pickPrize()
     targetPrizeIdxRef.current = idx
-    // target angle: segment idx lands at top (pointer), add 6–9 full rotations
-    const segCenter = idx * segAngle
-    const fullRotations = (6 + Math.floor(Math.random() * 4)) * Math.PI * 2
+    // Pointer is at top. Segment i is centered at: angle + i*segAngle - π/2 + segAngle/2
+    // For segment idx center to hit top (-π/2), we need:
+    //   targetAngle ≡ -(idx + 0.5) * segAngle  (mod 2π)
+    const PI2 = Math.PI * 2
+    const desiredMod = ((-(idx + 0.5) * segAngle) % PI2 + PI2) % PI2
+    const currentMod = ((angleRef.current % PI2) + PI2) % PI2
+    const delta = ((desiredMod - currentMod) + PI2) % PI2
+    const fullRotations = (6 + Math.floor(Math.random() * 4)) * PI2
     spinStartAngleRef.current = angleRef.current
-    targetAngleRef.current = angleRef.current + fullRotations + (Math.PI * 2 - ((angleRef.current + fullRotations) % (Math.PI * 2))) - segCenter
+    targetAngleRef.current = angleRef.current + fullRotations + delta
     spinStartTimeRef.current = Date.now()
     setResult(null)
     setSpinning(true)
