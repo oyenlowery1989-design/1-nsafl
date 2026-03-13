@@ -64,6 +64,19 @@ function Badge({ children, color }: { children: React.ReactNode; color: string }
   )
 }
 
+function CopyBtn({ value, label }: { value: string; label?: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <button
+      onClick={() => { navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 1500) }}
+      title={`Copy ${label ?? value}`}
+      className="ml-1.5 text-gray-600 hover:text-[#D4AF37] transition align-middle"
+    >
+      {copied ? <span className="text-[10px] text-green-400">✓</span> : <span className="text-[11px]">⎘</span>}
+    </button>
+  )
+}
+
 function Th({ children }: { children?: React.ReactNode }) {
   return (
     <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap border-b border-white/5">
@@ -415,7 +428,10 @@ function WinTableRow({
   return (
     <tr className="hover:bg-white/3 transition-colors">
       <Td mono><span className="text-gray-500">{w.id}</span></Td>
-      <Td mono><span className="text-gray-300">{w.telegram_id}</span></Td>
+      <Td mono>
+        <span className="text-gray-300">{w.telegram_id}</span>
+        <CopyBtn value={String(w.telegram_id)} label="Telegram ID" />
+      </Td>
       <Td>
         <span className="text-[#D4AF37] font-medium">{w.prize}</span>
       </Td>
@@ -426,16 +442,17 @@ function WinTableRow({
         }
       </Td>
       <Td mono>
-        <span
-          className="text-xs text-gray-400 bg-black/30 px-2 py-0.5 rounded"
-          title={w.win_code}
-        >
+        <span className="text-xs text-gray-400 bg-black/30 px-2 py-0.5 rounded" title={w.win_code}>
           {shortStr(w.win_code, 12)}
         </span>
+        <CopyBtn value={w.win_code} label="win code" />
       </Td>
       <Td mono>
         {w.wallet_address
-          ? <span className="text-xs text-gray-400" title={w.wallet_address}>{shortStr(w.wallet_address)}</span>
+          ? <span className="inline-flex items-center gap-0.5">
+              <span className="text-xs text-[#D4AF37]" title={w.wallet_address}>{shortStr(w.wallet_address)}</span>
+              <CopyBtn value={w.wallet_address} label="wallet address" />
+            </span>
           : <span className="text-gray-600">—</span>
         }
       </Td>
