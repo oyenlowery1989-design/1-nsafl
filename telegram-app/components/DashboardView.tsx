@@ -225,6 +225,37 @@ export default function DashboardView({ address, balance }: Props) {
 
         <TierHeroCard />
 
+        {/* ── Lucky Draw Promo ───────────────────────────────────── */}
+        <div
+          onClick={() => router.push('/game')}
+          className="rounded-2xl border border-[#D4AF37]/30 bg-[#D4AF37]/5 p-4 cursor-pointer hover:bg-[#D4AF37]/10 active:scale-[0.98] transition"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center flex-shrink-0">
+                <span className="material-symbols-outlined text-[#D4AF37] text-xl animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>casino</span>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white">Lucky Draw — Win XLM &amp; NSAFL</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">Spin daily. Win up to 1000 XLM. Free to play!</p>
+              </div>
+            </div>
+            <span className="material-symbols-outlined text-[#D4AF37] text-lg">chevron_right</span>
+          </div>
+          <div className="flex items-center space-x-3 mt-3 pt-3 border-t border-white/5">
+            {[
+              { prize: '1000 XLM', label: 'Jackpot', color: 'text-yellow-300' },
+              { prize: '100 XLM', label: 'Big Win', color: 'text-blue-300' },
+              { prize: '100 NSAFL', label: 'Token Win', color: 'text-green-300' },
+            ].map(({ prize, label, color }) => (
+              <div key={prize} className="flex-1 bg-white/3 rounded-lg py-1.5 text-center border border-white/8">
+                <p className={`text-xs font-bold ${color}`}>{prize}</p>
+                <p className="text-[9px] text-gray-500">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* ── Live Network Stats ─────────────────────────────────── */}
         {liveStats && (
           <section>

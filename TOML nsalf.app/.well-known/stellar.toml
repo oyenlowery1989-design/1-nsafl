@@ -1,0 +1,52 @@
+
+# ======================================
+# NSAFL — Stellar TOML
+# Ecosystem:   Northern Star AFL ($NSAFL)
+# Domain: nsafl.com
+# ======================================
+
+NETWORK_PASSPHRASE="Public Global Stellar Network ; September 2015"
+
+VERSION="2.1.0"
+
+# ======================================
+# ACCOUNTS
+# ======================================
+
+ACCOUNTS=[
+  "GAJVAQ5DCOJVZ6AL3P4QVDTGMOHRVHG6WJ6252SOCLTX5MXXX22Y67FL"
+]
+
+# ======================================
+# DOCUMENTATION
+# ======================================
+[DOCUMENTATION]
+ORG_NAME="Northern Star AFL"
+ORG_URL="https://nsafl.com"
+ORG_DESCRIPTION="The Northern Star AFL ($NSAFL) is Western Australia's sovereign sports asset on the Stellar blockchain, funding the physical rebuild of WA's heartland stadiums and returning full economic power to the fans and families of the West."
+ORG_LOGO="https://nsafl.com/logo.png"
+ORG_OFFICIAL_EMAIL="contact@nsafl.com"
+
+# ======================================
+# PRINCIPALS
+# ======================================
+[[PRINCIPALS]]
+name="The Northern Star AFL"
+email="contact@nsafl.com"
+
+# ======================================
+# ASSETS
+# ======================================
+[[CURRENCIES]]
+code="NSAFL"
+issuer="GAJVAQ5DCOJVZ6AL3P4QVDTGMOHRVHG6WJ6252SOCLTX5MXXX22Y67FL"
+status="live"
+display_decimals=7
+name="NSAFL"
+desc="The Northern Star AFL ($NSAFL) is Western Australia's sovereign sports asset on the Stellar blockchain, funding the physical rebuild of WA's heartland stadiums and returning full economic power to the fans and families of the West."
+conditions="The token is designed to provide users with fractional ownership and access to NSAFL assets. It will be available for trade through Stellar-enabled wallets and platforms."
+image="https://nsafl.com/logo.png"
+
+# ======================================
+# END OF FILE
+# ======================================

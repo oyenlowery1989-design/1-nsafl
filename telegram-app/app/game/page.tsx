@@ -113,7 +113,7 @@ function pickPrize(): number {
   return PRIZES.length - 1
 }
 
-function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void; stellarAddress: string | null; totalBalls: number }) {
+function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon }: { onBack: () => void; stellarAddress: string | null; totalBalls: number; onBallWon: () => void }) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rafRef = useRef<number>(0)
@@ -340,6 +340,7 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls }: { onBack: () => void;
       }).catch(() => null)
     } else if (result.label === '+1 Ball') {
       haptic.success()
+      onBallWon()
     } else {
       haptic.warning()
     }
@@ -934,12 +935,14 @@ function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void
 }
 
 // ── Hub View ──────────────────────────────────────────────────────────────────
-function HubView({ onPlay, onLucky, totalPoints, tierPoints, tierLabel }: {
+function HubView({ onPlay, onLucky, totalPoints, tierPoints, tierLabel, referralBalls, bonusBalls }: {
   onPlay: () => void
   onLucky: () => void
   totalPoints: number
   tierPoints: number
   tierLabel: string
+  referralBalls: number
+  bonusBalls: number
 }) {
   const router = useRouter()
   const personalBest = typeof window !== 'undefined'
@@ -1032,8 +1035,16 @@ function HubView({ onPlay, onLucky, totalPoints, tierPoints, tierLabel }: {
             </div>
             <div className="flex items-center justify-between text-xs">
               <span className="text-gray-400">Referrals</span>
-              <span className="text-gray-500">+0 balls</span>
+              {referralBalls > 0
+                ? <span className="text-white font-semibold">+{referralBalls} ball{referralBalls !== 1 ? 's' : ''}</span>
+                : <span className="text-gray-600">+0 (invite friends!)</span>}
             </div>
+            {bonusBalls > 0 && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-gray-400">Lucky Draw wins</span>
+                <span className="text-white font-semibold">+{bonusBalls} ball{bonusBalls !== 1 ? 's' : ''}</span>
+              </div>
+            )}
           </div>
 
           <button
@@ -1058,8 +1069,10 @@ function HubView({ onPlay, onLucky, totalPoints, tierPoints, tierLabel }: {
               {
                 icon: 'group_add',
                 label: 'Referrals',
-                desc: '+1 ball per person you bring (coming soon)',
-                muted: true,
+                desc: referralBalls > 0
+                  ? `You have ${referralBalls} referral ball${referralBalls !== 1 ? 's' : ''} · invite more friends!`
+                  : '+1 ball per person you bring · share your referral link',
+                muted: referralBalls === 0,
               },
               {
                 icon: 'task_alt',
@@ -1137,6 +1150,8 @@ function HubView({ onPlay, onLucky, totalPoints, tierPoints, tierLabel }: {
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
+const BONUS_BALLS_KEY = 'nsafl_bonus_balls'
+
 export default function GamePage() {
   const [view, setView] = useState<GameView>('hub')
 
@@ -1144,9 +1159,35 @@ export default function GamePage() {
   const stellarAddress = useWalletStore((s) => s.stellarAddress)
   const balance = parseFloat(tokenBalance) || 0
   const tierPoints = getPointsFromTier(balance)
-  const totalPoints = 1 + getTotalPoints(balance)
   const currentTier = getTierForBalance(balance)
   const tierLabel = currentTier.label
+
+  // Referral balls — fetched from API
+  const [referralBalls, setReferralBalls] = useState(0)
+  // Bonus balls won via Lucky Draw "+1 Ball" prize — persisted in localStorage
+  const [bonusBalls, setBonusBalls] = useState(() => {
+    if (typeof window === 'undefined') return 0
+    return parseInt(localStorage.getItem(BONUS_BALLS_KEY) ?? '0', 10)
+  })
+
+  useEffect(() => {
+    fetch('/api/user/referrals', {
+      headers: { 'x-telegram-init-data': getTelegramInitData() },
+    })
+      .then(r => r.json())
+      .then(j => { if (j.success) setReferralBalls(j.data?.referralCount ?? 0) })
+      .catch(() => null)
+  }, [])
+
+  const addBonusBall = useCallback(() => {
+    setBonusBalls(prev => {
+      const next = prev + 1
+      localStorage.setItem(BONUS_BALLS_KEY, String(next))
+      return next
+    })
+  }, [])
+
+  const totalPoints = 1 + getTotalPoints(balance) + referralBalls + bonusBalls
 
   useTelegramBack(useCallback(() => {
     if (view !== 'hub') setView('hub')
@@ -1164,6 +1205,7 @@ export default function GamePage() {
           onBack={() => setView('hub')}
           stellarAddress={stellarAddress}
           totalBalls={totalPoints}
+          onBallWon={addBonusBall}
         />
       ) : (
         <>
@@ -1172,6 +1214,8 @@ export default function GamePage() {
             onLucky={() => setView('lucky')}
             totalPoints={totalPoints}
             tierPoints={tierPoints}
+            referralBalls={referralBalls}
+            bonusBalls={bonusBalls}
             tierLabel={tierLabel}
           />
           <BottomNav />

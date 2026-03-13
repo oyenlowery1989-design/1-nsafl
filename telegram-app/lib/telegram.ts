@@ -74,3 +74,14 @@ export function shareReferralLink(referralLink: string): void {
   const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(REFERRAL_SHARE_TEXT)}`
   ;(window as TelegramWindow).Telegram?.WebApp?.openTelegramLink?.(shareUrl)
 }
+
+export function parseTelegramUser(initData: string): { id: number; first_name?: string; username?: string } | null {
+  try {
+    const params = new URLSearchParams(initData)
+    const userStr = params.get('user')
+    if (!userStr) return null
+    return JSON.parse(decodeURIComponent(userStr))
+  } catch {
+    return null
+  }
+}
