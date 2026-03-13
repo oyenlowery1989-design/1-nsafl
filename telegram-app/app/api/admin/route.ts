@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
     { data: donations },
     { data: purchases },
     { data: accessAttempts },
+    { data: referredUsers },
   ] = await Promise.all([
     // Users + wallets + balances in one shot
     supabase
@@ -65,14 +66,52 @@ export async function GET(req: NextRequest) {
       .select('id, ip, user_agent, tg_sdk_present, tg_sdk_fake, devtools_opened, screen, timezone, language, url, telegram_id, telegram_username, telegram_first_name, geo_location, created_at')
       .order('created_at', { ascending: false })
       .limit(100),
+
+    // Users who were referred (have referred_by set) - for referral stats
+    supabase
+      .from('users')
+      .select('telegram_id, telegram_first_name, telegram_username, referred_by, created_at')
+      .not('referred_by', 'is', null)
+      .order('created_at', { ascending: false }),
+
   ])
 
+  // Build referral stats from referred users list + users lookup
+  const allUsers = users ?? []
+  const referred = referredUsers ?? []
+
+  // Group referred users by their referrer
+  const referrerMap = new Map<number, { count: number; lastAt: string }>()
+  for (const r of referred) {
+    if (!r.referred_by) continue
+    const existing = referrerMap.get(r.referred_by)
+    if (existing) {
+      existing.count++
+      if ((r.created_at ?? '') > existing.lastAt) existing.lastAt = r.created_at ?? ''
+    } else {
+      referrerMap.set(r.referred_by, { count: 1, lastAt: r.created_at ?? '' })
+    }
+  }
+
+  const referralStats = Array.from(referrerMap.entries()).map(([referrerId, stats]) => {
+    const referrer = allUsers.find(u => u.telegram_id === referrerId)
+    return {
+      referrer_id: referrerId,
+      referrer_name: referrer?.telegram_first_name ?? null,
+      referrer_username: referrer?.telegram_username ?? null,
+      referral_count: stats.count,
+      last_referral_at: stats.lastAt,
+    }
+  }).sort((a, b) => b.referral_count - a.referral_count)
+
   return ok({
-    users: users ?? [],
+    users: allUsers,
     teamRequests: teamRequests ?? [],
     gameSessions: gameSessions ?? [],
     donations: donations ?? [],
     purchases: purchases ?? [],
     accessAttempts: accessAttempts ?? [],
+    referralStats,
+    referredUsers: referred,
   })
 }
