@@ -538,6 +538,9 @@ function AdminContent() {
   const [deletingAccessId, setDeletingAccessId] = useState<string | null>(null)
   const [donationFilter, setDonationFilter] = useState<'all' | 'unverified' | 'team' | 'player' | 'general'>('all')
   const [purchaseFilter, setPurchaseFilter] = useState<'all' | 'unverified' | 'direct' | 'advanced'>('all')
+  const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'active' | 'blocked'>('all')
+  const [userTeamFilter, setUserTeamFilter] = useState('all')
+  const [accessTimeFilter, setAccessTimeFilter] = useState<'1h' | '24h' | '7d' | 'all'>('all')
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null)
   const [toastMsg, setToastMsg] = useState<string | null>(null)
 
@@ -712,14 +715,20 @@ function AdminContent() {
   const walletById: Record<string, { stellar_address: string; user: User }> = {}
   for (const u of data.users) for (const w of u.wallets) walletById[w.id] = { stellar_address: w.stellar_address, user: u }
 
-  const filteredUsers = search
-    ? data.users.filter(u =>
-        u.telegram_username?.toLowerCase().includes(search.toLowerCase()) ||
-        u.telegram_first_name?.toLowerCase().includes(search.toLowerCase()) ||
-        String(u.telegram_id).includes(search) ||
-        u.wallets.some(w => w.stellar_address.toLowerCase().includes(search.toLowerCase()))
-      )
-    : data.users
+  const uniqueTeams = Array.from(new Set(data.users.map(u => u.favorite_team).filter((t): t is string => !!t)))
+
+  const filteredUsers = data.users.filter(u => {
+    if (search && !(
+      u.telegram_username?.toLowerCase().includes(search.toLowerCase()) ||
+      u.telegram_first_name?.toLowerCase().includes(search.toLowerCase()) ||
+      String(u.telegram_id).includes(search) ||
+      u.wallets.some(w => w.stellar_address.toLowerCase().includes(search.toLowerCase()))
+    )) return false
+    if (userStatusFilter === 'active' && u.is_blocked) return false
+    if (userStatusFilter === 'blocked' && !u.is_blocked) return false
+    if (userTeamFilter !== 'all' && u.favorite_team !== userTeamFilter) return false
+    return true
+  })
 
   // Donations filtered
   const filteredDonations = data.donations.filter(d => {
@@ -896,14 +905,33 @@ function AdminContent() {
         {/* ── USERS ── */}
         {tab === 'users' && (
           <div className="space-y-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <input
                 type="text"
                 placeholder="Search by name, @username, Telegram ID, or Stellar address…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="flex-1 bg-[#111827] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#D4AF37]/40"
+                className="flex-1 min-w-[200px] bg-[#111827] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#D4AF37]/40"
               />
+              <select
+                value={userStatusFilter}
+                onChange={e => setUserStatusFilter(e.target.value as 'all' | 'active' | 'blocked')}
+                className="bg-[#0d1424] border border-white/10 text-gray-300 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-[#D4AF37]/50"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="blocked">Blocked</option>
+              </select>
+              <select
+                value={userTeamFilter}
+                onChange={e => setUserTeamFilter(e.target.value)}
+                className="bg-[#0d1424] border border-white/10 text-gray-300 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-[#D4AF37]/50"
+              >
+                <option value="all">All Teams</option>
+                {uniqueTeams.map(t => (
+                  <option key={t} value={t}>{teamName(t)}</option>
+                ))}
+              </select>
               <span className="text-sm text-gray-500 whitespace-nowrap">{filteredUsers.length} results</span>
             </div>
             <Card>
@@ -1028,6 +1056,25 @@ function AdminContent() {
 
         {/* ── GAME ── */}
         {tab === 'game' && (
+          <div className="space-y-4">
+          {(() => {
+            const sessions = data.gameSessions
+            const totalSessions = sessions.length
+            const totalGameKicks = sessions.reduce((s, g) => s + g.kicks, 0)
+            const avgKicks = totalSessions > 0 ? Math.round(totalGameKicks / totalSessions) : 0
+            const totalSeconds = sessions.reduce((s, g) => s + g.duration_seconds, 0)
+            const playHours = Math.floor(totalSeconds / 3600)
+            const playMins = Math.floor((totalSeconds % 3600) / 60)
+            const playTime = playHours > 0 ? `${playHours}h ${playMins}m` : `${playMins}m`
+            return (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <StatTile label="Total Sessions" value={totalSessions} accent="text-purple-400" />
+                <StatTile label="Total Kicks" value={totalGameKicks.toLocaleString()} accent="text-yellow-400" />
+                <StatTile label="Avg Kicks / Session" value={avgKicks} accent="text-blue-400" />
+                <StatTile label="Total Play Time" value={playTime} accent="text-green-400" />
+              </div>
+            )
+          })()}
           <Card>
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -1050,6 +1097,7 @@ function AdminContent() {
               </table>
             </div>
           </Card>
+          </div>
         )}
 
         {/* ── DONATIONS ── */}
@@ -1193,9 +1241,21 @@ function AdminContent() {
         {/* ── ACCESS ATTEMPTS ── */}
         {tab === 'access' && (
           <div className="space-y-3">
-            <div className="flex gap-2">
-              {suspiciousAccess > 0 && <Badge color="red">{suspiciousAccess} suspicious</Badge>}
-              <Badge color="gray">{data.accessAttempts.length} total (last 100)</Badge>
+            <div className="flex flex-wrap gap-2 items-center">
+              {(['1h', '24h', '7d', 'all'] as const).map(f => (
+                <button key={f} onClick={() => setAccessTimeFilter(f)}
+                  className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition ${
+                    accessTimeFilter === f
+                      ? 'bg-[#D4AF37]/15 text-[#D4AF37]'
+                      : 'bg-white/6 text-gray-400 hover:bg-white/10 hover:text-white'
+                  }`}>
+                  {f === '1h' ? 'Last hour' : f === '24h' ? 'Last 24h' : f === '7d' ? 'Last 7d' : 'All time'}
+                </button>
+              ))}
+              <div className="ml-auto flex gap-2">
+                {suspiciousAccess > 0 && <Badge color="red">{suspiciousAccess} suspicious</Badge>}
+                <Badge color="gray">{data.accessAttempts.length} total (last 100)</Badge>
+              </div>
             </div>
             <Card>
               <div className="overflow-x-auto">
@@ -1204,7 +1264,11 @@ function AdminContent() {
                     <Th>Type</Th><Th>IP / Location</Th><Th>User</Th><Th>Screen</Th><Th>Timezone</Th><Th>Language</Th><Th>When</Th><Th></Th>
                   </tr></thead>
                   <tbody className="divide-y divide-white/4">
-                    {data.accessAttempts.map(a => {
+                    {data.accessAttempts.filter(a => {
+                      if (accessTimeFilter === 'all') return true
+                      const ms = { '1h': 60 * 60 * 1000, '24h': 24 * 60 * 60 * 1000, '7d': 7 * 24 * 60 * 60 * 1000 }[accessTimeFilter]
+                      return Date.now() - new Date(a.created_at).getTime() <= ms
+                    }).map(a => {
                       const isTelegramSession = !!a.telegram_id && !a.devtools_opened && !a.tg_sdk_fake
                       const isDevtools        = a.devtools_opened
                       const isFakeSdk        = a.tg_sdk_fake
