@@ -123,6 +123,7 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon, initialCanSp
   const angleRef = useRef(0)
   const targetAngleRef = useRef(0)
   const targetPrizeIdxRef = useRef(0)
+  const wasFreeSpin = useRef(false)
   const segCount = PRIZES.length
   const segAngle = (Math.PI * 2) / segCount
 
@@ -306,6 +307,7 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon, initialCanSp
     setResult(null)
     setSpinning(true)
     haptic.medium()
+    wasFreeSpin.current = freeSpin
     if (!freeSpin) {
       const next = spinsRemaining - 1
       setSpinsRemaining(next)
@@ -317,20 +319,26 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon, initialCanSp
   // result effects
   useEffect(() => {
     if (!result) return
+    // Record every non-free spin to enforce server-side daily limit
+    if (!wasFreeSpin.current) {
+      const isWinResult = result.isNSAFL || result.isXLM
+      const tag = isWinResult
+        ? (result.isXLM ? `${result.amount}XLM` : `${result.amount}NSAFL`)
+        : result.label.replace(/\s+/g, '_').toUpperCase()
+      const code = `SPIN-${tag}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`
+      if (isWinResult) setWinCode(code)
+      fetch('/api/game/win', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': getTelegramInitData() },
+        body: JSON.stringify({ prize: result.label, amount: result.amount ?? null, code, wallet: stellarAddress }),
+        keepalive: true,
+      }).catch(() => null)
+    }
     if (result.label === 'Free Spin') {
       haptic.success()
       setTimeout(() => { setFreeSpin(true); setResult(null) }, 2200)
     } else if (result.isNSAFL || result.isXLM) {
       haptic.success()
-      const tag = result.isXLM ? `${result.amount}XLM` : `${result.amount}NSAFL`
-      const code = `WIN-${tag}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`
-      setWinCode(code)
-      fetch('/api/game/win', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': getTelegramInitData() },
-        body: JSON.stringify({ prize: result.label, amount: result.amount, code, wallet: stellarAddress }),
-        keepalive: true,
-      }).catch(() => null)
     } else if (result.label === '+1 Ball') {
       haptic.success()
       onBallWon()
