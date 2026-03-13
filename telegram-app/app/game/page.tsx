@@ -1304,7 +1304,7 @@ export default function GamePage() {
     else if (view !== 'hub') setView('hub')
   }, [view]))
 
-  if (balance === 0) {
+  if (currentTier.id === 'pre-tier') {
     return (
       <WalletGuard>
         <div className="min-h-screen bg-[#0A0E1A] flex flex-col items-center justify-center px-8 text-center">
@@ -1316,7 +1316,7 @@ export default function GamePage() {
           </div>
           <h1 className="text-2xl font-bold text-white font-['Playfair_Display'] mb-3">Game Zone Locked</h1>
           <p className="text-sm text-gray-400 max-w-[260px] leading-relaxed mb-8">
-            You need to hold {PRIMARY_CUSTOM_ASSET_LABEL} tokens to access the Game Zone.
+            You need at least 100 {PRIMARY_CUSTOM_ASSET_LABEL} (Tier 1) to access the Game Zone.
           </p>
           <a
             href="/buy"

@@ -95,8 +95,8 @@ export async function POST(req: NextRequest) {
       if (w?.id) {
         const { data: bal } = await (supabase as any)
           .from('wallet_balances').select('nsafl_balance').eq('wallet_id', w.id).single()
-        if (!bal || Number(bal.nsafl_balance) === 0) {
-          return fail('No token balance — purchase required to play', 'NO_BALANCE', 403)
+        if (!bal || Number(bal.nsafl_balance) < 100) {
+          return fail('Tier 1 required (100+ NSAFL) to play', 'NO_BALANCE', 403)
         }
       }
     }
