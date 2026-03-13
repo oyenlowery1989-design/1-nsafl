@@ -82,22 +82,31 @@ export async function POST(req: NextRequest) {
     .select('id', { count: 'exact', head: true })
     .eq('user_id', upserted?.id ?? '')
 
-  // 5. Log this session to access_attempts so we have a full connection history per user
+  // 5. Log this session — skip if same user + IP already recorded in the last 24h
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
     ?? req.headers.get('x-real-ip')
     ?? null
-  const geoLocation = await resolveIpLocation(ip)
-  await supabase.from('access_attempts').insert({
-    ip,
-    user_agent:          req.headers.get('user-agent') ?? null,
-    tg_sdk_present:      true,
-    tg_sdk_fake:         false,
-    devtools_opened:     false,
-    telegram_id:         telegramUser.id,
-    telegram_username:   telegramUser.username ?? null,
-    telegram_first_name: telegramUser.first_name,
-    geo_location:        geoLocation,
-  })
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const { count: recentCount } = await supabase
+    .from('access_attempts')
+    .select('id', { count: 'exact', head: true })
+    .eq('telegram_id', telegramUser.id)
+    .eq('ip', ip ?? '')
+    .gte('created_at', since)
+  if ((recentCount ?? 0) === 0) {
+    const geoLocation = await resolveIpLocation(ip)
+    await supabase.from('access_attempts').insert({
+      ip,
+      user_agent:          req.headers.get('user-agent') ?? null,
+      tg_sdk_present:      true,
+      tg_sdk_fake:         false,
+      devtools_opened:     false,
+      telegram_id:         telegramUser.id,
+      telegram_username:   telegramUser.username ?? null,
+      telegram_first_name: telegramUser.first_name,
+      geo_location:        geoLocation,
+    })
+  }
 
   return ok({ recorded: true, telegramId: telegramUser.id, hasWallet: (walletCount ?? 0) > 0 })
 }
