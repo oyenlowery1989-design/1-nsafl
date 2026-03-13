@@ -140,17 +140,23 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon }: { onBack: 
       .catch(() => null)
   }, [])
 
-  // ── Spins-per-day ──────────────────────────────────────────────────────────
-  const LD_KEY = 'nsafl_lucky_spins'
-  const todayKey = new Date().toISOString().slice(0, 10)
+  // ── Spins-per-day (server-enforced) ────────────────────────────────────────
+  const [canSpin, setCanSpin] = useState(DEV_BYPASS)
+  const [spinsRemaining, setSpinsRemaining] = useState(DEV_BYPASS ? 99 : 0)
+  const [spinStatusLoaded, setSpinStatusLoaded] = useState(DEV_BYPASS)
 
-  const getSpinsToday = useCallback(() => {
-    try { return JSON.parse(localStorage.getItem(LD_KEY) ?? '{}')[todayKey] ?? 0 } catch { return 0 }
-  }, [todayKey])
-
-  const [spinsToday, setSpinsToday] = useState(() => getSpinsToday())
-  const spinsRemaining = DEV_BYPASS ? 99 : Math.max(0, totalBalls - spinsToday)
-  const canSpin = spinsRemaining > 0 && !spinning
+  useEffect(() => {
+    if (DEV_BYPASS) return
+    fetch('/api/game/win', { headers: { 'x-telegram-init-data': getTelegramInitData() } })
+      .then(r => r.json())
+      .then(j => {
+        const d = j.data ?? j
+        setCanSpin(d.canSpin ?? false)
+        setSpinsRemaining(d.spinsRemaining ?? 0)
+      })
+      .catch(() => setCanSpin(false))
+      .finally(() => setSpinStatusLoaded(true))
+  }, [])
 
   // ── Draw ───────────────────────────────────────────────────────────────────
   const drawWheel = useCallback((angle: number) => {
@@ -313,16 +319,11 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon }: { onBack: 
     setSpinning(true)
     haptic.medium()
     if (!freeSpin) {
-      try {
-        const data = JSON.parse(localStorage.getItem(LD_KEY) ?? '{}')
-        data[todayKey] = (data[todayKey] ?? 0) + 1
-        Object.keys(data).forEach(k => { if (k < todayKey) delete data[k] })
-        localStorage.setItem(LD_KEY, JSON.stringify(data))
-        setSpinsToday(getSpinsToday())
-      } catch {}
+      setCanSpin(false)
+      setSpinsRemaining(0)
     }
     setFreeSpin(false)
-  }, [canSpin, spinning, freeSpin, segAngle, todayKey, getSpinsToday])
+  }, [canSpin, spinning, freeSpin, segAngle])
 
   // result effects
   useEffect(() => {
@@ -387,9 +388,9 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon }: { onBack: 
             Lucky Draw
           </p>
           <p className="text-white/40 text-[10px] mt-0.5">
-            {freeSpin ? '🔄 Free spin ready!' : canSpin
-              ? `${spinsRemaining} spin${spinsRemaining !== 1 ? 's' : ''} remaining today`
-              : '⏳ No spins left today'}
+            {!spinStatusLoaded ? '⏳ Checking…' : freeSpin ? '🔄 Free spin ready!' : canSpin
+              ? '1 spin remaining today'
+              : '⏳ No spins left today — come back tomorrow'}
           </p>
         </div>
         <div className="w-16" />
@@ -484,7 +485,7 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon }: { onBack: 
       {/* spin button */}
       <div className="px-4 pb-8 flex-shrink-0 space-y-2">
         {canSpin || freeSpin ? (
-          <button onClick={handleSpin} disabled={spinning}
+          <button onClick={handleSpin} disabled={spinning || !spinStatusLoaded}
             className="w-full py-4 rounded-2xl text-base font-bold text-black active:scale-95 transition disabled:opacity-50"
             style={{
               background: spinning
