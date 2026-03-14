@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { ALL_CLUBS } from "@/config/afl"
 import { Suspense } from 'react'
 import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
+import { getTierForBalance } from '@/config/tiers'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface WalletBalance { nsafl_balance: number; xlm_balance: number; balance_week_ago: number; last_synced_at: string }
@@ -41,6 +42,37 @@ const ago = (iso: string) => {
 const teamName = (id: string | null) => id ? (ALL_CLUBS.find(c => c.id === id)?.name ?? id) : '—'
 const num = (n: number | null | undefined) => Number(n ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })
 const shortAddr = (addr: string) => `${addr.slice(0, 4)}…${addr.slice(-6)}`
+
+function CopyAddressRow({ address }: { address: string }) {
+  const [copied, setCopied] = useState(false)
+  const copy = () => {
+    navigator.clipboard.writeText(address).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    }).catch(() => {
+      // fallback for non-secure contexts
+      const el = document.createElement('textarea')
+      el.value = address
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand('copy')
+      document.body.removeChild(el)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    })
+  }
+  return (
+    <div className="flex items-center gap-2 bg-black/30 rounded-lg px-3 py-2 mb-3">
+      <p className="font-mono text-xs text-gray-300 break-all flex-1">{address}</p>
+      <button onClick={copy} className="ml-1 shrink-0 flex items-center gap-1 text-xs transition"
+        style={{ color: copied ? '#4ade80' : '#6b7280' }} title="Copy address">
+        <Icon name={copied ? 'check' : 'content_copy'} className="text-xs" />
+        {copied && <span className="text-[10px] font-semibold">Copied!</span>}
+      </button>
+    </div>
+  )
+}
+
 function TgUser({ users, id }: { users: User[]; id: number | null | undefined }) {
   if (!id) return <span className="text-gray-600">anon</span>
   const u = users.find(x => x.telegram_id === id)
@@ -757,38 +789,39 @@ function UserDetail({
                           {w.last_connected_at && <div>Last used {dt(w.last_connected_at)}</div>}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 bg-black/30 rounded-lg px-3 py-2 mb-4">
-                        <p className="font-mono text-sm text-gray-200 break-all flex-1">{w.stellar_address}</p>
-                        <button
-                          onClick={() => { navigator.clipboard.writeText(w.stellar_address); }}
-                          className="ml-1 text-gray-600 hover:text-[#D4AF37] transition shrink-0"
-                          title="Copy address"
-                        >
-                          <Icon name="content_copy" className="text-xs" />
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="bg-black/20 rounded-lg p-3">
-                          <p className="text-[10px] text-gray-500 uppercase font-medium">{PRIMARY_CUSTOM_ASSET_CODE}</p>
-                          <p className="text-lg font-bold text-yellow-400 mt-0.5">{num(b?.nsafl_balance)}</p>
-                        </div>
-                        <div className="bg-black/20 rounded-lg p-3">
-                          <p className="text-[10px] text-gray-500 uppercase font-medium">XLM</p>
-                          <p className="text-lg font-bold text-gray-300 mt-0.5">{num(b?.xlm_balance)}</p>
-                        </div>
-                        <div className="bg-black/20 rounded-lg p-3">
-                          <p className="text-[10px] text-gray-500 uppercase font-medium">Week Ago</p>
-                          <p className="text-lg font-bold text-gray-400 mt-0.5">{num(b?.balance_week_ago)}</p>
-                          {b?.last_synced_at && (
-                            <>
-                              <p className="text-[10px] text-gray-600 mt-0.5">synced {ago(b.last_synced_at)}</p>
-                              {(Date.now() - new Date(b.last_synced_at).getTime()) > 24 * 60 * 60 * 1000 && (
+                      <CopyAddressRow address={w.stellar_address} />
+                      {b ? (
+                        <>
+                          <div className="grid grid-cols-3 gap-3 mb-2">
+                            <div className="bg-black/20 rounded-lg p-3">
+                              <p className="text-[10px] text-gray-500 uppercase font-medium">{PRIMARY_CUSTOM_ASSET_CODE}</p>
+                              <p className="text-lg font-bold text-yellow-400 mt-0.5">{num(b.nsafl_balance)}</p>
+                              <p className="text-[10px] font-semibold mt-0.5" style={{ color: getTierForBalance(Number(b.nsafl_balance)).color }}>
+                                {getTierForBalance(Number(b.nsafl_balance)).label}
+                              </p>
+                            </div>
+                            <div className="bg-black/20 rounded-lg p-3">
+                              <p className="text-[10px] text-gray-500 uppercase font-medium">XLM</p>
+                              <p className="text-lg font-bold text-gray-300 mt-0.5">{num(b.xlm_balance)}</p>
+                              {b.last_synced_at && (
+                                <p className="text-[10px] text-gray-600 mt-0.5">synced {ago(b.last_synced_at)}</p>
+                              )}
+                            </div>
+                            <div className="bg-black/20 rounded-lg p-3">
+                              <p className="text-[10px] text-gray-500 uppercase font-medium">Week Ago</p>
+                              <p className="text-lg font-bold text-gray-400 mt-0.5">{num(b.balance_week_ago)}</p>
+                              {b.last_synced_at && (Date.now() - new Date(b.last_synced_at).getTime()) > 24 * 60 * 60 * 1000 && (
                                 <Badge color="yellow">Stale</Badge>
                               )}
-                            </>
+                            </div>
+                          </div>
+                          {b.last_synced_at && (
+                            <p className="text-[10px] text-gray-600">Balances from sync — may not reflect live Horizon state</p>
                           )}
-                        </div>
-                      </div>
+                        </>
+                      ) : (
+                        <p className="text-[11px] text-gray-600 mb-4">No balance synced yet</p>
+                      )}
                     </div>
                   )
                 })}
