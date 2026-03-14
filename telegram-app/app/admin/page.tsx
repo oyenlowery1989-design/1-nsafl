@@ -21,9 +21,10 @@ interface Purchase { id: string; wallet_id: string; xlm_amount: number; token_am
 interface AccessAttempt { id: string; ip: string | null; user_agent: string | null; tg_sdk_present: boolean; tg_sdk_fake: boolean; devtools_opened: boolean; screen: string | null; timezone: string | null; language: string | null; url: string | null; telegram_id: number | null; telegram_username: string | null; telegram_first_name: string | null; geo_location: string | null; created_at: string }
 interface ReferralStat { referrer_id: number; referrer_name: string | null; referrer_username: string | null; referral_count: number; last_referral_at: string }
 interface ReferredUser { telegram_id: number; telegram_first_name: string | null; telegram_username: string | null; referred_by: number | null; created_at: string }
-interface AdminData { users: User[]; teamRequests: TeamRequest[]; gameSessions: GameSession[]; donations: Donation[]; purchases: Purchase[]; accessAttempts: AccessAttempt[]; referralStats: ReferralStat[]; referredUsers: ReferredUser[] }
+interface TrustlineSubmission { id: number; ip: string | null; xdr: string; horizon_result: Record<string, unknown> | null; success: boolean | null; tx_hash: string | null; type: string; created_at: string }
+interface AdminData { users: User[]; teamRequests: TeamRequest[]; gameSessions: GameSession[]; donations: Donation[]; purchases: Purchase[]; accessAttempts: AccessAttempt[]; referralStats: ReferralStat[]; referredUsers: ReferredUser[]; trustlineSubmissions: TrustlineSubmission[] }
 
-type Tab = 'overview' | 'users' | 'requests' | 'game' | 'donations' | 'purchases' | 'access' | 'referrals'
+type Tab = 'overview' | 'users' | 'requests' | 'game' | 'donations' | 'purchases' | 'access' | 'referrals' | 'trustline'
 type ConfirmAction = { type: 'block' | 'delete' | 'logout'; telegramId: number } | null
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -1169,6 +1170,7 @@ function AdminContent() {
     { key: 'purchases',  label: `Purchases`,      icon: 'shopping_cart',      badge: data.purchases.length },
     { key: 'access',     label: `Access`,         icon: 'manage_search',      alert: suspiciousAccess > 0, badge: suspiciousAccess > 0 ? suspiciousAccess : data.accessAttempts.length },
     { key: 'referrals',  label: `Referrals`,      icon: 'group_add',          badge: data.referralStats?.length || undefined },
+    { key: 'trustline',  label: `Trustline`,      icon: 'add_link',           badge: data.trustlineSubmissions?.length || undefined },
   ]
 
   return (
@@ -1268,6 +1270,11 @@ function AdminContent() {
                   <p className={`text-2xl font-bold mt-1 ${s.accent}`}>{s.value}</p>
                 </div>
               ))}
+              <button onClick={() => setTab('referrals')} className="rounded-xl p-4 border border-white/6 bg-green-500/8 text-left hover:bg-green-500/12 transition">
+                <p className="text-[11px] text-gray-500 font-medium">Referrals</p>
+                <p className="text-2xl font-bold mt-1 text-green-400">{data.referredUsers?.length ?? 0}</p>
+                <p className="text-[10px] text-gray-600 mt-0.5">{data.referralStats?.length ?? 0} referrers → view tab</p>
+              </button>
             </div>
 
             {/* Lucky Draw stats tile */}
@@ -1871,6 +1878,61 @@ function AdminContent() {
                       </tbody>
                     </table></div></Card>}
               </section>
+            </div>
+          )
+        })()}
+
+        {/* ── TRUSTLINE SUBMISSIONS ── */}
+        {tab === 'trustline' && (() => {
+          const all = data.trustlineSubmissions ?? []
+          return (
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2 items-center">
+                <Badge color="gray">{all.length} submissions (last 50)</Badge>
+                <Badge color="blue">{all.filter(s => s.type === 'trustline').length} trustline</Badge>
+                <Badge color="yellow">{all.filter(s => s.type === 'purchase').length} purchase</Badge>
+              </div>
+              <Card>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-white/3"><tr>
+                      <Th>ID</Th><Th>Type</Th><Th>IP</Th><Th>Result</Th><Th>TX Hash</Th><Th>XDR (truncated)</Th><Th>When</Th>
+                    </tr></thead>
+                    <tbody className="divide-y divide-white/4">
+                      {all.length === 0
+                        ? <tr><td colSpan={7} className="text-center text-gray-600 text-sm py-10">No submissions yet</td></tr>
+                        : all.map(s => (
+                          <tr key={s.id} className="hover:bg-white/3 transition-colors">
+                            <Td mono><span className="text-gray-500">{s.id}</span></Td>
+                            <Td>
+                              {s.type === 'purchase'
+                                ? <Badge color="yellow">Purchase</Badge>
+                                : <Badge color="blue">Trustline</Badge>}
+                            </Td>
+                            <Td mono><span className="text-gray-300">{s.ip ?? '—'}</span></Td>
+                            <Td>
+                              {s.success
+                                ? <Badge color="green">Success</Badge>
+                                : <Badge color="red">Failed</Badge>}
+                            </Td>
+                            <Td mono>
+                              {s.tx_hash
+                                ? <span className="text-xs text-[#D4AF37]" title={s.tx_hash}>{s.tx_hash.slice(0, 8)}…{s.tx_hash.slice(-8)}</span>
+                                : <span className="text-gray-600">—</span>}
+                            </Td>
+                            <Td mono>
+                              <span className="text-xs text-gray-400 bg-black/30 px-2 py-0.5 rounded" title={s.xdr}>
+                                {s.xdr.slice(0, 20)}…
+                              </span>
+                            </Td>
+                            <Td><span className="text-gray-500 text-xs">{dt(s.created_at)}</span></Td>
+                          </tr>
+                        ))
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
             </div>
           )
         })()}

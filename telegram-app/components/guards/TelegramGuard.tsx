@@ -115,6 +115,7 @@ type GuardState = 'pending' | 'allowed' | 'blocked' | 'denied'
 export default function TelegramGuard({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<GuardState>('pending')
   const disconnect = useWalletStore((s) => s.disconnect)
+  const setTelegramUserId = useWalletStore((s) => s.setTelegramUserId)
 
   useEffect(() => {
     const check = async () => {
@@ -143,13 +144,18 @@ export default function TelegramGuard({ children }: { children: React.ReactNode 
         const urlParams = new URLSearchParams(window.location.search)
         const refParam = startParam ?? urlParams.get('tgWebAppStartParam') ?? urlParams.get('startapp') ?? urlParams.get('ref') ?? null
         let referredBy: number | null = null
-        if (refParam?.startsWith('ref_')) {
-          const parsed = parseInt(refParam.replace('ref_', ''), 10)
+        if (refParam) {
+          const raw = refParam.startsWith('ref_') ? refParam.slice(4) : refParam
+          const parsed = parseInt(raw, 10)
           if (!isNaN(parsed)) {
             referredBy = parsed
             sessionStorage.setItem('nsafl_referrer', String(parsed))
           }
         }
+        // Persist Telegram user ID so referral links work on profile/leaderboard
+        const tgUserId = tg.initDataUnsafe?.user?.id
+        if (tgUserId) setTelegramUserId(tgUserId)
+
         const { status, hasWallet } = await recordSession(referredBy)
         if (status === 'blocked') {
           setState('blocked')

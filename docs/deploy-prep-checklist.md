@@ -8,15 +8,15 @@ Step-by-step guide to swap all placeholder values for real production values bef
 
 Edit `telegram-app/.env.local` and update these values:
 
-| Variable | Current (dev) | Action |
-|---|---|---|
-| `NEXT_PUBLIC_PRIMARY_ASSET_CODE` | `NSAFL` | Change to real token ticker |
-| `NEXT_PUBLIC_PRIMARY_ASSET_ISSUER` | `GAWZCHDWMK43M6MZ2AX7AX52M7M5JLBJYTOEO3SV4LIMI6HJVJRYSY2Z` | Change to real issuer address |
-| `NEXT_PUBLIC_SHOWN_ASSETS` | `NSAFL,XLM` | Change to match real token ticker |
-| `NEXT_PUBLIC_DIRECT_BUY_XLM_ADDRESS` | (your XLM address) | Confirm this is the correct receiving wallet |
-| `NEXT_PUBLIC_DEV_BYPASS` | `true` | **Set to `false`** for production |
-| `ADMIN_SECRET_TOKEN` | (your secret) | Confirm this is set and strong |
-| `TELEGRAM_BOT_TOKEN` | `8719214894:...` | Confirm this is the production bot token |
+| Variable                             | Current (dev)                                              | Action                                       |
+| ------------------------------------ | ---------------------------------------------------------- | -------------------------------------------- |
+| `NEXT_PUBLIC_PRIMARY_ASSET_CODE`     | `NSAFL`                                                    | Change to real token ticker                  |
+| `NEXT_PUBLIC_PRIMARY_ASSET_ISSUER`   | `GAWZCHDWMK43M6MZ2AX7AX52M7M5JLBJYTOEO3SV4LIMI6HJVJRYSY2Z` | Change to real issuer address                |
+| `NEXT_PUBLIC_SHOWN_ASSETS`           | `NSAFL,XLM`                                                | Change to match real token ticker            |
+| `NEXT_PUBLIC_DIRECT_BUY_XLM_ADDRESS` | (your XLM address)                                         | Confirm this is the correct receiving wallet |
+| `NEXT_PUBLIC_DEV_BYPASS`             | `true`                                                     | **Set to `false`** for production            |
+| `ADMIN_SECRET_TOKEN`                 | (your secret)                                              | Confirm this is set and strong               |
+| `TELEGRAM_BOT_TOKEN`                 | `8719214894:...`                                           | Confirm this is the production bot token     |
 
 Also copy all these into Vercel → Project → Settings → Environment Variables. See Section 5.
 
@@ -32,13 +32,16 @@ The LOBSTR and SCOPULY links have the asset code and issuer baked in as string l
 
 ```ts
 // BEFORE (hardcoded):
-const LOBSTR_URL = `https://lobstr.co/trade/NSAFL:GAWZC.../XLM`
-const SCOPULY_URL = `https://scopuly.com/trade/NSAFL-XLM-GAWZC...`
+const LOBSTR_URL = `https://lobstr.co/trade/NSAFL:GAWZC.../XLM`;
+const SCOPULY_URL = `https://scopuly.com/trade/NSAFL-XLM-GAWZC...`;
 
 // AFTER (use env-driven constants):
-import { PRIMARY_CUSTOM_ASSET_CODE, PRIMARY_CUSTOM_ASSET_ISSUER } from '@/lib/constants'
-const LOBSTR_URL = `https://lobstr.co/trade/${PRIMARY_CUSTOM_ASSET_CODE}:${PRIMARY_CUSTOM_ASSET_ISSUER}/XLM`
-const SCOPULY_URL = `https://scopuly.com/trade/${PRIMARY_CUSTOM_ASSET_CODE}-XLM-${PRIMARY_CUSTOM_ASSET_ISSUER}`
+import {
+  PRIMARY_CUSTOM_ASSET_CODE,
+  PRIMARY_CUSTOM_ASSET_ISSUER,
+} from "@/lib/constants";
+const LOBSTR_URL = `https://lobstr.co/trade/${PRIMARY_CUSTOM_ASSET_CODE}:${PRIMARY_CUSTOM_ASSET_ISSUER}/XLM`;
+const SCOPULY_URL = `https://scopuly.com/trade/${PRIMARY_CUSTOM_ASSET_CODE}-XLM/${PRIMARY_CUSTOM_ASSET_ISSUER}/native`;
 ```
 
 ### 2b. Fix hardcoded dashboard title
@@ -47,11 +50,11 @@ const SCOPULY_URL = `https://scopuly.com/trade/${PRIMARY_CUSTOM_ASSET_CODE}-XLM-
 
 ```ts
 // BEFORE:
-'NSAFL Dashboard'
+"NSAFL Dashboard";
 
 // AFTER:
-import { PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
-`${PRIMARY_CUSTOM_ASSET_LABEL} Dashboard`
+import { PRIMARY_CUSTOM_ASSET_LABEL } from "@/lib/constants";
+`${PRIMARY_CUSTOM_ASSET_LABEL} Dashboard`;
 ```
 
 ### 2c. Remove duplicate constant definitions
@@ -62,7 +65,11 @@ This file defines `ASSET_CODE`, `ASSET_ISSUER`, `HORIZON_URL` locally. Replace w
 
 ```ts
 // REMOVE these local definitions, then:
-import { PRIMARY_CUSTOM_ASSET_CODE, PRIMARY_CUSTOM_ASSET_ISSUER, HORIZON_URL } from '@/lib/constants'
+import {
+  PRIMARY_CUSTOM_ASSET_CODE,
+  PRIMARY_CUSTOM_ASSET_ISSUER,
+  HORIZON_URL,
+} from "@/lib/constants";
 ```
 
 ### 2d. Rename `nsaflBalance` in Zustand store (optional but recommended)
@@ -70,6 +77,7 @@ import { PRIMARY_CUSTOM_ASSET_CODE, PRIMARY_CUSTOM_ASSET_ISSUER, HORIZON_URL } f
 **File:** `telegram-app/hooks/useStore.ts`
 
 The field `nsaflBalance` is a legacy name from the old token. If you want a clean rename:
+
 - Rename `nsaflBalance` → `tokenBalance` (or keep as-is — it works either way, just ugly)
 - If renamed: update every reference (`app/page.tsx`, `components/DashboardView.tsx`, `components/_dashboard/BalanceCard.tsx`, any other component that reads `nsaflBalance`)
 - The Zustand `persist` key is `'homecoming-hub-wallet'` — if you rename the field, existing users will lose their cached balance (they'll just re-fetch on next open, no data loss)
@@ -79,7 +87,7 @@ The field `nsaflBalance` is a legacy name from the old token. If you want a clea
 **File:** `telegram-app/app/api/buy/direct/route.ts` line ~14
 
 ```ts
-const XLM_TO_NSAFL_RATE = 100  // hardcoded
+const XLM_TO_NSAFL_RATE = 100; // hardcoded
 ```
 
 Update this to the real rate, or replace with a live Horizon price fetch if you want it dynamic.
@@ -106,21 +114,21 @@ export const TIERS: Tier[] = [
 
 The codebase audit found the following status:
 
-| Item | Status | File |
-|---|---|---|
-| Asset code in UI | ✅ Via `PRIMARY_CUSTOM_ASSET_CODE` from `lib/constants.ts` | All components |
-| Asset issuer in UI | ✅ Via `PRIMARY_CUSTOM_ASSET_ISSUER` | All components |
-| Horizon URL | ✅ Via `NEXT_PUBLIC_HORIZON_URL` env var | `lib/constants.ts` |
-| Supabase URL/keys | ✅ Via env vars | `lib/supabase.ts`, `lib/supabase-server.ts` |
-| Bot token | ✅ Via `TELEGRAM_BOT_TOKEN` env var | `app/api/auth/session/route.ts` |
-| Admin secret | ✅ Via `ADMIN_SECRET_TOKEN` env var | `app/api/admin/route.ts` |
-| Direct buy XLM address | ✅ Via `NEXT_PUBLIC_DIRECT_BUY_XLM_ADDRESS` env var | `app/buy/page.tsx` |
-| Buy page DEX URLs | ❌ Hardcoded strings | `app/buy/page.tsx` — fix in 2a |
-| Dashboard title | ❌ Hardcoded 'NSAFL Dashboard' | `app/page.tsx` — fix in 2b |
-| Funding route constants | ❌ Locally redefined | `app/api/stats/funding/route.ts` — fix in 2c |
-| Zustand field name | ⚠️ Legacy `nsaflBalance` name | `hooks/useStore.ts` — optional, fix in 2d |
-| Buy rate | ⚠️ Hardcoded `100` | `app/api/buy/direct/route.ts` — fix in 2e |
-| Tiers | ⚠️ Placeholder values | `config/tiers.ts` — update in step 3 |
+| Item                    | Status                                                     | File                                         |
+| ----------------------- | ---------------------------------------------------------- | -------------------------------------------- |
+| Asset code in UI        | ✅ Via `PRIMARY_CUSTOM_ASSET_CODE` from `lib/constants.ts` | All components                               |
+| Asset issuer in UI      | ✅ Via `PRIMARY_CUSTOM_ASSET_ISSUER`                       | All components                               |
+| Horizon URL             | ✅ Via `NEXT_PUBLIC_HORIZON_URL` env var                   | `lib/constants.ts`                           |
+| Supabase URL/keys       | ✅ Via env vars                                            | `lib/supabase.ts`, `lib/supabase-server.ts`  |
+| Bot token               | ✅ Via `TELEGRAM_BOT_TOKEN` env var                        | `app/api/auth/session/route.ts`              |
+| Admin secret            | ✅ Via `ADMIN_SECRET_TOKEN` env var                        | `app/api/admin/route.ts`                     |
+| Direct buy XLM address  | ✅ Via `NEXT_PUBLIC_DIRECT_BUY_XLM_ADDRESS` env var        | `app/buy/page.tsx`                           |
+| Buy page DEX URLs       | ❌ Hardcoded strings                                       | `app/buy/page.tsx` — fix in 2a               |
+| Dashboard title         | ❌ Hardcoded 'NSAFL Dashboard'                             | `app/page.tsx` — fix in 2b                   |
+| Funding route constants | ❌ Locally redefined                                       | `app/api/stats/funding/route.ts` — fix in 2c |
+| Zustand field name      | ⚠️ Legacy `nsaflBalance` name                              | `hooks/useStore.ts` — optional, fix in 2d    |
+| Buy rate                | ⚠️ Hardcoded `100`                                         | `app/api/buy/direct/route.ts` — fix in 2e    |
+| Tiers                   | ⚠️ Placeholder values                                      | `config/tiers.ts` — update in step 3         |
 
 ---
 
@@ -156,6 +164,7 @@ https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook?url=https://<your-ve
 ```
 
 Also update the Mini App URL in BotFather:
+
 1. `/mybots` → your bot → Bot Settings → Menu Button → Edit the URL → set to your Vercel domain
 
 ---

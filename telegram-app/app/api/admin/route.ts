@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
     { data: purchases },
     { data: accessAttempts },
     { data: referredUsers },
+    { data: trustlineSubmissions },
   ] = await Promise.all([
     // Users + wallets + balances in one shot
     supabase
@@ -74,6 +75,13 @@ export async function GET(req: NextRequest) {
       .not('referred_by', 'is', null)
       .order('created_at', { ascending: false }),
 
+    // Trustline submissions (last 50)
+    (supabase as any)
+      .from('trustline_submissions')
+      .select('id, ip, xdr, horizon_result, success, tx_hash, created_at')
+      .order('created_at', { ascending: false })
+      .limit(50),
+
   ])
 
   // Build referral stats from referred users list + users lookup
@@ -113,5 +121,6 @@ export async function GET(req: NextRequest) {
     accessAttempts: accessAttempts ?? [],
     referralStats,
     referredUsers: referred,
+    trustlineSubmissions: trustlineSubmissions ?? [],
   })
 }

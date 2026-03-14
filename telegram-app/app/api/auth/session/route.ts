@@ -58,19 +58,13 @@ export async function POST(req: NextRequest) {
     .select('id, is_blocked, referred_by')
     .single()
 
-  // 2b. Save referral on first open — only if not already set and referrer exists
+  // 2b. Save referral on first open — only if not already set
+  // FK constraint removed so this works even if referrer hasn't opened the app yet
   if (upserted && referredBy && upserted.referred_by === null) {
-    const { data: referrerExists } = await supabase
+    await supabase
       .from('users')
-      .select('telegram_id')
-      .eq('telegram_id', referredBy)
-      .maybeSingle()
-    if (referrerExists) {
-      await supabase
-        .from('users')
-        .update({ referred_by: referredBy })
-        .eq('telegram_id', telegramUser.id)
-    }
+      .update({ referred_by: referredBy })
+      .eq('telegram_id', telegramUser.id)
   }
 
   // 3. Check soft-block on user row
