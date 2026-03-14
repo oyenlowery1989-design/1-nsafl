@@ -55,12 +55,16 @@ export async function POST(req: NextRequest) {
       },
       { onConflict: 'telegram_id' }
     )
-    .select('id, is_blocked, referred_by')
+    .select('id, is_blocked, referred_by, created_at')
     .single()
 
-  // 2b. Save referral on first open — only if not already set
-  // FK constraint removed so this works even if referrer hasn't opened the app yet
-  if (upserted && referredBy && upserted.referred_by === null) {
+  // 2b. Save referral only on brand-new users (row created within last 10s).
+  // Existing users without a referral must be assigned manually — auto-capture
+  // only applies at the moment the account is first created.
+  const isNewUser = upserted?.created_at
+    ? Date.now() - new Date(upserted.created_at).getTime() < 10_000
+    : false
+  if (upserted && referredBy && isNewUser && upserted.referred_by === null) {
     await supabase
       .from('users')
       .update({ referred_by: referredBy })

@@ -21,14 +21,15 @@ export async function GET(req: NextRequest) {
     { data: accessAttempts },
     { data: referredUsers },
     { data: trustlineSubmissions },
+    { data: allBalances },
   ] = await Promise.all([
     // Users + wallets + balances in one shot
-    supabase
+    (supabase as any)
       .from('users')
       .select(`
         telegram_id, telegram_username, telegram_first_name, telegram_photo_url, telegram_phone,
         favorite_team, display_preference, opt_in_telegram_notifications, is_blocked,
-        referred_by, created_at, updated_at,
+        referred_by, bonus_balls, bonus_spins, created_at, updated_at,
         wallets (
           id, stellar_address, label, is_primary, created_at, last_connected_at,
           wallet_balances ( nsafl_balance, xlm_balance, balance_week_ago, last_synced_at )
@@ -82,6 +83,9 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(50),
 
+    // Aggregate totals directly — avoids relying on nested JS aggregation
+    supabase.from('wallet_balances').select('nsafl_balance, xlm_balance'),
+
   ])
 
   // Build referral stats from referred users list + users lookup
@@ -102,7 +106,8 @@ export async function GET(req: NextRequest) {
   }
 
   const referralStats = Array.from(referrerMap.entries()).map(([referrerId, stats]) => {
-    const referrer = allUsers.find(u => u.telegram_id === referrerId)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const referrer = allUsers.find((u: any) => u.telegram_id === referrerId)
     return {
       referrer_id: referrerId,
       referrer_name: referrer?.telegram_first_name ?? null,
@@ -111,6 +116,9 @@ export async function GET(req: NextRequest) {
       last_referral_at: stats.lastAt,
     }
   }).sort((a, b) => b.referral_count - a.referral_count)
+
+  const totalNsafl = (allBalances ?? []).reduce((s, b) => s + Number(b.nsafl_balance ?? 0), 0)
+  const totalXlm   = (allBalances ?? []).reduce((s, b) => s + Number(b.xlm_balance ?? 0), 0)
 
   return ok({
     users: allUsers,
@@ -122,5 +130,7 @@ export async function GET(req: NextRequest) {
     referralStats,
     referredUsers: referred,
     trustlineSubmissions: trustlineSubmissions ?? [],
+    totalNsafl,
+    totalXlm,
   })
 }

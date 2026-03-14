@@ -11,7 +11,7 @@ async function getDailySpinLimit(supabase: ReturnType<typeof createServiceClient
   // Get primary wallet → nsafl_balance
   const { data: userRow } = await (supabase as any)
     .from('users')
-    .select('id')
+    .select('id, bonus_spins')
     .eq('telegram_id', telegramId)
     .single()
 
@@ -44,8 +44,9 @@ async function getDailySpinLimit(supabase: ReturnType<typeof createServiceClient
     .select('telegram_id', { count: 'exact', head: true })
     .eq('referred_by', telegramId)
 
+  const bonusSpins = userRow?.bonus_spins ?? 0
   // minimum 1 so everyone gets at least 1 spin
-  return Math.max(1, tierIndex + (referralCount ?? 0))
+  return Math.max(1, tierIndex + (referralCount ?? 0) + bonusSpins)
 }
 
 export async function GET(req: NextRequest) {

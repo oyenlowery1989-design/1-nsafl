@@ -66,13 +66,26 @@ const REFERRAL_SHARE_TEXT =
 
 export function buildReferralLink(tgId: number | string | null | undefined, botUsername?: string): string {
   const bot = botUsername ?? process.env.NEXT_PUBLIC_BOT_USERNAME ?? 'NSAFL_bot'
-  return tgId ? `https://t.me/${bot}?start=ref_${tgId}` : `https://t.me/${bot}`
+  return tgId ? `https://t.me/${bot}?startapp=ref_${tgId}` : `https://t.me/${bot}`
 }
 
 export function shareReferralLink(referralLink: string): void {
   if (!referralLink || typeof window === 'undefined') return
   const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(REFERRAL_SHARE_TEXT)}`
   ;(window as TelegramWindow).Telegram?.WebApp?.openTelegramLink?.(shareUrl)
+}
+
+/** Open a Telegram bot link using WebApp SDK if available, else window.open */
+export function openTelegramLink(url: string): void {
+  if (typeof window === 'undefined') return
+  const tg = (window as TelegramWindow).Telegram?.WebApp
+  if (tg?.openTelegramLink) { tg.openTelegramLink(url) } else { window.open(url, '_blank') }
+}
+
+/** Build a ?start= bot deep link (opens bot chat, not Mini App) */
+export function buildBotStartLink(param: string, botUsername?: string): string {
+  const bot = botUsername ?? process.env.NEXT_PUBLIC_BOT_USERNAME ?? 'NSAFL_bot'
+  return `https://t.me/${bot}?start=${param}`
 }
 
 export function parseTelegramUser(initData: string): { id: number; first_name?: string; username?: string } | null {

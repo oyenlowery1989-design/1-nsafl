@@ -13,6 +13,8 @@ interface User {
   telegram_photo_url: string | null; telegram_phone: string | null; favorite_team: string | null
   display_preference: string; opt_in_telegram_notifications: boolean; is_blocked: boolean
   referred_by: number | null; created_at: string; updated_at: string; wallets: Wallet[]
+  bonus_balls?: number
+  bonus_spins?: number
 }
 interface TeamRequest { id: string; telegram_id: number; requested_team: string; status: string; admin_note: string | null; created_at: string; resolved_at: string | null }
 interface GameSession { id: string; telegram_id: number | null; wallet_id: string | null; kicks: number; balls_spawned: number; duration_seconds: number; created_at: string }
@@ -22,7 +24,7 @@ interface AccessAttempt { id: string; ip: string | null; user_agent: string | nu
 interface ReferralStat { referrer_id: number; referrer_name: string | null; referrer_username: string | null; referral_count: number; last_referral_at: string }
 interface ReferredUser { telegram_id: number; telegram_first_name: string | null; telegram_username: string | null; referred_by: number | null; created_at: string }
 interface TrustlineSubmission { id: number; ip: string | null; xdr: string; horizon_result: Record<string, unknown> | null; success: boolean | null; tx_hash: string | null; type: string; created_at: string }
-interface AdminData { users: User[]; teamRequests: TeamRequest[]; gameSessions: GameSession[]; donations: Donation[]; purchases: Purchase[]; accessAttempts: AccessAttempt[]; referralStats: ReferralStat[]; referredUsers: ReferredUser[]; trustlineSubmissions: TrustlineSubmission[] }
+interface AdminData { users: User[]; teamRequests: TeamRequest[]; gameSessions: GameSession[]; donations: Donation[]; purchases: Purchase[]; accessAttempts: AccessAttempt[]; referralStats: ReferralStat[]; referredUsers: ReferredUser[]; trustlineSubmissions: TrustlineSubmission[]; totalNsafl?: number; totalXlm?: number }
 
 type Tab = 'overview' | 'users' | 'requests' | 'game' | 'donations' | 'purchases' | 'access' | 'referrals' | 'trustline'
 type ConfirmAction = { type: 'block' | 'delete' | 'logout'; telegramId: number } | null
@@ -381,6 +383,98 @@ function UserDetail({
   const [prefDraft, setPrefDraft] = useState(u.display_preference)
   const [editSaving, setEditSaving] = useState(false)
   const [editToast, setEditToast] = useState<string | null>(null)
+  const [bonusBalls, setBonusBalls] = useState(u.bonus_balls ?? 0)
+  const [grantingBall, setGrantingBall] = useState(false)
+  const [bonusSpins, setBonusSpins] = useState(u.bonus_spins ?? 0)
+  const [grantingSpin, setGrantingSpin] = useState(false)
+
+  async function grantBonusBall() {
+    setGrantingBall(true)
+    try {
+      const next = bonusBalls + 1
+      const res = await fetch(`/api/admin/user/${u.telegram_id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+        body: JSON.stringify({ bonus_balls: next }),
+      })
+      const j = await res.json()
+      if (j.success) {
+        setBonusBalls(next)
+        onUserUpdated(u.telegram_id, { bonus_balls: next })
+        showEditToast(`+1 ball granted — now ${next} bonus ball${next !== 1 ? 's' : ''}`)
+      } else {
+        showEditToast('Failed to grant ball')
+      }
+    } catch {
+      showEditToast('Error — try again')
+    } finally {
+      setGrantingBall(false)
+    }
+  }
+
+  async function grantBonusSpin() {
+    setGrantingSpin(true)
+    try {
+      const next = bonusSpins + 1
+      const res = await fetch(`/api/admin/user/${u.telegram_id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+        body: JSON.stringify({ bonus_spins: next }),
+      })
+      const j = await res.json()
+      if (j.success) {
+        setBonusSpins(next)
+        onUserUpdated(u.telegram_id, { bonus_spins: next })
+        showEditToast(`+1 spin granted — now ${next} bonus spin${next !== 1 ? 's' : ''}/day`)
+      } else { showEditToast('Failed to grant spin') }
+    } catch { showEditToast('Error — try again') }
+    finally { setGrantingSpin(false) }
+  }
+
+  async function revokeBonusSpin() {
+    if (bonusSpins <= 0) return
+    setGrantingSpin(true)
+    try {
+      const next = bonusSpins - 1
+      const res = await fetch(`/api/admin/user/${u.telegram_id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+        body: JSON.stringify({ bonus_spins: next }),
+      })
+      const j = await res.json()
+      if (j.success) {
+        setBonusSpins(next)
+        onUserUpdated(u.telegram_id, { bonus_spins: next })
+        showEditToast(`Revoked 1 spin — now ${next} bonus spin${next !== 1 ? 's' : ''}/day`)
+      } else { showEditToast('Failed to revoke spin') }
+    } catch { showEditToast('Error — try again') }
+    finally { setGrantingSpin(false) }
+  }
+
+  async function revokeBonusBall() {
+    if (bonusBalls <= 0) return
+    setGrantingBall(true)
+    try {
+      const next = bonusBalls - 1
+      const res = await fetch(`/api/admin/user/${u.telegram_id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+        body: JSON.stringify({ bonus_balls: next }),
+      })
+      const j = await res.json()
+      if (j.success) {
+        setBonusBalls(next)
+        onUserUpdated(u.telegram_id, { bonus_balls: next })
+        showEditToast(`Revoked 1 ball — now ${next} bonus ball${next !== 1 ? 's' : ''}`)
+      } else {
+        showEditToast('Failed to revoke ball')
+      }
+    } catch {
+      showEditToast('Error — try again')
+    } finally {
+      setGrantingBall(false)
+    }
+  }
 
   function showEditToast(msg: string) {
     setEditToast(msg)
@@ -578,6 +672,48 @@ function UserDetail({
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* ── Bonus Balls ── */}
+        <div className="bg-[#111827] border border-white/8 rounded-2xl p-5 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Bonus Balls 🏈</p>
+            <p className="text-3xl font-bold text-[#D4AF37] mt-1">{bonusBalls}</p>
+            <p className="text-[11px] text-gray-500 mt-0.5">Admin-granted + Lucky Draw wins</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={revokeBonusBall}
+              disabled={grantingBall || bonusBalls <= 0}
+              className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 disabled:opacity-30 text-lg font-bold transition flex items-center justify-center"
+            >−</button>
+            <button
+              onClick={grantBonusBall}
+              disabled={grantingBall}
+              className="px-4 py-2 rounded-lg bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/25 disabled:opacity-50 text-sm font-semibold transition"
+            >{grantingBall ? 'Saving…' : '+1 Ball'}</button>
+          </div>
+        </div>
+
+        {/* ── Bonus Spins ── */}
+        <div className="bg-[#111827] border border-white/8 rounded-2xl p-5 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Bonus Spins 🎰</p>
+            <p className="text-3xl font-bold text-purple-400 mt-1">{bonusSpins}</p>
+            <p className="text-[11px] text-gray-500 mt-0.5">Extra daily Lucky Draw spins</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={revokeBonusSpin}
+              disabled={grantingSpin || bonusSpins <= 0}
+              className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 disabled:opacity-30 text-lg font-bold transition flex items-center justify-center"
+            >−</button>
+            <button
+              onClick={grantBonusSpin}
+              disabled={grantingSpin}
+              className="px-4 py-2 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 hover:bg-purple-500/25 disabled:opacity-50 text-sm font-semibold transition"
+            >{grantingSpin ? 'Saving…' : '+1 Spin'}</button>
           </div>
         </div>
 
@@ -1103,7 +1239,8 @@ function AdminContent() {
   // ── Derived stats ──────────────────────────────────────────────────────────
   const totalUsers = data.users.length
   const totalWallets = data.users.reduce((s, u) => s + u.wallets.length, 0)
-  const totalTokenHeld = data.users.reduce((s, u) => s + u.wallets.reduce((ws, w) => ws + Number(w.wallet_balances[0]?.nsafl_balance ?? 0), 0), 0)
+  const totalTokenHeld = data.totalNsafl ?? data.users.reduce((s, u) => s + u.wallets.reduce((ws, w) => ws + Number(w.wallet_balances[0]?.nsafl_balance ?? 0), 0), 0)
+  const totalXlmHeld   = data.totalXlm ?? data.users.reduce((s, u) => s + u.wallets.reduce((ws, w) => ws + Number(w.wallet_balances[0]?.xlm_balance ?? 0), 0), 0)
   const pendingCount = data.teamRequests.filter(r => r.status === 'pending').length
   const totalKicks = data.gameSessions.reduce((s, g) => s + g.kicks, 0)
   const suspiciousAccess = data.accessAttempts.filter(a => a.tg_sdk_fake || a.devtools_opened).length
@@ -1261,6 +1398,7 @@ function AdminContent() {
                 { label: 'Total Users',       value: totalUsers,                    accent: 'text-blue-400',   bg: 'bg-blue-500/8'   },
                 { label: 'Wallets',           value: totalWallets,                  accent: 'text-green-400',  bg: 'bg-green-500/8'  },
                 { label: `${PRIMARY_CUSTOM_ASSET_CODE} Held`, value: num(totalTokenHeld), accent: 'text-yellow-400', bg: 'bg-yellow-500/8' },
+                { label: 'XLM Held',                          value: num(totalXlmHeld),   accent: 'text-blue-300',  bg: 'bg-blue-500/8'   },
                 { label: 'Pending Requests',  value: pendingCount,                  accent: pendingCount > 0 ? 'text-red-400' : 'text-gray-400', bg: pendingCount > 0 ? 'bg-red-500/8' : 'bg-white/4' },
                 { label: 'Total Kicks',       value: totalKicks.toLocaleString(),   accent: 'text-purple-400', bg: 'bg-purple-500/8' },
                 { label: 'Suspicious Access', value: suspiciousAccess,              accent: suspiciousAccess > 0 ? 'text-red-400' : 'text-gray-400', bg: suspiciousAccess > 0 ? 'bg-red-500/8' : 'bg-white/4' },

@@ -3,7 +3,7 @@ import { useEffect, useRef, useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTelegramBack } from '@/hooks/useTelegramBack'
 import { haptic } from '@/lib/telegram-ui'
-import { getTelegramInitData } from '@/lib/telegram'
+import { getTelegramInitData, openTelegramLink, buildBotStartLink } from '@/lib/telegram'
 import { useWalletStore } from '@/hooks/useStore'
 import { getTierForBalance } from '@/config/tiers'
 import { PRIMARY_CUSTOM_ASSET_CODE, PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
@@ -84,26 +84,40 @@ interface Prize {
   label: string
   emoji: string
   color: string
-  weight: number   // out of 1000 total
-  isNSAFL?: boolean
-  isXLM?: boolean
+  weight: number
+  isWNSAFL?: boolean
+  isWXLM?: boolean
+  isWXRP?: boolean
+  isWUSDC?: boolean
   amount?: number
 }
 
-// Total weight = 1000
-// 5 XLM: 1% | 2 XLM: 1% | 1 XLM: 1% | 100 NSAFL: 3% | 50 NSAFL: 4% | 25 NSAFL: 5% | rest split evenly
+function isAssetPrize(p: Prize): boolean {
+  return !!(p.isWNSAFL || p.isWXLM || p.isWXRP || p.isWUSDC)
+}
+
+function getAssetSymbol(p: Prize): string {
+  if (p.isWXLM) return 'wXLM'
+  if (p.isWNSAFL) return 'wNSAFL'
+  if (p.isWXRP) return 'wXRP'
+  return 'wUSDC'
+}
+
+// Weighted prize table — asset prizes ~17% total, non-asset fills the rest
 const PRIZES: Prize[] = [
-  { label: '5 XLM',    emoji: '💎', color: '#0a3d62', weight: 10,  isXLM: true,   amount: 5    },
-  { label: '2 XLM',    emoji: '✨', color: '#1e6091', weight: 10,  isXLM: true,   amount: 2    },
-  { label: '1 XLM',    emoji: '🌟', color: '#1a4a6a', weight: 10,  isXLM: true,   amount: 1    },
-  { label: '100 NSAFL',emoji: '🏆', color: '#b7791f', weight: 30,  isNSAFL: true, amount: 100  },
-  { label: '50 NSAFL', emoji: '🥇', color: '#D4AF37', weight: 40,  isNSAFL: true, amount: 50   },
-  { label: '25 NSAFL', emoji: '🥈', color: '#c8a030', weight: 50,  isNSAFL: true, amount: 25   },
-  { label: '+1 Ball',  emoji: '🎯', color: '#1a5c2e', weight: 170 },
-  { label: 'Free Spin',emoji: '🔄', color: '#1a4a8a', weight: 170 },
-  { label: 'Top Badge',emoji: '⭐', color: '#4a1070', weight: 170 },
-  { label: 'Try Again',emoji: '😔', color: '#2d3748', weight: 170 },
-  { label: 'Better Luck',emoji:'💨',color: '#1a202c', weight: 170 },
+  { label: '10 wXLM',   emoji: '💎', color: '#0a3d62', weight: 10,  isWXLM: true,   amount: 10   },
+  { label: '5 wXLM',    emoji: '✨', color: '#1e6091', weight: 10,  isWXLM: true,   amount: 5    },
+  { label: '2 wXLM',    emoji: '🌟', color: '#1a4a6a', weight: 10,  isWXLM: true,   amount: 2    },
+  { label: '500 wNSAFL',emoji: '🏆', color: '#b7791f', weight: 10,  isWNSAFL: true, amount: 500  },
+  { label: '250 wNSAFL',emoji: '🥇', color: '#D4AF37', weight: 20,  isWNSAFL: true, amount: 250  },
+  { label: '100 wNSAFL',emoji: '🥈', color: '#c8a030', weight: 30,  isWNSAFL: true, amount: 100  },
+  { label: '5 wXRP',    emoji: '🔷', color: '#1a4060', weight: 15,  isWXRP: true,   amount: 5    },
+  { label: '10 wUSDC',  emoji: '💵', color: '#0a4a2a', weight: 15,  isWUSDC: true,  amount: 10   },
+  { label: '+1 Ball',   emoji: '🎯', color: '#1a5c2e', weight: 145 },
+  { label: 'Free Spin', emoji: '🔄', color: '#1a4a8a', weight: 145 },
+  { label: 'Top Badge', emoji: '⭐', color: '#4a1070', weight: 145 },
+  { label: 'Try Again', emoji: '😔', color: '#2d3748', weight: 145 },
+  { label: 'Better Luck',emoji:'💨', color: '#1a202c', weight: 145 },
 ]
 
 // weighted random pick
@@ -124,7 +138,7 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon, initialCanSp
   const angleRef = useRef(0)
   const targetAngleRef = useRef(0)
   const targetPrizeIdxRef = useRef(0)
-  const wasFreeSpin = useRef(false)
+  const winSentRef = useRef(false) // prevents double-save if effect re-fires
   const segCount = PRIZES.length
   const segAngle = (Math.PI * 2) / segCount
 
@@ -306,9 +320,9 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon, initialCanSp
     targetAngleRef.current = angleRef.current + fullRotations + delta
     spinStartTimeRef.current = Date.now()
     setResult(null)
+    winSentRef.current = false
     setSpinning(true)
     haptic.medium()
-    wasFreeSpin.current = freeSpin
     if (!freeSpin) {
       const next = spinsRemaining - 1
       setSpinsRemaining(next)
@@ -320,15 +334,14 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon, initialCanSp
   // result effects
   useEffect(() => {
     if (!result) return
-    // Always record NSAFL/XLM wins (free spin or not — prize is real either way)
-    // For non-wins: only record if it was a paid spin (enforces daily limit count)
-    const isWinResult = result.isNSAFL || result.isXLM
-    if (isWinResult || !wasFreeSpin.current) {
-      const tag = isWinResult
-        ? (result.isXLM ? `${result.amount}XLM` : `${result.amount}NSAFL`)
-        : result.label.replace(/\s+/g, '_').toUpperCase()
+    // Guard against double-fire (stellarAddress update can re-trigger)
+    if (winSentRef.current) return
+    winSentRef.current = true
+    // Only save asset wins to DB — skip Free Spin, +1 Ball, and try-again prizes
+    if (isAssetPrize(result)) {
+      const tag = `${result.amount}${getAssetSymbol(result)}`
       const code = `SPIN-${tag}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`
-      if (isWinResult) setWinCode(code)
+      setWinCode(code)
       fetch('/api/game/win', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': getTelegramInitData() },
@@ -339,7 +352,7 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon, initialCanSp
     if (result.label === 'Free Spin') {
       haptic.success()
       setTimeout(() => { setFreeSpin(true); setResult(null) }, 2200)
-    } else if (result.isNSAFL || result.isXLM) {
+    } else if (isAssetPrize(result)) {
       haptic.success()
     } else if (result.label === '+1 Ball') {
       haptic.success()
@@ -348,13 +361,18 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon, initialCanSp
       haptic.warning()
     }
     // confetti for any win
-    if (result.isNSAFL || result.isXLM || result.label === '+1 Ball') {
+    if (isAssetPrize(result) || result.label === '+1 Ball') {
       setShowConfetti(true)
       setTimeout(() => setShowConfetti(false), 2500)
     }
-  }, [result, stellarAddress])
+  }, [result, stellarAddress, onBallWon])
 
-  const isWin = result && (result.isNSAFL || result.isXLM || result.label === '+1 Ball')
+  const isWin = result && (isAssetPrize(result) || result.label === '+1 Ball')
+
+  const handleClaimViaBot = useCallback(() => {
+    if (!winCode) return
+    openTelegramLink(buildBotStartLink(`claim_${winCode}`))
+  }, [winCode])
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-y-auto"
@@ -459,15 +477,21 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon, initialCanSp
             {result.label === 'Free Spin' && (
               <p className="text-xs text-[#D4AF37]/70 mt-1">Spinning again in a moment...</p>
             )}
-            {(result.isNSAFL || result.isXLM) && (
+            {isAssetPrize(result) && (
               <div className="mt-3 space-y-2">
                 {winCode && (
                   <>
                     <p className="text-[11px] text-gray-400">
-                      Screenshot & DM <span className="text-[#D4AF37] font-bold">@NSAFL_bot</span> to claim
+                      You need a trustline for <span className="text-[#D4AF37] font-bold">{getAssetSymbol(result)}</span> — tap below to claim via bot
                     </p>
                     <div className="px-3 py-2 rounded-xl border border-[#D4AF37]/40 text-[11px] text-[#D4AF37] font-mono font-bold tracking-widest"
                       style={{ background: 'rgba(212,175,55,0.08)' }}>{winCode}</div>
+                    <button
+                      onClick={handleClaimViaBot}
+                      className="w-full py-2.5 rounded-xl text-sm font-bold text-black active:scale-95 transition"
+                      style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #f0d060 100%)' }}>
+                      🤖 Claim via Bot
+                    </button>
                   </>
                 )}
                 {stellarAddress && (
@@ -957,45 +981,24 @@ function HubView({ onPlay, onLucky, onQuiz, totalPoints, tierPoints, tierLabel, 
     ? parseInt(localStorage.getItem(PB_KEY) ?? '0', 10)
     : 0
 
-  const games = [
+  const luckyUnlocked = (DEV_BYPASS || totalPoints >= LUCKY_BALLS_REQUIRED) && luckyCanSpin
+  const luckyLockedByBalls = !DEV_BYPASS && totalPoints < LUCKY_BALLS_REQUIRED
+  const luckyLockedBySpins = !luckyLockedByBalls && !luckyCanSpin
+
+  const miniGames = [
     {
       id: 'ball',
       icon: 'sports_football',
       name: `${PRIMARY_CUSTOM_ASSET_CODE} Ball`,
-      description: 'Keep the ball in the air — don\'t let it hit the ground',
-      cost: 0,
+      description: 'Keep the ball in the air',
       unlocked: true,
       onPlay,
-    },
-    {
-      id: 'lucky',
-      icon: 'casino',
-      name: 'Lucky Draw',
-      description: luckyCanSpin
-        ? `${luckySpinsRemaining} of ${luckyDailyLimit} spin${luckyDailyLimit !== 1 ? 's' : ''} left today`
-        : 'No spins left today — come back tomorrow',
-      cost: LUCKY_BALLS_REQUIRED,
-      unlocked: (DEV_BYPASS || totalPoints >= LUCKY_BALLS_REQUIRED) && luckyCanSpin,
-      onPlay: onLucky,
-      lockReason: totalPoints < LUCKY_BALLS_REQUIRED
-        ? `Need ${LUCKY_BALLS_REQUIRED} balls to unlock`
-        : 'No spins remaining today',
-    },
-    {
-      id: 'quiz',
-      icon: 'quiz',
-      name: `${PRIMARY_CUSTOM_ASSET_CODE} Quiz`,
-      description: 'Answer AFL & WAFL trivia questions',
-      cost: 0,
-      unlocked: true,
-      onPlay: onQuiz,
     },
     {
       id: 'scorer',
       icon: 'military_tech',
       name: 'Top Scorer',
       description: 'Daily leaderboard challenge',
-      cost: 5,
       unlocked: false,
       comingSoon: true,
     },
@@ -1079,7 +1082,8 @@ function HubView({ onPlay, onLucky, onQuiz, totalPoints, tierPoints, tierLabel, 
         {/* How to earn */}
         <div className="rounded-2xl p-4 border border-white/10"
           style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(12px)' }}>
-          <p className="text-xs font-bold text-white mb-3">How to earn more balls</p>
+          <p className="text-xs font-bold text-white mb-1">How to earn more balls</p>
+          <p className="text-[10px] text-gray-600 mb-3">Need {LUCKY_BALLS_REQUIRED}+ balls to unlock Lucky Draw 🎰</p>
           <div className="space-y-3">
             {[
               {
@@ -1116,6 +1120,118 @@ function HubView({ onPlay, onLucky, onQuiz, totalPoints, tierPoints, tierLabel, 
           </div>
         </div>
 
+        {/* ── Lucky Draw card (full-width, prominent) ── */}
+        <div className={`rounded-2xl border overflow-hidden ${
+          luckyUnlocked ? 'border-[#D4AF37]/40' : 'border-white/10'
+        }`} style={{
+          background: luckyUnlocked ? 'rgba(212,175,55,0.07)' : 'rgba(255,255,255,0.03)',
+          backdropFilter: 'blur(12px)',
+        }}>
+          {/* Header */}
+          <div className="px-4 pt-4 pb-3">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center space-x-2">
+                <span className={`material-symbols-outlined text-2xl ${luckyUnlocked ? 'text-[#D4AF37]' : 'text-gray-500'}`}
+                  style={{ fontVariationSettings: "'FILL' 1" }}>casino</span>
+                <p className={`text-base font-bold ${luckyUnlocked ? 'text-white' : 'text-gray-400'}`}>Lucky Draw</p>
+              </div>
+              {luckyUnlocked ? (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30">
+                  {luckySpinsRemaining} spin{luckySpinsRemaining !== 1 ? 's' : ''} left today
+                </span>
+              ) : luckyLockedBySpins ? (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/5 text-gray-500 border border-white/10">
+                  Resets tomorrow
+                </span>
+              ) : (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/5 text-gray-500 border border-white/10">
+                  🔒 Locked
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-gray-500 ml-8">Spin to win XLM, NSAFL tokens &amp; more</p>
+          </div>
+
+          {/* Progress bar — balls toward requirement */}
+          <div className="px-4 pb-3">
+            <div className="flex items-center justify-between text-[10px] mb-1.5">
+              <span className="text-gray-500">Balls to unlock</span>
+              <span className={`font-bold ${totalPoints >= LUCKY_BALLS_REQUIRED ? 'text-[#D4AF37]' : 'text-gray-300'}`}>
+                {Math.min(totalPoints, LUCKY_BALLS_REQUIRED)} / {LUCKY_BALLS_REQUIRED} 🏈
+              </span>
+            </div>
+            <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min(100, (totalPoints / LUCKY_BALLS_REQUIRED) * 100)}%`,
+                  background: totalPoints >= LUCKY_BALLS_REQUIRED
+                    ? 'linear-gradient(90deg, #D4AF37, #f0d060)'
+                    : 'linear-gradient(90deg, #6b7280, #9ca3af)',
+                }}
+              />
+            </div>
+          </div>
+
+          {/* State-specific content */}
+          {luckyUnlocked && (
+            <div className="px-4 pb-4">
+              <button
+                onClick={() => { haptic.medium(); onLucky() }}
+                className="w-full py-3 rounded-xl text-sm font-bold text-black active:scale-95 transition"
+                style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #f0d060 50%, #D4AF37 100%)' }}
+              >
+                🎰 Spin the Wheel
+              </button>
+            </div>
+          )}
+
+          {luckyLockedByBalls && (
+            <div className="px-4 pb-4 space-y-3">
+              <div className="rounded-xl bg-white/4 border border-white/8 p-3">
+                <p className="text-xs font-semibold text-gray-300 mb-2">
+                  You need {LUCKY_BALLS_REQUIRED - totalPoints} more ball{LUCKY_BALLS_REQUIRED - totalPoints !== 1 ? 's' : ''} to unlock. Here&apos;s how:
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="material-symbols-outlined text-[#D4AF37] text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>group_add</span>
+                      <span className="text-[11px] text-gray-300">Refer 1 friend</span>
+                    </div>
+                    <button
+                      onClick={() => { haptic.light(); router.push('/profile') }}
+                      className="text-[10px] font-bold text-[#D4AF37] border border-[#D4AF37]/30 px-2 py-0.5 rounded-full hover:bg-[#D4AF37]/10 transition"
+                    >
+                      Share link →
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="material-symbols-outlined text-[#D4AF37] text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
+                      <span className="text-[11px] text-gray-300">Hold 501+ {PRIMARY_CUSTOM_ASSET_CODE} (Tier 2)</span>
+                    </div>
+                    <button
+                      onClick={() => { haptic.light(); router.push('/buy') }}
+                      className="text-[10px] font-bold text-[#D4AF37] border border-[#D4AF37]/30 px-2 py-0.5 rounded-full hover:bg-[#D4AF37]/10 transition"
+                    >
+                      Buy →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {luckyLockedBySpins && (
+            <div className="px-4 pb-4">
+              <div className="rounded-xl bg-white/4 border border-white/8 p-3 text-center">
+                <p className="text-xs text-gray-400">You&apos;ve used all your spins today.</p>
+                <p className="text-[11px] text-gray-500 mt-0.5">Spins reset at midnight UTC — come back tomorrow!</p>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Quiz card */}
         <div
           onClick={onQuiz}
@@ -1147,11 +1263,11 @@ function HubView({ onPlay, onLucky, onQuiz, totalPoints, tierPoints, tierLabel, 
           </div>
         </div>
 
-        {/* Games grid */}
+        {/* Mini games grid */}
         <div>
           <p className="text-xs font-bold text-white mb-2.5">Games</p>
           <div className="grid grid-cols-2 gap-3">
-            {games.map((game) => (
+            {miniGames.map((game) => (
               <div
                 key={game.id}
                 className={`rounded-2xl p-3.5 border flex flex-col space-y-2 ${
@@ -1169,7 +1285,7 @@ function HubView({ onPlay, onLucky, onQuiz, totalPoints, tierPoints, tierLabel, 
                   </span>
                   {!game.unlocked && (
                     <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full border border-white/10 text-gray-500 uppercase tracking-wider">
-                      {'lockReason' in game ? '🔒' : 'Soon'}
+                      {'comingSoon' in game ? 'Soon' : '🔒'}
                     </span>
                   )}
                 </div>
@@ -1179,11 +1295,6 @@ function HubView({ onPlay, onLucky, onQuiz, totalPoints, tierPoints, tierLabel, 
                   </p>
                   <p className="text-[9px] text-gray-600 leading-snug mt-0.5">{game.description}</p>
                 </div>
-                {game.cost > 0 && (
-                  <div className="text-[9px] font-semibold text-gray-600">
-                    {game.cost} balls to play
-                  </div>
-                )}
                 {game.unlocked && game.onPlay && (
                   <button
                     onClick={() => { haptic.medium(); game.onPlay!() }}
@@ -1238,11 +1349,8 @@ export default function GamePage() {
 
   // Referral balls — fetched from API
   const [referralBalls, setReferralBalls] = useState(0)
-  // Bonus balls won via Lucky Draw "+1 Ball" prize — persisted in localStorage
-  const [bonusBalls, setBonusBalls] = useState(() => {
-    if (typeof window === 'undefined') return 0
-    return parseInt(localStorage.getItem(BONUS_BALLS_KEY) ?? '0', 10)
-  })
+  // Bonus balls — server-side source of truth (admin grants + Lucky Draw wins)
+  const [bonusBalls, setBonusBalls] = useState(0)
 
   useEffect(() => {
     fetch('/api/user/referrals', {
@@ -1250,6 +1358,15 @@ export default function GamePage() {
     })
       .then(r => r.json())
       .then(j => { if (j.success) setReferralBalls(j.data?.referralCount ?? 0) })
+      .catch(() => null)
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/user/bonus-balls', {
+      headers: { 'x-telegram-init-data': getTelegramInitData() },
+    })
+      .then(r => r.json())
+      .then(j => { if (j.success) setBonusBalls(j.data?.bonusBalls ?? 0) })
       .catch(() => null)
   }, [])
 
@@ -1291,10 +1408,12 @@ export default function GamePage() {
   }, [])
 
   const addBonusBall = useCallback(() => {
-    setBonusBalls(prev => {
-      const next = prev + 1
-      localStorage.setItem(BONUS_BALLS_KEY, String(next))
-      return next
+    setBonusBalls(prev => prev + 1)
+    fetch('/api/user/bonus-balls', {
+      method: 'POST',
+      headers: { 'x-telegram-init-data': getTelegramInitData() },
+    }).catch(() => {
+      setBonusBalls(prev => prev - 1) // rollback on failure
     })
   }, [])
 
