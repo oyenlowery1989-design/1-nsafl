@@ -419,6 +419,36 @@ function UserDetail({
   const [grantingBall, setGrantingBall] = useState(false)
   const [bonusSpins, setBonusSpins] = useState(u.bonus_spins ?? 0)
   const [grantingSpin, setGrantingSpin] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshToast, setRefreshToast] = useState<string | null>(null)
+
+  async function refreshBalance() {
+    setRefreshing(true)
+    setRefreshToast(null)
+    try {
+      const res = await fetch(`/api/admin/user/${u.telegram_id}/refresh-balance`, {
+        method: 'POST',
+        headers: { 'x-admin-token': token },
+      })
+      const j = await res.json()
+      if (j.success) {
+        setRefreshToast(`✓ NSAFL: ${Number(j.data.nsafl_balance).toLocaleString()} · XLM: ${Number(j.data.xlm_balance).toLocaleString(undefined, { maximumFractionDigits: 2 })}`)
+        onUserUpdated(u.telegram_id, {
+          wallets: u.wallets.map(w => w.is_primary ? {
+            ...w,
+            wallet_balances: [{ nsafl_balance: j.data.nsafl_balance, xlm_balance: j.data.xlm_balance, balance_week_ago: w.wallet_balances[0]?.balance_week_ago ?? 0, last_synced_at: new Date().toISOString() }],
+          } : w),
+        })
+      } else {
+        setRefreshToast(`✗ ${j.error ?? 'Failed'}`)
+      }
+    } catch {
+      setRefreshToast('✗ Network error')
+    } finally {
+      setRefreshing(false)
+      setTimeout(() => setRefreshToast(null), 4000)
+    }
+  }
 
   async function grantBonusBall() {
     setGrantingBall(true)
@@ -772,7 +802,19 @@ function UserDetail({
         {/* ── Wallets ── */}
         <section>
           <SectionTitle icon="account_balance_wallet" title="Connected Wallets" count={u.wallets.length} />
-          {u.wallets.length === 0
+          <div className="flex items-center justify-between mb-2">
+          <span />
+          <div className="flex items-center gap-2">
+            {refreshToast && <span className={`text-xs font-semibold ${refreshToast.startsWith('✓') ? 'text-green-400' : 'text-red-400'}`}>{refreshToast}</span>}
+            <button onClick={refreshBalance} disabled={refreshing || u.wallets.length === 0}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-white/10 text-gray-400 hover:text-white hover:border-white/20 disabled:opacity-40 transition"
+              style={{ background: 'rgba(255,255,255,0.04)' }}>
+              <Icon name="sync" className={`text-sm ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Refreshing…' : 'Refresh Balance'}
+            </button>
+          </div>
+        </div>
+        {u.wallets.length === 0
             ? <p className="text-gray-600 text-sm">No wallets connected yet.</p>
             : <div className="space-y-3">
                 {u.wallets.map((w, i) => {
@@ -1589,8 +1631,8 @@ function AdminContent() {
                               ? <span className="text-xs text-gray-400">{addrShort}{u.wallets.length > 1 && <span className="ml-1 text-gray-600">+{u.wallets.length - 1}</span>}</span>
                               : <span className="text-gray-600 text-xs">None</span>}
                           </Td>
-                          <Td><span className="font-semibold text-yellow-400">{num(bal?.nsafl_balance)}</span></Td>
-                          <Td><span className="text-gray-400">{num(bal?.xlm_balance)}</span></Td>
+                          <Td>{bal ? <span className="font-semibold text-yellow-400">{num(bal.nsafl_balance)}</span> : <span className="text-gray-600 text-xs">—</span>}</Td>
+                          <Td>{bal ? <span className="text-gray-400">{num(bal.xlm_balance)}</span> : <span className="text-gray-600 text-xs">—</span>}</Td>
                           <Td><span className="text-gray-500 text-xs">{ago(u.created_at)}</span></Td>
                           <Td>
                             <div className="flex gap-1" onClick={e => e.stopPropagation()}>
