@@ -3,6 +3,8 @@ import { validateTelegramInitData } from '@/lib/telegram'
 import { createServiceClient } from '@/lib/supabase-server'
 import { ok, fail } from '@/lib/api-response'
 import { getTierForBalance, TIERS } from '@/config/tiers'
+import { prizeToAsset } from '@/lib/rewardAssets'
+import { sendPrizePayment, REWARD_SENDER_SECRET } from '@/lib/stellar-payment'
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ''
 const IS_DEV = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_DEV_BYPASS === 'true'
@@ -144,7 +146,7 @@ export async function POST(req: NextRequest) {
   // Generate a win code server-side if not provided (non-asset prizes)
   const winCode = body.code ?? `SPIN-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
 
-  const { error } = await (supabase as any)
+  const { data: inserted, error } = await (supabase as any)
     .from('lucky_draw_wins')
     .insert({
       telegram_id: user.id,
@@ -155,6 +157,8 @@ export async function POST(req: NextRequest) {
       claimed: false,
       prize_source: 'lucky_draw',
     })
+    .select('id')
+    .single()
 
   if (error) {
     console.error('lucky_draw_wins insert error:', error.message)
@@ -170,9 +174,23 @@ export async function POST(req: NextRequest) {
         .from('users')
         .update({ bonus_spins: (userRow.bonus_spins ?? 0) + 2 })
         .eq('telegram_id', user.id)
-        .eq('bonus_spins', userRow.bonus_spins ?? 0) // optimistic lock — same pattern as decrement above
+        .eq('bonus_spins', userRow.bonus_spins ?? 0) // optimistic lock
     }
   }
 
-  return ok({ saved: true })
+  // Auto-send asset prizes immediately if sender is configured and user has a wallet address
+  const winId: number | undefined = inserted?.id
+  const walletAddress: string | undefined = body.wallet
+  const isAssetPrize = !!prizeToAsset(body.prize)
+
+  if (!IS_DEV && isAssetPrize && winId && walletAddress && REWARD_SENDER_SECRET) {
+    const payment = await sendPrizePayment(body.prize, body.amount, walletAddress, winId, supabase)
+    if (payment.sent) {
+      return ok({ saved: true, autoSent: true, txHash: payment.txHash })
+    }
+    // Payment failed (e.g. no trustline) — win is recorded, admin can retry
+    return ok({ saved: true, autoSent: false, paymentError: payment.code, lobstrDeeplink: payment.lobstrDeeplink })
+  }
+
+  return ok({ saved: true, autoSent: false })
 }

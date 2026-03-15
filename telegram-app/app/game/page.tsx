@@ -249,6 +249,8 @@ function LuckyDraw({ onBack, stellarAddress, onSpinComplete, initialCanSpin, ini
     winSentRef.current = false
     setResult(null)
     setWinCode(null)
+    setAutoSent(false)
+    setAutoSentTxHash(null)
     setFreeSpin(false)
 
     const idx = pickPrize()
@@ -294,12 +296,21 @@ function LuckyDraw({ onBack, stellarAddress, onSpinComplete, initialCanSpin, ini
     }
 
     setProcessing(true)
+    setAutoSent(false)
+    setAutoSentTxHash(null)
     fetch('/api/game/win', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': getTelegramInitData() },
       body: JSON.stringify({ prize: result.label, amount: result.amount ?? null, code, wallet: stellarAddress }),
       keepalive: true,
     })
+      .then(r => r.json())
+      .then(j => {
+        if (j.data?.autoSent) {
+          setAutoSent(true)
+          setAutoSentTxHash(j.data.txHash ?? null)
+        }
+      })
       .catch(() => null)
       .finally(async () => {
         // Refresh server state after spin is fully recorded; update local display
@@ -315,6 +326,8 @@ function LuckyDraw({ onBack, stellarAddress, onSpinComplete, initialCanSpin, ini
   const isWin = result && result.label !== 'Free Spin' && (isAssetPrize(result) || result.label === '+2 Spins')
 
   const [claimed, setClaimed] = useState(false)
+  const [autoSent, setAutoSent] = useState(false)
+  const [autoSentTxHash, setAutoSentTxHash] = useState<string | null>(null)
   const handleClaimViaBot = useCallback(() => {
     if (!winCode || claimed) return
     setClaimed(true)
@@ -434,19 +447,40 @@ function LuckyDraw({ onBack, stellarAddress, onSpinComplete, initialCanSpin, ini
                   <div className="px-3 py-2 rounded-xl border border-[#D4AF37]/40 text-[11px] text-[#D4AF37] font-mono font-bold tracking-widest text-center"
                     style={{ background: 'rgba(212,175,55,0.08)' }}>{winCode}</div>
                 )}
-                {stellarAddress && (
-                  <TrustlineChecker
-                    stellarAddress={stellarAddress}
-                    requiredCodes={[getAssetSymbol(result)]}
-                  />
+
+                {/* Auto-sent: show tx confirmation */}
+                {autoSent ? (
+                  <div className="rounded-xl border border-green-500/30 px-4 py-3 text-center space-y-1"
+                    style={{ background: 'rgba(74,222,128,0.06)' }}>
+                    <p className="text-sm font-bold text-green-400">✅ Prize sent to your wallet!</p>
+                    <p className="text-[10px] text-gray-500">Check your Stellar wallet — the {getAssetSymbol(result)} is on its way.</p>
+                    {autoSentTxHash && (
+                      <p className="text-[9px] text-gray-600 font-mono break-all">{autoSentTxHash}</p>
+                    )}
+                  </div>
+                ) : processing ? (
+                  <div className="rounded-xl border border-white/10 px-4 py-3 text-center"
+                    style={{ background: 'rgba(255,255,255,0.03)' }}>
+                    <p className="text-xs text-gray-400">⏳ Sending prize to your wallet…</p>
+                  </div>
+                ) : (
+                  /* Auto-send failed (e.g. no trustline) — show trustline checker + bot fallback */
+                  <>
+                    {stellarAddress && (
+                      <TrustlineChecker
+                        stellarAddress={stellarAddress}
+                        requiredCodes={[getAssetSymbol(result)]}
+                      />
+                    )}
+                    <button
+                      onClick={handleClaimViaBot}
+                      disabled={claimed}
+                      className="w-full py-2.5 rounded-xl text-sm font-bold text-black active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #f0d060 100%)' }}>
+                      {claimed ? '✅ Claim sent — check bot' : '🤖 Claim via Bot'}
+                    </button>
+                  </>
                 )}
-                <button
-                  onClick={handleClaimViaBot}
-                  disabled={claimed}
-                  className="w-full py-2.5 rounded-xl text-sm font-bold text-black active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #f0d060 100%)' }}>
-                  {claimed ? '✅ Claim sent — check bot' : '🤖 Claim via Bot'}
-                </button>
               </div>
             )}
           </div>
