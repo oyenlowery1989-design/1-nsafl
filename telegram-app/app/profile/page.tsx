@@ -212,18 +212,23 @@ export default function ProfilePage() {
   const [trustlineStatuses, setTrustlineStatuses] = useState<Record<string, boolean | null>>(
     Object.fromEntries(REWARD_ASSETS.filter(a => a.issuer).map(a => [a.code, null]))
   );
+  const [rewardBalances, setRewardBalances] = useState<Record<string, string>>({});
 
   const checkTrustlines = useCallback((address: string) => {
     const HORIZON_URL = process.env.NEXT_PUBLIC_HORIZON_URL ?? 'https://horizon.stellar.org';
     return fetch(`${HORIZON_URL}/accounts/${address}`)
       .then(r => r.json())
       .then(account => {
-        const bals: { asset_code?: string; asset_issuer?: string }[] = account.balances ?? [];
+        const bals: { asset_code?: string; asset_issuer?: string; balance?: string }[] = account.balances ?? [];
+        const assets = REWARD_ASSETS.filter(a => a.issuer);
         setTrustlineStatuses(Object.fromEntries(
-          REWARD_ASSETS.filter(a => a.issuer).map(a => [
-            a.code,
-            bals.some(b => b.asset_code === a.code && b.asset_issuer === a.issuer),
-          ])
+          assets.map(a => [a.code, bals.some(b => b.asset_code === a.code && b.asset_issuer === a.issuer)])
+        ));
+        setRewardBalances(Object.fromEntries(
+          assets.map(a => {
+            const b = bals.find(b => b.asset_code === a.code && b.asset_issuer === a.issuer);
+            return [a.code, b ? parseFloat(b.balance ?? '0').toFixed(2) : '0'];
+          })
         ));
       })
       .catch(() => null);
@@ -942,7 +947,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* Asset balances */}
+            {/* Asset balances — main assets */}
             <div className="space-y-2">
               {SHOWN_ASSET_CONFIGS.map((cfg) => {
                 const bal =
@@ -955,18 +960,12 @@ export default function ProfilePage() {
                     className={`flex items-center justify-between px-3 py-2.5 rounded-xl border ${isPrimary ? "bg-[#D4AF37]/5 border-[#D4AF37]/20" : "bg-white/5 border-white/10"}`}
                   >
                     <div className="flex items-center space-x-2">
-                      <div
-                        className={`w-7 h-7 rounded-full flex items-center justify-center ${isPrimary ? "bg-[#D4AF37]/20" : "bg-white/10"}`}
-                      >
-                        <span
-                          className={`material-symbols-outlined text-[14px] ${isPrimary ? "text-[#D4AF37]" : "text-gray-300"}`}
-                        >
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center ${isPrimary ? "bg-[#D4AF37]/20" : "bg-white/10"}`}>
+                        <span className={`material-symbols-outlined text-[14px] ${isPrimary ? "text-[#D4AF37]" : "text-gray-300"}`}>
                           {isPrimary ? "token" : "currency_exchange"}
                         </span>
                       </div>
-                      <span
-                        className={`text-xs font-semibold ${isPrimary ? "text-[#D4AF37]" : "text-gray-300"}`}
-                      >
+                      <span className={`text-xs font-semibold ${isPrimary ? "text-[#D4AF37]" : "text-gray-300"}`}>
                         {cfg.label}
                       </span>
                     </div>
@@ -974,64 +973,52 @@ export default function ProfilePage() {
                   </div>
                 );
               })}
-            </div>
-          </div>
-        </div>
 
-        {/* ── Prize Trustlines ───────────────────────────────────────────── */}
-        <div className="glass-card p-4 rounded-2xl">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center space-x-2">
-              <span className="material-symbols-outlined text-[#D4AF37] text-base" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
-              <p className="text-xs font-bold text-white uppercase tracking-wide">Prize Trustlines</p>
-            </div>
-            <Link
-              href="/trustlines"
-              className="flex items-center space-x-1 text-[11px] text-[#D4AF37]/80 hover:text-[#D4AF37] transition"
-            >
-              <span>Manage</span>
-              <span className="material-symbols-outlined text-xs leading-none">chevron_right</span>
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {REWARD_ASSETS.filter(a => a.issuer).map(a => {
-              const status = trustlineStatuses[a.code];
-              const checking = status === null;
-              const has = status === true;
-              return (
-                <div
-                  key={a.code}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-xl border"
-                  style={{
-                    borderColor: has ? 'rgba(74,222,128,0.3)' : checking ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.1)',
-                    background: has ? 'rgba(74,222,128,0.05)' : 'rgba(255,255,255,0.02)',
-                  }}
-                >
-                  {checking ? (
-                    <span className="material-symbols-outlined text-gray-500 text-sm animate-spin">progress_activity</span>
-                  ) : has ? (
-                    <span className="material-symbols-outlined text-green-400 text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                  ) : (
-                    <span className="material-symbols-outlined text-yellow-400 text-sm">link_off</span>
-                  )}
-                  <div>
-                    <p className={`text-xs font-semibold ${has ? 'text-green-300' : 'text-white'}`}>{a.code}</p>
-                    <p className="text-[9px] text-gray-500">{has ? 'Active' : checking ? 'Checking…' : 'Missing'}</p>
+              {/* Prize assets — balance shown if trustline active, otherwise "No trustline" */}
+              <div className="pt-1 pb-0.5 flex items-center justify-between">
+                <p className="text-[9px] text-gray-600 uppercase tracking-widest font-semibold">Prize Assets</p>
+                <Link href="/trustlines" className="text-[9px] text-[#D4AF37]/60 hover:text-[#D4AF37] transition">Manage →</Link>
+              </div>
+              {REWARD_ASSETS.filter(a => a.issuer).map(a => {
+                const status = trustlineStatuses[a.code];
+                const checking = status === null;
+                const has = status === true;
+                const bal = rewardBalances[a.code];
+                return (
+                  <div
+                    key={a.code}
+                    className="flex items-center justify-between px-3 py-2.5 rounded-xl border"
+                    style={{
+                      borderColor: has ? 'rgba(74,222,128,0.25)' : checking ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.08)',
+                      background: has ? 'rgba(74,222,128,0.04)' : 'rgba(255,255,255,0.02)',
+                    }}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center bg-white/5">
+                        {checking ? (
+                          <span className="material-symbols-outlined text-gray-500 text-[13px] animate-spin">progress_activity</span>
+                        ) : has ? (
+                          <span className="material-symbols-outlined text-green-400 text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                        ) : (
+                          <span className="material-symbols-outlined text-yellow-400 text-[13px]">link_off</span>
+                        )}
+                      </div>
+                      <span className={`text-xs font-semibold ${has ? 'text-green-300' : 'text-gray-400'}`}>{a.code}</span>
+                    </div>
+                    {checking ? (
+                      <span className="text-[11px] text-gray-600">—</span>
+                    ) : has ? (
+                      <span className="text-sm font-bold text-white">{bal}</span>
+                    ) : (
+                      <Link href="/trustlines" className="text-[10px] text-yellow-400 hover:text-yellow-300 transition font-semibold">
+                        Add trustline →
+                      </Link>
+                    )}
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-          {Object.values(trustlineStatuses).some(v => v === false) && (
-            <Link
-              href="/trustlines"
-              className="mt-3 flex items-center justify-center space-x-1.5 w-full py-2 rounded-xl text-xs font-semibold border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10 transition"
-              style={{ background: 'rgba(234,179,8,0.05)' }}
-            >
-              <span className="material-symbols-outlined text-xs leading-none">add_link</span>
-              <span>Add missing trustlines</span>
-            </Link>
-          )}
         </div>
 
         {/* ── Quick Stats Row ────────────────────────────────────────────── */}
