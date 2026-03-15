@@ -585,8 +585,13 @@ function HubView({ onLucky, onQuiz, quizPoints, luckyCanSpin, luckySpinsRemainin
               <p className="text-[10px] text-gray-500 mt-1">
                 {isTier0
                   ? 'Welcome spins (one-time gift)'
-                  : `${luckyDailyLimit} spins per day · resets midnight UTC`}
+                  : `${luckyDailyLimit} spins per day`}
               </p>
+              {!isTier0 && resetCountdown && (
+                <p className="text-[10px] text-gray-600 mt-0.5">
+                  Resets in <span className="font-mono text-gray-400">{resetCountdown}</span>
+                </p>
+              )}
             </div>
             <div className="text-right">
               <p className="text-[9px] text-gray-500 uppercase tracking-wider">Tier</p>
