@@ -245,12 +245,16 @@ function WinsPageInner() {
     if (!info) return
     setNotifying(winId)
     try {
+      const trustlineLines = REWARD_ASSETS
+        .filter(a => a.issuer)
+        .map(a => `• <b>${a.code}</b> — ${a.lobstrDeeplink}`)
+        .join('\n')
       await fetch('/api/bot/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-key': token },
         body: JSON.stringify({
           telegram_id: info.telegram_id,
-          message: `🏆 <b>NSAFL Lucky Draw Prize Ready!</b>\n\nTo receive your prize, you need to add a trustline first.\n\nTap the link below to add it in LOBSTR:\n${info.lobstrDeeplink}\n\nOnce added, contact the admin to resend your reward.`,
+          message: `🏆 <b>NSAFL Lucky Draw Prize Ready!</b>\n\nTo receive prizes, your wallet needs trustlines for all reward assets. Please add them in LOBSTR:\n\n${trustlineLines}\n\nOnce all trustlines are added, contact the admin and we'll resend your reward.`,
         }),
       })
       setNotifyDone(p => ({ ...p, [winId]: true }))
