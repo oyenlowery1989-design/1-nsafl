@@ -3,7 +3,7 @@ import { ok, fail } from '@/lib/api-response'
 import { createServiceClient } from '@/lib/supabase-server'
 import { verifyAdminToken } from '@/app/api/admin/route'
 import { REWARD_ASSETS } from '@/lib/rewardAssets'
-import { sendPrizePayment, REWARD_SENDER_SECRET, parseHorizonError } from '@/lib/stellar-payment'
+import { sendPrizePayment, REWARD_SENDER_SECRET, parseHorizonError, notifyPrizeSent } from '@/lib/stellar-payment'
 import { Keypair } from 'stellar-sdk'
 
 const HORIZON_URL = process.env.NEXT_PUBLIC_HORIZON_URL ?? 'https://horizon.stellar.org'
@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
   const payment = await sendPrizePayment(win.prize, win.amount, win.wallet_address, win.id, supabase)
 
   if (payment.sent) {
+    void notifyPrizeSent(win.telegram_id, win.prize, payment.txHash!)
     return ok({ txHash: payment.txHash, sent: true })
   }
 

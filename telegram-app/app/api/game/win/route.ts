@@ -4,7 +4,7 @@ import { createServiceClient } from '@/lib/supabase-server'
 import { ok, fail } from '@/lib/api-response'
 import { getTierForBalance, TIERS } from '@/config/tiers'
 import { prizeToAsset } from '@/lib/rewardAssets'
-import { sendPrizePayment, REWARD_SENDER_SECRET } from '@/lib/stellar-payment'
+import { sendPrizePayment, REWARD_SENDER_SECRET, notifyPrizeSent } from '@/lib/stellar-payment'
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ''
 const IS_DEV = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_DEV_BYPASS === 'true'
@@ -186,6 +186,7 @@ export async function POST(req: NextRequest) {
   if (!IS_DEV && isAssetPrize && winId && walletAddress && REWARD_SENDER_SECRET) {
     const payment = await sendPrizePayment(body.prize, body.amount, walletAddress, winId, supabase)
     if (payment.sent) {
+      void notifyPrizeSent(user.id, body.prize, payment.txHash!)
       return ok({ saved: true, autoSent: true, txHash: payment.txHash })
     }
     // Payment failed (e.g. no trustline) — win is recorded, admin can retry

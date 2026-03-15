@@ -19,6 +19,25 @@ import { prizeToAsset } from '@/lib/rewardAssets'
 
 const HORIZON_URL = process.env.NEXT_PUBLIC_HORIZON_URL ?? 'https://horizon.stellar.org'
 const REWARD_MEMO = (process.env.REWARD_MEMO ?? 'NSAFL Lucky Draw Prize').slice(0, 28)
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ''
+
+/** Send a Telegram message to a user via the bot. Fire-and-forget — never throws. */
+export async function notifyPrizeSent(telegramId: number, prize: string, txHash: string): Promise<void> {
+  if (!BOT_TOKEN || !telegramId) return
+  const explorerUrl = `https://stellar.expert/explorer/public/tx/${txHash}`
+  const message =
+    `🎉 <b>Your NSAFL Lucky Draw prize has been sent!</b>\n\n` +
+    `Prize: <b>${prize}</b>\n` +
+    `Transaction: <a href="${explorerUrl}">View on Explorer</a>\n\n` +
+    `The tokens are on their way to your Stellar wallet. 🏉`
+  try {
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: telegramId, text: message, parse_mode: 'HTML', disable_web_page_preview: true }),
+    })
+  } catch { /* ignore — payment already sent */ }
+}
 
 export const REWARD_SENDER_SECRET = process.env.REWARD_SENDER_SECRET ?? ''
 
