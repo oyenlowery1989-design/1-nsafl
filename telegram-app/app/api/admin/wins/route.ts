@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
   const totalPages = Math.ceil(total / limit) || 1
 
   // Fetch user display names for this page's telegram_ids
-  const telegramIds: number[] = [...new Set((wins ?? []).map((w: { telegram_id: number }) => w.telegram_id))]
+  const telegramIds: number[] = [...new Set<number>((wins ?? []).map((w: { telegram_id: number }) => w.telegram_id))]
   const userMap: Record<number, { first_name: string | null; username: string | null }> = {}
   if (telegramIds.length > 0) {
     const { data: users } = await (supabase as any)

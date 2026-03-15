@@ -145,13 +145,10 @@ function SummaryStrip({ data }: { data: AdminData }) {
   const totalDonations = data.donations.length
   const donationSum = data.donations.reduce((s, d) => s + Number(d.amount), 0)
   const verifiedDonations = data.donations.filter(d => d.verified).length
-  const pendingTeamRequests = data.teamRequests.filter(r => r.status === 'pending').length
-
   const stats = [
     { label: 'Total Users',       value: totalUsers,                       accent: 'text-blue-400',   icon: 'group' },
     { label: 'Total Donations',   value: `${totalDonations}`,              sub: `${num(donationSum)} total`, accent: 'text-green-400',  icon: 'volunteer_activism' },
     { label: 'Verified Donations',value: verifiedDonations,                accent: 'text-[#D4AF37]',  icon: 'verified' },
-    { label: 'Pending Requests',  value: pendingTeamRequests,              accent: pendingTeamRequests > 0 ? 'text-red-400' : 'text-gray-500', icon: 'pending_actions' },
   ]
 
   return (
@@ -244,7 +241,6 @@ function buildTimeline(
   userSessions: GameSession[],
   userDonations: Donation[],
   userPurchases: Purchase[],
-  userRequests: TeamRequest[],
   userAccess: AccessAttempt[],
 ): TimelineItem[] {
   const items: TimelineItem[] = []
@@ -286,15 +282,6 @@ function buildTimeline(
     })
   }
 
-  for (const r of userRequests) {
-    items.push({
-      date: r.created_at,
-      type: 'team',
-      label: `Requested team change to ${teamName(r.requested_team)} — ${r.status}`,
-      detail: r.admin_note ?? undefined,
-    })
-  }
-
   for (const a of userAccess) {
     const isAlert = a.devtools_opened || a.tg_sdk_fake
     const location = a.geo_location ? ` from ${a.geo_location}` : a.ip ? ` from ${a.ip}` : ''
@@ -317,17 +304,16 @@ function buildTimeline(
 }
 
 function ActivityTimeline({
-  u, userSessions, userDonations, userPurchases, userRequests, userAccess,
+  u, userSessions, userDonations, userPurchases, userAccess,
 }: {
   u: User
   userSessions: GameSession[]
   userDonations: Donation[]
   userPurchases: Purchase[]
-  userRequests: TeamRequest[]
   userAccess: AccessAttempt[]
 }) {
   const [showAll, setShowAll] = useState(false)
-  const all = buildTimeline(u, userSessions, userDonations, userPurchases, userRequests, userAccess)
+  const all = buildTimeline(u, userSessions, userDonations, userPurchases, userAccess)
   const visible = showAll ? all : all.slice(0, 20)
 
   if (all.length === 0) {
@@ -396,7 +382,6 @@ function UserDetail({
   const userSessions  = data.gameSessions.filter(g => g.telegram_id === u.telegram_id)
   const userDonations = data.donations.filter(d => walletIds.has(d.wallet_id))
   const userPurchases = data.purchases.filter(p => walletIds.has(p.wallet_id))
-  const userRequests  = data.teamRequests.filter(r => r.telegram_id === u.telegram_id)
   const totalKicks    = userSessions.reduce((s, g) => s + g.kicks, 0)
   const totalTokenBal       = u.wallets.reduce((s, w) => s + Number(w.wallet_balances[0]?.nsafl_balance ?? 0), 0)
   const totalXLM      = u.wallets.reduce((s, w) => s + Number(w.wallet_balances[0]?.xlm_balance ?? 0), 0)
@@ -493,25 +478,6 @@ function UserDetail({
     finally { setGrantingSpin(false) }
   }
 
-  async function revokeBonusSpin() {
-    if (bonusSpins <= 0) return
-    setGrantingSpin(true)
-    try {
-      const next = bonusSpins - 1
-      const res = await fetch(`/api/admin/user/${u.telegram_id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
-        body: JSON.stringify({ bonus_spins: next }),
-      })
-      const j = await res.json()
-      if (j.success) {
-        setBonusSpins(next)
-        onUserUpdated(u.telegram_id, { bonus_spins: next })
-        showEditToast(`Revoked 1 spin — now ${next} bonus spin${next !== 1 ? 's' : ''}/day`)
-      } else { showEditToast('Failed to revoke spin') }
-    } catch { showEditToast('Error — try again') }
-    finally { setGrantingSpin(false) }
-  }
 
   async function revokeBonusBall() {
     if (bonusBalls <= 0) return
@@ -742,7 +708,7 @@ function UserDetail({
           <div>
             <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Bonus Balls 🏈</p>
             <p className="text-3xl font-bold text-[#D4AF37] mt-1">{bonusBalls}</p>
-            <p className="text-[11px] text-gray-500 mt-0.5">Admin-granted + Lucky Draw wins</p>
+            <p className="text-[11px] text-gray-500 mt-0.5">Admin-granted + wheel prize wins</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -763,20 +729,13 @@ function UserDetail({
           <div>
             <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Bonus Spins 🎰</p>
             <p className="text-3xl font-bold text-purple-400 mt-1">{bonusSpins}</p>
-            <p className="text-[11px] text-gray-500 mt-0.5">Extra daily Lucky Draw spins</p>
+            <p className="text-[11px] text-gray-500 mt-0.5">Remaining — auto-decrements when used</p>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={revokeBonusSpin}
-              disabled={grantingSpin || bonusSpins <= 0}
-              className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 disabled:opacity-30 text-lg font-bold transition flex items-center justify-center"
-            >−</button>
-            <button
-              onClick={grantBonusSpin}
-              disabled={grantingSpin}
-              className="px-4 py-2 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 hover:bg-purple-500/25 disabled:opacity-50 text-sm font-semibold transition"
-            >{grantingSpin ? 'Saving…' : '+1 Spin'}</button>
-          </div>
+          <button
+            onClick={grantBonusSpin}
+            disabled={grantingSpin}
+            className="px-4 py-2 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 hover:bg-purple-500/25 disabled:opacity-50 text-sm font-semibold transition"
+          >{grantingSpin ? 'Saving…' : '+1 Spin'}</button>
         </div>
 
         {/* ── Stats row ── */}
@@ -795,7 +754,6 @@ function UserDetail({
           userSessions={userSessions}
           userDonations={userDonations}
           userPurchases={userPurchases}
-          userRequests={userRequests}
           userAccess={userAccess}
         />
 
@@ -903,29 +861,6 @@ function UserDetail({
               </Card>
           }
         </section>
-
-        {/* ── Team change requests ── */}
-        {userRequests.length > 0 && (
-          <section>
-            <SectionTitle icon="sports_football" title="Team Change Requests" count={userRequests.length} />
-            <Card>
-              <table className="w-full">
-                <thead className="bg-white/3"><tr><Th>Requested Team</Th><Th>Status</Th><Th>Admin Note</Th><Th>Submitted</Th><Th>Resolved</Th></tr></thead>
-                <tbody className="divide-y divide-white/4">
-                  {userRequests.map(r => (
-                    <tr key={r.id} className="hover:bg-white/3">
-                      <Td><span className="text-gray-200">{teamName(r.requested_team)}</span></Td>
-                      <Td><Badge color={r.status === 'approved' ? 'green' : r.status === 'rejected' ? 'red' : 'yellow'}>{r.status}</Badge></Td>
-                      <Td><span className="text-gray-500 text-sm">{r.admin_note ?? '—'}</span></Td>
-                      <Td><span className="text-gray-500 text-xs">{dt(r.created_at)}</span></Td>
-                      <Td><span className="text-gray-500 text-xs">{r.resolved_at ? dt(r.resolved_at) : '—'}</span></Td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Card>
-          </section>
-        )}
 
         {/* ── Donations ── */}
         <section>
@@ -1048,7 +983,6 @@ function AdminContent() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('overview')
-  const [resolving, setResolving] = useState<string | null>(null)
   const [noteMap, setNoteMap] = useState<Record<string, string>>({})
   const [search, setSearch] = useState('')
   const [userAction, setUserAction] = useState<{ telegramId: number; name: string; type: 'logout' | 'delete' | 'block' | 'unblock' } | null>(null)
@@ -1068,10 +1002,43 @@ function AdminContent() {
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null)
   const [toastMsg, setToastMsg] = useState<string | null>(null)
   const [winStats, setWinStats] = useState<{ total: number; pending: number }>({ total: 0, pending: 0 })
+  const [refreshingRows, setRefreshingRows] = useState<Set<number>>(new Set())
+  const [lastAccessTabViewed, setLastAccessTabViewed] = useState<number>(() => {
+    try { return parseInt(localStorage.getItem('admin_access_tab_viewed') ?? '0', 10) } catch { return 0 }
+  })
 
   function showToast(msg: string) {
     setToastMsg(msg)
     setTimeout(() => setToastMsg(null), 3500)
+  }
+
+  async function refreshRowBalance(telegramId: number) {
+    setRefreshingRows(s => new Set(s).add(telegramId))
+    try {
+      const res = await fetch(`/api/admin/user/${telegramId}/refresh-balance`, {
+        method: 'POST',
+        headers: { 'x-admin-token': token },
+      })
+      const j = await res.json()
+      if (j.success) {
+        setData(prev => prev ? {
+          ...prev,
+          users: prev.users.map(u => u.telegram_id !== telegramId ? u : {
+            ...u,
+            wallets: u.wallets.map(w => w.is_primary ? {
+              ...w,
+              wallet_balances: [{ nsafl_balance: j.data.nsafl_balance, xlm_balance: j.data.xlm_balance, balance_week_ago: w.wallet_balances[0]?.balance_week_ago ?? 0, last_synced_at: new Date().toISOString() }],
+            } : w),
+          }),
+        } : prev)
+      } else {
+        showToast(`✗ ${j.error ?? 'Refresh failed'}`)
+      }
+    } catch {
+      showToast('✗ Network error')
+    } finally {
+      setRefreshingRows(s => { const n = new Set(s); n.delete(telegramId); return n })
+    }
   }
 
   async function deleteAccessAttempt(id: string) {
@@ -1101,8 +1068,40 @@ function AdminContent() {
         fetch(`/api/admin/wins?token=${t}&limit=1`, { headers: { 'x-admin-token': t } }),
       ])
       const j = await res.json()
-      if (j.success) setData(j.data)
-      else { setAuthed(false); localStorage.removeItem('admin_token') }
+      if (j.success) {
+        setData(j.data)
+        // Auto-sync any wallets with no balance data (fire-and-forget, merges results back)
+        const hasMissing = j.data.users?.some((u: User) =>
+          u.wallets.some(w => !w.wallet_balances?.length)
+        )
+        if (hasMissing) {
+          fetch('/api/admin/sync-missing-balances', { method: 'POST', headers: { 'x-admin-token': t } })
+            .then(r => r.json())
+            .then(sj => {
+              if (sj.success && sj.data.synced > 0) {
+                // Merge synced balances into state without a full refetch
+                setData(prev => {
+                  if (!prev) return prev
+                  const balMap = new Map<string, { nsafl_balance: number; xlm_balance: number }>(
+                    sj.data.results.map((r: { wallet_id: string; nsafl_balance: number; xlm_balance: number }) => [r.wallet_id, r])
+                  )
+                  return {
+                    ...prev,
+                    users: prev.users.map(u => ({
+                      ...u,
+                      wallets: u.wallets.map(w => {
+                        if (w.wallet_balances?.length || !balMap.has(w.id)) return w
+                        const b = balMap.get(w.id)!
+                        return { ...w, wallet_balances: [{ nsafl_balance: b.nsafl_balance, xlm_balance: b.xlm_balance, balance_week_ago: 0, last_synced_at: new Date().toISOString() }] }
+                      }),
+                    })),
+                  }
+                })
+              }
+            })
+            .catch(() => {/* silent — balance sync is best-effort */})
+        }
+      } else { setAuthed(false); localStorage.removeItem('admin_token') }
       if (winsRes.ok) {
         const wj = await winsRes.json()
         if (wj.success) setWinStats({ total: wj.data.total ?? 0, pending: wj.data.counts?.pending ?? 0 })
@@ -1148,19 +1147,6 @@ function AdminContent() {
     } finally {
       setActionLoading(false)
     }
-  }
-
-  async function resolveRequest(requestId: string, action: 'approve' | 'reject') {
-    setResolving(requestId)
-    try {
-      const res = await fetch('/api/admin/team-request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
-        body: JSON.stringify({ requestId, action, adminNote: noteMap[requestId] }),
-      })
-      const j = await res.json()
-      if (j.success) { setNoteMap(m => { const n = { ...m }; delete n[requestId]; return n }); fetchData(token) }
-    } finally { setResolving(null) }
   }
 
   async function verifyItem(type: 'donation' | 'purchase', id: string) {
@@ -1316,9 +1302,11 @@ function AdminContent() {
   const totalWallets = data.users.reduce((s, u) => s + u.wallets.length, 0)
   const totalTokenHeld = data.totalNsafl ?? data.users.reduce((s, u) => s + u.wallets.reduce((ws, w) => ws + Number(w.wallet_balances[0]?.nsafl_balance ?? 0), 0), 0)
   const totalXlmHeld   = data.totalXlm ?? data.users.reduce((s, u) => s + u.wallets.reduce((ws, w) => ws + Number(w.wallet_balances[0]?.xlm_balance ?? 0), 0), 0)
-  const pendingCount = data.teamRequests.filter(r => r.status === 'pending').length
   const totalKicks = data.gameSessions.reduce((s, g) => s + g.kicks, 0)
   const suspiciousAccess = data.accessAttempts.filter(a => a.tg_sdk_fake || a.devtools_opened).length
+  const newSuspiciousCount = data.accessAttempts.filter(a =>
+    (a.tg_sdk_fake || a.devtools_opened) && new Date(a.created_at).getTime() > lastAccessTabViewed
+  ).length
 
   const walletById: Record<string, { stellar_address: string; user: User }> = {}
   for (const u of data.users) for (const w of u.wallets) walletById[w.id] = { stellar_address: w.stellar_address, user: u }
@@ -1376,11 +1364,10 @@ function AdminContent() {
   const TABS: { key: Tab; label: string; icon: string; alert?: boolean; badge?: number }[] = [
     { key: 'overview',   label: 'Overview',      icon: 'dashboard' },
     { key: 'users',      label: `Users`,          icon: 'group',              badge: totalUsers },
-    { key: 'requests',   label: `Requests`,       icon: 'pending_actions',    alert: pendingCount > 0, badge: pendingCount > 0 ? pendingCount : undefined },
     { key: 'game',       label: `Game`,           icon: 'sports_esports',     badge: data.gameSessions.length },
     { key: 'donations',  label: `Donations`,      icon: 'volunteer_activism', badge: data.donations.length },
     { key: 'purchases',  label: `Purchases`,      icon: 'shopping_cart',      badge: data.purchases.length },
-    { key: 'access',     label: `Access`,         icon: 'manage_search',      alert: suspiciousAccess > 0, badge: suspiciousAccess > 0 ? suspiciousAccess : data.accessAttempts.length },
+    { key: 'access',     label: `Access`,         icon: 'manage_search',      alert: newSuspiciousCount > 0, badge: suspiciousAccess > 0 ? suspiciousAccess : data.accessAttempts.length },
     { key: 'referrals',  label: `Referrals`,      icon: 'group_add',          badge: data.referralStats?.length || undefined },
     { key: 'trustline',  label: `Trustline`,      icon: 'add_link',           badge: data.trustlineSubmissions?.length || undefined },
   ]
@@ -1428,7 +1415,14 @@ function AdminContent() {
       {/* ── Tabs ── */}
       <div className="bg-[#0d1424] border-b border-white/8 px-4 flex gap-0 overflow-x-auto mt-1">
         {TABS.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
+          <button key={t.key} onClick={() => {
+              if (t.key === 'access') {
+                const now = Date.now()
+                localStorage.setItem('admin_access_tab_viewed', String(now))
+                setLastAccessTabViewed(now)
+              }
+              setTab(t.key)
+            }}
             className={`px-4 py-3 text-xs font-semibold border-b-2 whitespace-nowrap transition relative flex items-center gap-1.5 ${
               tab === t.key
                 ? 'border-[#D4AF37] text-[#D4AF37]'
@@ -1446,6 +1440,7 @@ function AdminContent() {
                     : 'bg-white/8 text-gray-500'
               }`}>{t.badge}</span>
             )}
+            {t.alert && tab !== t.key && <span className="absolute top-2 right-1 w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
             {t.alert && !t.badge && <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500" />}
           </button>
         ))}
@@ -1474,7 +1469,6 @@ function AdminContent() {
                 { label: 'Wallets',           value: totalWallets,                  accent: 'text-green-400',  bg: 'bg-green-500/8'  },
                 { label: `${PRIMARY_CUSTOM_ASSET_CODE} Held`, value: num(totalTokenHeld), accent: 'text-yellow-400', bg: 'bg-yellow-500/8' },
                 { label: 'XLM Held',                          value: num(totalXlmHeld),   accent: 'text-blue-300',  bg: 'bg-blue-500/8'   },
-                { label: 'Pending Requests',  value: pendingCount,                  accent: pendingCount > 0 ? 'text-red-400' : 'text-gray-400', bg: pendingCount > 0 ? 'bg-red-500/8' : 'bg-white/4' },
                 { label: 'Total Kicks',       value: totalKicks.toLocaleString(),   accent: 'text-purple-400', bg: 'bg-purple-500/8' },
                 { label: 'Suspicious Access', value: suspiciousAccess,              accent: suspiciousAccess > 0 ? 'text-red-400' : 'text-gray-400', bg: suspiciousAccess > 0 ? 'bg-red-500/8' : 'bg-white/4' },
               ].map(s => (
@@ -1535,34 +1529,6 @@ function AdminContent() {
                 </table>
               </Card>
 
-              <Card>
-                <div className="px-4 py-3 border-b border-white/8 text-sm font-semibold text-gray-300 flex items-center gap-2">
-                  Pending Team Requests
-                  {pendingCount > 0 && <span className="bg-red-500/20 text-red-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{pendingCount}</span>}
-                </div>
-                {pendingCount === 0 ? (
-                  <p className="text-sm text-gray-600 px-4 py-8 text-center">No pending requests</p>
-                ) : (
-                  <table className="w-full">
-                    <thead><tr><Th>User</Th><Th>Requested</Th><Th>When</Th><Th>Actions</Th></tr></thead>
-                    <tbody className="divide-y divide-white/4">
-                      {data.teamRequests.filter(r => r.status === 'pending').map(r => (
-                        <tr key={r.id} className="hover:bg-white/3">
-                          <Td><TgUser users={data.users} id={r.telegram_id} /></Td>
-                          <Td>{teamName(r.requested_team)}</Td>
-                          <Td><span className="text-gray-500 text-xs">{ago(r.created_at)}</span></Td>
-                          <Td>
-                            <div className="flex gap-1">
-                              <button onClick={() => resolveRequest(r.id, 'approve')} disabled={resolving === r.id} className="text-xs bg-green-500/15 text-green-400 hover:bg-green-500/25 px-2 py-0.5 rounded font-semibold transition disabled:opacity-40">✓</button>
-                              <button onClick={() => resolveRequest(r.id, 'reject')} disabled={resolving === r.id} className="text-xs bg-red-500/15 text-red-400 hover:bg-red-500/25 px-2 py-0.5 rounded font-semibold transition disabled:opacity-40">✗</button>
-                            </div>
-                          </Td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </Card>
             </div>
           </div>
         )}
@@ -1636,6 +1602,17 @@ function AdminContent() {
                           <Td><span className="text-gray-500 text-xs">{ago(u.created_at)}</span></Td>
                           <Td>
                             <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                              {/* Refresh balance */}
+                              {primaryWallet && (
+                                <button
+                                  onClick={() => refreshRowBalance(u.telegram_id)}
+                                  disabled={refreshingRows.has(u.telegram_id)}
+                                  title="Refresh balance from Horizon"
+                                  className="text-xs bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 px-2 py-0.5 rounded font-semibold transition disabled:opacity-40"
+                                >
+                                  <Icon name="sync" className={`text-sm ${refreshingRows.has(u.telegram_id) ? 'animate-spin' : ''}`} />
+                                </button>
+                              )}
                               {/* Block/Unblock with inline confirm */}
                               {u.is_blocked ? (
                                 <button onClick={() => setUserAction({ telegramId: u.telegram_id, name: u.telegram_first_name ?? String(u.telegram_id), type: 'unblock' })} className="text-xs bg-green-500/15 text-green-400 hover:bg-green-500/25 px-2 py-0.5 rounded font-semibold transition">Unblock</button>
@@ -1680,43 +1657,6 @@ function AdminContent() {
               </div>
             </Card>
           </div>
-        )}
-
-        {/* ── TEAM REQUESTS ── */}
-        {tab === 'requests' && (
-          <Card>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-white/3"><tr>
-                  <Th>User</Th><Th>Requested Team</Th><Th>Status</Th><Th>Admin Note</Th><Th>Requested</Th><Th>Resolved</Th><Th>Actions</Th>
-                </tr></thead>
-                <tbody className="divide-y divide-white/4">
-                  {data.teamRequests.map(r => (
-                    <tr key={r.id} className="hover:bg-white/3">
-                      <Td><TgUser users={data.users} id={r.telegram_id} /></Td>
-                      <Td><span className="font-medium text-white">{teamName(r.requested_team)}</span></Td>
-                      <Td><Badge color={r.status === 'approved' ? 'green' : r.status === 'rejected' ? 'red' : 'yellow'}>{r.status}</Badge></Td>
-                      <Td><span className="text-gray-400">{r.admin_note ?? <span className="text-gray-600">—</span>}</span></Td>
-                      <Td><span className="text-gray-500 text-xs">{dt(r.created_at)}</span></Td>
-                      <Td><span className="text-gray-500 text-xs">{r.resolved_at ? dt(r.resolved_at) : <span className="text-gray-600">—</span>}</span></Td>
-                      <Td>
-                        {r.status === 'pending' && (
-                          <div className="flex items-center gap-1">
-                            <input type="text" placeholder="Note…" value={noteMap[r.id] ?? ''} onChange={e => setNoteMap(m => ({ ...m, [r.id]: e.target.value }))}
-                              className="bg-black/40 border border-white/10 rounded px-2 py-1 text-xs text-white w-28 focus:outline-none focus:border-white/20" />
-                            <button onClick={() => resolveRequest(r.id, 'approve')} disabled={resolving === r.id}
-                              className="text-xs bg-green-500/15 text-green-400 hover:bg-green-500/25 px-2.5 py-1 rounded font-semibold transition disabled:opacity-40">Approve</button>
-                            <button onClick={() => resolveRequest(r.id, 'reject')} disabled={resolving === r.id}
-                              className="text-xs bg-red-500/15 text-red-400 hover:bg-red-500/25 px-2.5 py-1 rounded font-semibold transition disabled:opacity-40">Reject</button>
-                          </div>
-                        )}
-                      </Td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
         )}
 
         {/* ── GAME ── */}
