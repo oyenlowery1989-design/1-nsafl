@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { REWARD_ASSETS, RewardAsset } from "@/lib/rewardAssets";
 import { HORIZON_URL } from "@/lib/constants";
 
@@ -155,6 +156,12 @@ export default function TrustlineChecker({
           reward asset. This is a one-time setup on the Stellar network.
         </p>
       </div>
+
+      <Link href="/trustlines"
+        className="inline-flex items-center space-x-1 text-[11px] text-[#D4AF37]/80 hover:text-[#D4AF37] transition">
+        <span className="material-symbols-outlined text-xs leading-none">open_in_new</span>
+        <span>Manage all trustlines →</span>
+      </Link>
 
       {missing.map((s) => (
         <div
