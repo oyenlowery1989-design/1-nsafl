@@ -2,11 +2,14 @@
 import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { REWARD_ASSETS, prizeToAsset } from '@/lib/rewardAssets'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface WinRow {
   id: number
   telegram_id: number
+  user_first_name: string | null
+  user_username: string | null
   prize: string
   amount: number | null
   win_code: string
@@ -79,7 +82,7 @@ function CopyBtn({ value, label }: { value: string; label?: string }) {
 
 function Th({ children }: { children?: React.ReactNode }) {
   return (
-    <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap border-b border-white/5">
+    <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap bg-[#0a1020] border-b border-white/10">
       {children}
     </th>
   )
@@ -87,7 +90,7 @@ function Th({ children }: { children?: React.ReactNode }) {
 
 function Td({ children, mono }: { children: React.ReactNode; mono?: boolean }) {
   return (
-    <td className={`px-3 py-2.5 text-sm text-gray-200 align-top ${mono ? 'font-mono text-xs' : ''}`}>
+    <td className={`px-3 py-3 text-sm text-gray-200 align-middle ${mono ? 'font-mono text-xs' : ''}`}>
       {children}
     </td>
   )
@@ -148,6 +151,17 @@ function WinsPageInner() {
   const [paying, setPaying] = useState<number | null>(null)
   const [confirmPay, setConfirmPay] = useState<{ id: number; action: 'paid' | 'skipped' } | null>(null)
 
+  // Auto-send state
+  const [sending, setSending] = useState<number | null>(null)
+  const [sendError, setSendError] = useState<Record<number, string>>({})
+  const [noTrustInfo, setNoTrustInfo] = useState<Record<number, { lobstrDeeplink: string; telegram_id: number }>>({})
+  const [notifying, setNotifying] = useState<number | null>(null)
+  const [notifyDone, setNotifyDone] = useState<Record<number, boolean>>({})
+
+  // Sender wallet balances
+  const [senderBalances, setSenderBalances] = useState<Record<string, string>>({})
+  const HORIZON_URL = process.env.NEXT_PUBLIC_HORIZON_URL ?? 'https://horizon.stellar.org'
+
   const fetchWins = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -177,6 +191,73 @@ function WinsPageInner() {
   }, [token, page, filterStatus, filterPrize])
 
   useEffect(() => { fetchWins() }, [fetchWins])
+
+  // Fetch sender wallet balances from Horizon
+  useEffect(() => {
+    const senderAddr = process.env.NEXT_PUBLIC_REWARD_SENDER_ADDRESS
+    if (!senderAddr) return
+    fetch(`${HORIZON_URL}/accounts/${senderAddr}`)
+      .then(r => r.json())
+      .then(account => {
+        const bals: Record<string, string> = {}
+        for (const b of (account.balances ?? [])) {
+          if (b.asset_code) bals[b.asset_code] = parseFloat(b.balance).toLocaleString(undefined, { maximumFractionDigits: 2 })
+        }
+        setSenderBalances(bals)
+      })
+      .catch(() => {})
+  }, [HORIZON_URL])
+
+  const handleSend = async (id: number) => {
+    setSending(id)
+    setSendError(p => ({ ...p, [id]: '' }))
+    setNoTrustInfo(p => { const n = { ...p }; delete n[id]; return n })
+    try {
+      const res = await fetch('/api/admin/send-reward', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+        body: JSON.stringify({ winId: id }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        if (json?.code === 'NO_TRUST' && json?.lobstrDeeplink) {
+          setNoTrustInfo(p => ({ ...p, [id]: { lobstrDeeplink: json.lobstrDeeplink, telegram_id: json.telegram_id } }))
+          setSendError(p => ({ ...p, [id]: 'No trustline — user must add it first.' }))
+          return
+        }
+        throw new Error(json?.error ?? `HTTP ${res.status}`)
+      }
+      const txHash: string = json?.data?.txHash ?? ''
+      setWins(prev => prev.map(w => w.id === id
+        ? { ...w, payout_status: 'paid', payout_at: new Date().toISOString(), payout_tx_hash: txHash, claimed: true }
+        : w,
+      ))
+      setCounts(prev => ({ ...prev, pending: Math.max(0, prev.pending - 1), paid: prev.paid + 1 }))
+    } catch (e) {
+      setSendError(p => ({ ...p, [id]: e instanceof Error ? e.message : 'Send failed' }))
+    } finally {
+      setSending(null)
+    }
+  }
+
+  const handleNotifyTrustline = async (winId: number) => {
+    const info = noTrustInfo[winId]
+    if (!info) return
+    setNotifying(winId)
+    try {
+      await fetch('/api/bot/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': token },
+        body: JSON.stringify({
+          telegram_id: info.telegram_id,
+          message: `🏆 <b>NSAFL Lucky Draw Prize Ready!</b>\n\nTo receive your prize, you need to add a trustline first.\n\nTap the link below to add it in LOBSTR:\n${info.lobstrDeeplink}\n\nOnce added, contact the admin to resend your reward.`,
+        }),
+      })
+      setNotifyDone(p => ({ ...p, [winId]: true }))
+    } finally {
+      setNotifying(null)
+    }
+  }
 
   // Debounce prizeInput → filterPrize (500ms)
   useEffect(() => {
@@ -278,6 +359,19 @@ function WinsPageInner() {
           <StatTile label="Skipped" value={counts.skipped}  accent="text-gray-400" />
         </div>
 
+        {/* ── Sender wallet balances ── */}
+        {Object.keys(senderBalances).length > 0 && (
+          <div className="bg-[#0d1424] border border-white/8 rounded-xl px-4 py-3 flex flex-wrap items-center gap-3">
+            <span className="text-[11px] text-gray-500 uppercase font-medium mr-1">Sender Wallet</span>
+            {REWARD_ASSETS.filter(a => senderBalances[a.code] !== undefined).map(a => (
+              <span key={a.code} className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/20">
+                {a.code}
+                <span className="text-white font-bold">{senderBalances[a.code]}</span>
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* ── Filter bar ── */}
         <div className="bg-[#0d1424] border border-white/8 rounded-xl px-4 py-3 flex flex-wrap items-center gap-3">
           {/* Status dropdown */}
@@ -345,10 +439,10 @@ function WinsPageInner() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-white/3 sticky top-[52px] z-10">
+                <thead>
                   <tr>
                     <Th>ID</Th>
-                    <Th>Telegram ID</Th>
+                    <Th>User</Th>
                     <Th>Prize</Th>
                     <Th>Amount</Th>
                     <Th>Win Code</Th>
@@ -359,7 +453,7 @@ function WinsPageInner() {
                     <Th>Actions</Th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/4">
+                <tbody className="divide-y divide-white/6">
                   {wins.map(w => (
                     <WinTableRow
                       key={w.id}
@@ -368,6 +462,13 @@ function WinsPageInner() {
                       confirmPay={confirmPay}
                       onSetConfirm={setConfirmPay}
                       onPay={handlePay}
+                      sending={sending}
+                      sendError={sendError[w.id]}
+                      onSend={handleSend}
+                      noTrustInfo={noTrustInfo[w.id]}
+                      notifying={notifying}
+                      notifyDone={notifyDone[w.id]}
+                      onNotify={handleNotifyTrustline}
                     />
                   ))}
                 </tbody>
@@ -413,24 +514,49 @@ function WinTableRow({
   confirmPay,
   onSetConfirm,
   onPay,
+  sending,
+  sendError,
+  onSend,
+  noTrustInfo,
+  notifying,
+  notifyDone,
+  onNotify,
 }: {
   win: WinRow
   paying: number | null
   confirmPay: { id: number; action: 'paid' | 'skipped' } | null
   onSetConfirm: (v: { id: number; action: 'paid' | 'skipped' } | null) => void
   onPay: (id: number, action: 'paid' | 'skipped') => void
+  sending: number | null
+  sendError?: string
+  onSend: (id: number) => void
+  noTrustInfo?: { lobstrDeeplink: string; telegram_id: number }
+  notifying: number | null
+  notifyDone?: boolean
+  onNotify: (id: number) => void
 }) {
   const isPaying = paying === w.id
+  const isSending = sending === w.id
   const isConfirmingPaid    = confirmPay?.id === w.id && confirmPay?.action === 'paid'
   const isConfirmingSkipped = confirmPay?.id === w.id && confirmPay?.action === 'skipped'
   const alreadyDone = w.payout_status !== 'pending'
+  const isSendable = !!prizeToAsset(w.prize) && !!w.wallet_address
 
   return (
-    <tr className="hover:bg-white/3 transition-colors">
+    <tr className="hover:bg-white/5 transition-colors">
       <Td mono><span className="text-gray-500">{w.id}</span></Td>
-      <Td mono>
-        <span className="text-gray-300">{w.telegram_id}</span>
-        <CopyBtn value={String(w.telegram_id)} label="Telegram ID" />
+      <Td>
+        <div className="flex flex-col gap-0.5">
+          {(w.user_first_name || w.user_username) && (
+            <span className="text-white font-semibold text-xs">
+              {w.user_first_name ?? ''}{w.user_username ? ` @${w.user_username}` : ''}
+            </span>
+          )}
+          <div className="flex items-center">
+            <span className="text-gray-500 font-mono text-[11px]">{w.telegram_id}</span>
+            <CopyBtn value={String(w.telegram_id)} label="Telegram ID" />
+          </div>
+        </div>
       </Td>
       <Td>
         <span className="text-[#D4AF37] font-medium">{w.prize}</span>
@@ -496,16 +622,71 @@ function WinTableRow({
         </div>
       </Td>
       <Td>
-        {isPaying ? (
+        {isPaying || isSending ? (
           <span className="text-xs text-gray-500 flex items-center gap-1">
             <span className="material-symbols-outlined text-sm leading-none animate-spin">progress_activity</span>
-            Saving…
+            {isSending ? 'Sending…' : 'Saving…'}
           </span>
         ) : alreadyDone ? (
-          <span className="text-xs text-gray-600 italic">Done</span>
+          <div className="space-y-1">
+            <span className="text-xs text-gray-600 italic">Done</span>
+            {w.payout_tx_hash && (
+              <a
+                href={`https://stellar.expert/explorer/public/tx/${w.payout_tx_hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-[10px] text-blue-400 hover:underline"
+              >
+                <span className="material-symbols-outlined text-[10px]">open_in_new</span>
+                Explorer
+              </a>
+            )}
+          </div>
         ) : (
           <div className="flex flex-col gap-1.5">
-            {/* Mark Paid */}
+            {/* Auto-Send Payment (asset prizes only) */}
+            {isSendable && (
+              <button
+                onClick={() => onSend(w.id)}
+                className="text-xs bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 px-2 py-0.5 rounded font-semibold transition whitespace-nowrap flex items-center gap-1"
+              >
+                <span className="material-symbols-outlined text-xs leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>send</span>
+                Send Payment
+              </button>
+            )}
+            {sendError && (
+              <p className="text-[10px] text-red-400 max-w-[160px] leading-tight">{sendError}</p>
+            )}
+            {noTrustInfo && (
+              <div className="flex flex-col gap-1 mt-0.5">
+                {notifyDone ? (
+                  <span className="text-[10px] text-green-400 font-semibold">✓ Notified via Telegram</span>
+                ) : (
+                  <button
+                    onClick={() => onNotify(w.id)}
+                    disabled={notifying === w.id}
+                    className="text-[10px] bg-yellow-500/15 text-yellow-400 hover:bg-yellow-500/25 px-2 py-0.5 rounded font-semibold transition whitespace-nowrap flex items-center gap-1 disabled:opacity-50"
+                  >
+                    {notifying === w.id
+                      ? <span className="material-symbols-outlined text-[10px] leading-none animate-spin">progress_activity</span>
+                      : <span className="material-symbols-outlined text-[10px] leading-none">send</span>
+                    }
+                    Notify User
+                  </button>
+                )}
+                <a
+                  href={noTrustInfo.lobstrDeeplink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-blue-400 hover:underline flex items-center gap-0.5"
+                >
+                  <span className="material-symbols-outlined text-[10px] leading-none">open_in_new</span>
+                  Trustline link
+                </a>
+              </div>
+            )}
+
+            {/* Mark Paid manually */}
             {isConfirmingPaid ? (
               <span className="inline-flex items-center gap-1 text-xs">
                 <span className="text-gray-400">Sure?</span>

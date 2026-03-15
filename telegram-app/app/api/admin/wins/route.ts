@@ -38,6 +38,25 @@ export async function GET(req: NextRequest) {
   const total = count ?? 0
   const totalPages = Math.ceil(total / limit) || 1
 
+  // Fetch user display names for this page's telegram_ids
+  const telegramIds: number[] = [...new Set((wins ?? []).map((w: { telegram_id: number }) => w.telegram_id))]
+  const userMap: Record<number, { first_name: string | null; username: string | null }> = {}
+  if (telegramIds.length > 0) {
+    const { data: users } = await (supabase as any)
+      .from('users')
+      .select('telegram_id, telegram_first_name, telegram_username')
+      .in('telegram_id', telegramIds)
+    for (const u of (users ?? [])) {
+      userMap[u.telegram_id] = { first_name: u.telegram_first_name ?? null, username: u.telegram_username ?? null }
+    }
+  }
+
+  const winsWithNames = (wins ?? []).map((w: { telegram_id: number }) => ({
+    ...w,
+    user_first_name: userMap[w.telegram_id]?.first_name ?? null,
+    user_username: userMap[w.telegram_id]?.username ?? null,
+  }))
+
   // fetch counts per payout_status for stat tiles
   const { data: countRows } = await (supabase as any)
     .from('lucky_draw_wins')
@@ -48,5 +67,5 @@ export async function GET(req: NextRequest) {
     if (row.payout_status in counts) counts[row.payout_status as keyof typeof counts]++
   }
 
-  return ok({ wins: wins ?? [], total, page, totalPages, counts })
+  return ok({ wins: winsWithNames, total, page, totalPages, counts })
 }

@@ -469,7 +469,7 @@ function LuckyDraw({ onBack, stellarAddress, onSpinComplete, initialCanSpin, ini
                     {stellarAddress && (
                       <TrustlineChecker
                         stellarAddress={stellarAddress}
-                        requiredCodes={[getAssetSymbol(result)]}
+                        requiredCodes={['wXLM', 'wNSAFL', 'wXRP', 'wUSDC']}
                       />
                     )}
                     <button
