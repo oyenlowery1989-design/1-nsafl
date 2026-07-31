@@ -1,9 +1,9 @@
 'use client'
 import { useEffect, useState, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { Icon } from '../components/ui'
 import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
 import { REWARD_ASSETS } from '@/lib/rewardAssets'
+import { useAdminToken } from '../hooks/useAdminToken'
 
 type SenderConfig = {
   senderPublicKey: string
@@ -13,19 +13,11 @@ type SenderConfig = {
 }
 
 function SettingsContent() {
-  const params = useSearchParams()
-  const [token, setToken] = useState('')
+  const token = useAdminToken() ?? ''
   const [config, setConfig] = useState<SenderConfig | null>(null)
   const [loading, setLoading] = useState(true)
   const [envStatus, setEnvStatus] = useState<Record<string, boolean> | null>(null)
   const [envLoading, setEnvLoading] = useState(false)
-
-  useEffect(() => {
-    const urlToken = params.get('token')
-    const t = urlToken ?? localStorage.getItem('admin_token') ?? ''
-    if (urlToken) localStorage.setItem('admin_token', urlToken)
-    setToken(t)
-  }, [params])
 
   useEffect(() => {
     if (!token) return

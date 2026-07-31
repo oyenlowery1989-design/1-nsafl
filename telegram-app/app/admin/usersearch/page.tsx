@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useAdminToken } from '../hooks/useAdminToken'
 import { Icon } from '../components/ui'
 
 type SearchUser = {
@@ -17,19 +17,11 @@ type SearchUser = {
 }
 
 function UserSearchContent() {
-  const params = useSearchParams()
-  const [token, setToken] = useState('')
+  const token = useAdminToken() ?? ''
   const [q, setQ] = useState('')
   const [searching, setSearching] = useState(false)
   const [results, setResults] = useState<SearchUser[]>([])
   const [err, setErr] = useState('')
-
-  useEffect(() => {
-    const urlToken = params.get('token')
-    const t = urlToken ?? localStorage.getItem('admin_token') ?? ''
-    if (urlToken) localStorage.setItem('admin_token', urlToken)
-    setToken(t)
-  }, [params])
 
   async function handleSearch(e?: React.FormEvent) {
     e?.preventDefault()

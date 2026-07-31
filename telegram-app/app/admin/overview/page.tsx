@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useAdminToken } from '../hooks/useAdminToken'
 import Link from 'next/link'
 import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
 import { Icon } from '../components/ui'
@@ -38,8 +38,7 @@ function TrendBadge({ today, yesterday }: { today: number; yesterday: number }) 
 }
 
 function OverviewContent() {
-  const params = useSearchParams()
-  const [token, setToken] = useState('')
+  const token = useAdminToken() ?? ''
   const [data, setData] = useState<AdminData | null>(null)
   const [winStats, setWinStats] = useState({ total: 0, pending: 0 })
   const [stats, setStats] = useState<{
@@ -56,13 +55,6 @@ function OverviewContent() {
   // Pending wins notification
   const [prevPending, setPrevPending] = useState<number | null>(null)
   const [newPendingToast, setNewPendingToast] = useState(false)
-
-  useEffect(() => {
-    const urlToken = params.get('token')
-    const t = urlToken ?? localStorage.getItem('admin_token') ?? ''
-    if (urlToken) localStorage.setItem('admin_token', urlToken)
-    setToken(t)
-  }, [params])
 
   const fetchAll = useCallback(async (t: string) => {
     if (!t) return

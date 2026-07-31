@@ -1,6 +1,5 @@
 'use client'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 import { Icon } from './ui'
 import type { Tab } from '../types'
 
@@ -44,9 +43,6 @@ export function AdminSidebar({
   totalUsers, totalDonations, totalPurchases, totalGameSessions,
   suspiciousCount, referralCount, pendingWins, newSuspiciousCount,
 }: Props) {
-  const params = useSearchParams()
-  const token = params.get('token') ?? ''
-
   const groups: NavGroup[] = [
     {
       label: 'Main',
@@ -79,7 +75,7 @@ export function AdminSidebar({
         { key: 'trustline', label: 'Trustlines', icon: 'add_link' },
       ],
       links: [
-        { href: `/admin/wins?token=${token}`, label: 'Game Wins', icon: 'emoji_events', badge: pendingWins > 0 ? pendingWins : undefined },
+        { href: '/admin/wins', label: 'Game Wins', icon: 'emoji_events', badge: pendingWins > 0 ? pendingWins : undefined },
       ],
     },
   ]

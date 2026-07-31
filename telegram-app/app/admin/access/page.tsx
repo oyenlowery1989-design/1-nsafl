@@ -1,10 +1,10 @@
 'use client'
 import { useEffect, useState, useCallback, Suspense, Fragment } from 'react'
-import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import type { AccessAttempt } from '../types'
 import { Badge, Card, Th, Td, Icon } from '../components/ui'
 import { dt, ago } from '../utils'
+import { useAdminToken } from '../hooks/useAdminToken'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 type TimeFilter = '1h' | '24h' | '7d' | 'all'
@@ -45,7 +45,7 @@ function typeBadge(a: AccessAttempt): { label: string; color: string } {
 
 // ── Inner component ───────────────────────────────────────────────────────────
 function AccessPageInner() {
-  const searchParams = useSearchParams()
+  const token = useAdminToken() ?? ''
 
   const [attempts, setAttempts] = useState<AccessAttempt[]>([])
   const [loading, setLoading] = useState(true)
@@ -57,10 +57,6 @@ function AccessPageInner() {
   const [blockingIp, setBlockingIp] = useState<string | null>(null)
   const [bulkConfirm, setBulkConfirm] = useState(false)
   const [bulkDeleting, setBulkDeleting] = useState(false)
-
-  const token = typeof window !== 'undefined'
-    ? (searchParams.get('token') || localStorage.getItem('admin_token') || '')
-    : ''
 
   const fetchData = useCallback(async () => {
     if (!token) { setError('No admin token'); setLoading(false); return }

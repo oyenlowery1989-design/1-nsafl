@@ -1,27 +1,19 @@
 'use client'
 import { useEffect, useState, useMemo, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useAdminToken } from '../hooks/useAdminToken'
 import { Card, Th, Td } from '../components/ui'
 import { dt, num, shortAddr } from '../utils'
 import type { AdminData, WalletRef } from '../types'
 import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
 
 function PurchasesContent() {
-  const params = useSearchParams()
-  const [token, setToken] = useState('')
+  const token = useAdminToken() ?? ''
   const [data, setData] = useState<AdminData | null>(null)
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'unverified' | 'direct' | 'advanced'>('all')
   const [search, setSearch] = useState('')
   const [verifyingId, setVerifyingId] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
-
-  useEffect(() => {
-    const urlToken = params.get('token')
-    const t = urlToken ?? localStorage.getItem('admin_token') ?? ''
-    if (urlToken) localStorage.setItem('admin_token', urlToken)
-    setToken(t)
-  }, [params])
 
   useEffect(() => {
     if (!token) return

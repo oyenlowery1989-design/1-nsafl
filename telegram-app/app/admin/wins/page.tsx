@@ -496,7 +496,7 @@ function WinsPageInner() {
       {/* ── Header ── */}
       <header className="bg-[#0d1424] border-b border-white/8 px-6 py-3 flex items-center gap-4 sticky top-0 z-20">
         <Link
-          href={`/admin?token=${token}`}
+          href="/admin"
           className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition shrink-0"
         >
           <Icon name="arrow_back" className="text-base" />

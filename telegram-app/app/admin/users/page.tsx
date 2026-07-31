@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback, useMemo, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useAdminToken } from '../hooks/useAdminToken'
 import { Badge, Card, Th, Td, Icon, StatTile } from '../components/ui'
 import { UserDetail } from '../components/UserDetail'
 import { ConfirmModal } from '../components/ConfirmModal'
@@ -49,19 +49,8 @@ type StatusFilter = 'all' | 'active' | 'blocked'
 // ── Inner page ───────────────────────────────────────────────────────────────
 
 function UsersPageInner() {
-  const params = useSearchParams()
-
   // Auth
-  const [token, setToken] = useState<string | null>(null)
-  useEffect(() => {
-    const urlToken = params.get('token')
-    if (urlToken) {
-      localStorage.setItem('admin_token', urlToken)
-      setToken(urlToken)
-      return
-    }
-    setToken(localStorage.getItem('admin_token') ?? '')
-  }, [params])
+  const token = useAdminToken()
 
   // Data
   const [data, setData] = useState<AdminData | null>(null)
@@ -258,7 +247,7 @@ function UsersPageInner() {
   if (token === null) return <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center"><span className="text-gray-500 text-sm">Loading...</span></div>
   if (token === '') return (
     <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
-      <p className="text-red-400 text-sm">No admin token. Add <code className="bg-white/10 px-1.5 py-0.5 rounded text-xs">?token=...</code> to the URL.</p>
+      <p className="text-red-400 text-sm">No admin token. Log in via <a href="/admin" className="underline">/admin</a>.</p>
     </div>
   )
 

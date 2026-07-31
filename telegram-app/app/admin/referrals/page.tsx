@@ -1,26 +1,15 @@
 'use client'
 import { useEffect, useState, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useAdminToken } from '../hooks/useAdminToken'
 import { Badge, Card, Th, Td, StatTile, SectionTitle, Icon } from '../components/ui'
 import { ago, num } from '../utils'
 import type { AdminData, ReferralStat, ReferredUser } from '../types'
 
 function ReferralsPageInner() {
-  const params = useSearchParams()
-  const [token, setToken] = useState<string | null>(null)
+  const token = useAdminToken()
   const [data, setData] = useState<AdminData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const urlToken = params.get('token')
-    if (urlToken) {
-      localStorage.setItem('admin_token', urlToken)
-      setToken(urlToken)
-    } else {
-      setToken(localStorage.getItem('admin_token') ?? '')
-    }
-  }, [params])
 
   useEffect(() => {
     if (token === null || token === '') return

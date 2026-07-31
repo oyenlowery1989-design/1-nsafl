@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useAdminToken } from '../hooks/useAdminToken'
 import { Icon } from '../components/ui'
 
 const TEMPLATES = [
@@ -23,8 +23,7 @@ const TEMPLATES = [
 ]
 
 function BroadcastContent() {
-  const params = useSearchParams()
-  const [token, setToken] = useState('')
+  const token = useAdminToken() ?? ''
   const [message, setMessage] = useState('')
   const [onlyOptedIn, setOnlyOptedIn] = useState(true)
   const [preview, setPreview] = useState<{ recipientCount: number } | null>(null)
@@ -33,13 +32,6 @@ function BroadcastContent() {
   const [result, setResult] = useState<{ sent: number; errors: number } | null>(null)
   const [confirm, setConfirm] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState('')
-
-  useEffect(() => {
-    const urlToken = params.get('token')
-    const t = urlToken ?? localStorage.getItem('admin_token') ?? ''
-    if (urlToken) localStorage.setItem('admin_token', urlToken)
-    setToken(t)
-  }, [params])
 
   async function handlePreview() {
     setPreviewing(true); setPreview(null)

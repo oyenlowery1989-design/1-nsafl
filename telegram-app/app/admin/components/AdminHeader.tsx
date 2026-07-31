@@ -4,13 +4,12 @@ import { Icon } from './ui'
 import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
 
 interface Props {
-  token: string
   winStats: { total: number; pending: number }
   onRefresh: () => void
   onLogout: () => void
 }
 
-export function AdminHeader({ token, winStats, onRefresh, onLogout }: Props) {
+export function AdminHeader({ winStats, onRefresh, onLogout }: Props) {
   const [confirmLogout, setConfirmLogout] = useState(false)
 
   return (
@@ -28,7 +27,7 @@ export function AdminHeader({ token, winStats, onRefresh, onLogout }: Props) {
       <div className="flex items-center gap-2">
         {/* Wins link */}
         <a
-          href={`/admin/wins?token=${token}`}
+          href="/admin/wins"
           className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#D4AF37] border border-white/10 rounded-lg px-3 py-1.5 hover:bg-white/5 transition"
         >
           <Icon name="emoji_events" className="text-sm" />

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { ok, fail } from '@/lib/api-response'
 import { createServiceClient } from '@/lib/supabase-server'
+import { verifyAdminToken } from '@/app/api/admin/route'
 
 const isDev =
   process.env.NODE_ENV !== 'production' &&
@@ -31,11 +32,9 @@ async function sendTelegramMessage(
 }
 
 export async function POST(req: NextRequest) {
-  // Accept either x-admin-token (standard) or x-admin-key (legacy)
   const adminToken = process.env.ADMIN_SECRET_TOKEN
-  if (adminToken && !isDev) {
-    const provided = req.headers.get('x-admin-token') ?? req.headers.get('x-admin-key') ?? ''
-    if (provided !== adminToken) return fail('Unauthorized', 'UNAUTHORIZED', 401)
+  if (adminToken && !isDev && !verifyAdminToken(req)) {
+    return fail('Unauthorized', 'UNAUTHORIZED', 401)
   }
 
   let body: { telegram_id?: unknown; broadcast?: unknown; message?: unknown }

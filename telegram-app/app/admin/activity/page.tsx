@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useAdminToken } from '../hooks/useAdminToken'
 import { Icon } from '../components/ui'
 
 type PaidWin = {
@@ -17,18 +17,10 @@ type PaidWin = {
 }
 
 function ActivityContent() {
-  const params = useSearchParams()
-  const [token, setToken] = useState('')
+  const token = useAdminToken() ?? ''
   const [wins, setWins] = useState<PaidWin[]>([])
   const [loading, setLoading] = useState(true)
   const [filterAdmin, setFilterAdmin] = useState('')
-
-  useEffect(() => {
-    const urlToken = params.get('token')
-    const t = urlToken ?? localStorage.getItem('admin_token') ?? ''
-    if (urlToken) localStorage.setItem('admin_token', urlToken)
-    setToken(t)
-  }, [params])
 
   useEffect(() => {
     if (!token) return

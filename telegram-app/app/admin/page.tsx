@@ -1,29 +1,22 @@
 'use client'
 import { useEffect, useState, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
 import { Icon } from './components/ui'
 
 function AdminLoginContent() {
   const router = useRouter()
-  const params = useSearchParams()
   const [tokenInput, setTokenInput] = useState('')
   const [checked, setChecked] = useState(false)
 
   useEffect(() => {
-    const urlToken = params.get('token')
-    if (urlToken) {
-      localStorage.setItem('admin_token', urlToken)
-      router.push('/admin/overview')
-      return
-    }
     const stored = localStorage.getItem('admin_token')
     if (stored) {
       router.push('/admin/overview')
       return
     }
     setChecked(true)
-  }, [params, router])
+  }, [router])
 
   function handleSubmit() {
     const t = tokenInput.trim()
@@ -48,7 +41,7 @@ function AdminLoginContent() {
             <p className="text-xs text-gray-500">{PRIMARY_CUSTOM_ASSET_CODE} Hub</p>
           </div>
         </div>
-        <div className="hidden">
+        <div>
           <label className="block text-xs font-medium text-gray-400 mb-1.5">Admin Token</label>
           <input
             type="password"
@@ -60,7 +53,7 @@ function AdminLoginContent() {
             autoFocus
           />
         </div>
-        <div className="hidden">
+        <div>
           <button
             onClick={handleSubmit}
             className="w-full bg-[#D4AF37] text-black font-bold rounded-lg py-2.5 text-sm hover:bg-[#c9a42e] transition"
@@ -68,7 +61,6 @@ function AdminLoginContent() {
             Enter
           </button>
         </div>
-        <p className="text-xs text-gray-500 text-center">Access via <span className="font-mono text-gray-400">?token=…</span> URL parameter.</p>
       </div>
     </div>
   )

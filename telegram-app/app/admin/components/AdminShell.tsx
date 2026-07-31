@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, Suspense } from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
 import { Icon } from './ui'
@@ -44,27 +44,20 @@ const NAV_GROUPS = [
 function AdminShellInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const params = useSearchParams()
   const [token, setToken] = useState<string | null>(null)
   const [pendingWins, setPendingWins] = useState(0)
   const [confirmLogout, setConfirmLogout] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  // Read / save token
+  // Read token from localStorage only
   useEffect(() => {
-    const urlToken = params.get('token')
-    if (urlToken) {
-      localStorage.setItem('admin_token', urlToken)
-      setToken(urlToken)
-      return
-    }
     const stored = localStorage.getItem('admin_token')
     if (!stored && pathname !== '/admin') {
       router.push('/admin')
       return
     }
     setToken(stored ?? '')
-  }, [params, pathname, router])
+  }, [pathname, router])
 
   // Poll pending wins badge
   useEffect(() => {

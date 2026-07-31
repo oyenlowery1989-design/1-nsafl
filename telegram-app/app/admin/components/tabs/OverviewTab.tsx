@@ -13,14 +13,13 @@ interface Props {
   totalKicks: number
   suspiciousAccess: number
   winStats: { total: number; pending: number }
-  token: string
   onSelectUser: (u: User) => void
   onTabChange: (tab: import('../../types').Tab) => void
 }
 
 export function OverviewTab({
   data, totalUsers, totalWallets, totalTokenHeld, totalXlmHeld,
-  totalKicks, suspiciousAccess, winStats, token, onSelectUser, onTabChange,
+  totalKicks, suspiciousAccess, winStats, onSelectUser, onTabChange,
 }: Props) {
   return (
     <div className="space-y-5">
@@ -63,7 +62,7 @@ export function OverviewTab({
           </div>
         </div>
         <a
-          href={`/admin/wins?token=${token}`}
+          href="/admin/wins"
           className="text-xs text-[#D4AF37] hover:text-yellow-300 border border-[#D4AF37]/30 rounded-lg px-3 py-1.5 hover:bg-[#D4AF37]/10 transition shrink-0 font-semibold"
         >
           View all →

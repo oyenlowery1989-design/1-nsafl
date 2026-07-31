@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useMemo, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useAdminToken } from '../hooks/useAdminToken'
 import { Card, Th, Td, Icon } from '../components/ui'
 import { dt, num, shortAddr } from '../utils'
 import type { AdminData, Donation, WalletRef } from '../types'
@@ -15,21 +15,13 @@ function DonationTypeBadge({ type }: { type: string }) {
 }
 
 function DonationsContent() {
-  const params = useSearchParams()
-  const [token, setToken] = useState('')
+  const token = useAdminToken() ?? ''
   const [data, setData] = useState<AdminData | null>(null)
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'unverified' | 'team' | 'player' | 'general'>('all')
   const [search, setSearch] = useState('')
   const [verifyingId, setVerifyingId] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
-
-  useEffect(() => {
-    const urlToken = params.get('token')
-    const t = urlToken ?? localStorage.getItem('admin_token') ?? ''
-    if (urlToken) localStorage.setItem('admin_token', urlToken)
-    setToken(t)
-  }, [params])
 
   useEffect(() => {
     if (!token) return
