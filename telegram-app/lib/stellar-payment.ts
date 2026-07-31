@@ -94,12 +94,15 @@ export async function sendPrizePayment(
   try {
     // Idempotency: claim the row first. If a previous attempt already claimed or paid
     // this win (crash between submit and update, admin double-click), refuse to re-send.
-    const { data: claimed } = await supabase
+    const { data: claimed, error: claimError } = await supabase
       .from('lucky_draw_wins')
       .update({ payout_status: 'paying' })
       .eq('id', winId)
       .eq('payout_status', 'pending')
       .select('id')
+    if (claimError) {
+      return { sent: false, error: claimError.message, code: 'DB_ERROR' }
+    }
     if (!claimed?.length) {
       return { sent: false, error: 'Win is not pending (already paid or in flight)', code: 'ALREADY_PAID' }
     }
@@ -126,7 +129,7 @@ export async function sendPrizePayment(
     const result = await server.submitTransaction(tx)
 
     // Mark win as paid
-    await supabase.from('lucky_draw_wins').update({
+    const { error: paidError } = await supabase.from('lucky_draw_wins').update({
       claimed: true,
       claimed_at: new Date().toISOString(),
       payout_status: 'paid',
@@ -134,6 +137,10 @@ export async function sendPrizePayment(
       payout_at: new Date().toISOString(),
       payout_notes: `Auto-sent. Memo: ${REWARD_MEMO}`,
     }).eq('id', winId)
+
+    if (paidError) {
+      console.error(`sendPrizePayment: paid update failed for winId ${winId}, txHash ${result.hash}:`, paidError.message)
+    }
 
     return { sent: true, txHash: result.hash }
   } catch (err) {
