@@ -92,6 +92,18 @@ export async function sendPrizePayment(
   if (!asset.issuer) return { sent: false, error: `Issuer not configured for ${asset.code}`, code: 'CONFIG_ERROR' }
 
   try {
+    // Idempotency: claim the row first. If a previous attempt already claimed or paid
+    // this win (crash between submit and update, admin double-click), refuse to re-send.
+    const { data: claimed } = await supabase
+      .from('lucky_draw_wins')
+      .update({ payout_status: 'paying' })
+      .eq('id', winId)
+      .eq('payout_status', 'pending')
+      .select('id')
+    if (!claimed?.length) {
+      return { sent: false, error: 'Win is not pending (already paid or in flight)', code: 'ALREADY_PAID' }
+    }
+
     const senderKeypair = Keypair.fromSecret(REWARD_SENDER_SECRET)
     const server = new Horizon.Server(HORIZON_URL)
     const senderAccount = await server.loadAccount(senderKeypair.publicKey())
@@ -127,6 +139,12 @@ export async function sendPrizePayment(
   } catch (err) {
     const { message, code } = parseHorizonError(err)
     console.error(`sendPrizePayment error [${code}]:`, message)
+
+    // Release the claim so admin can retry
+    await supabase.from('lucky_draw_wins')
+      .update({ payout_status: 'pending', payout_notes: `Auto-send failed: ${code} ${message}`.slice(0, 200) })
+      .eq('id', winId).eq('payout_status', 'paying')
+
     const asset2 = prizeToAsset(prize)
     return {
       sent: false,

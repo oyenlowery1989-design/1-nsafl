@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
 
   if (!win) return fail('Win not found', 'NOT_FOUND', 404)
   if (!win.wallet_address) return fail('No wallet address on this win', 'BAD_REQUEST')
-  if (win.payout_status === 'paid') return fail('Already paid', 'ALREADY_PAID', 409)
+  if (win.payout_status === 'paid' || win.payout_status === 'paying') return fail('Already paid or in flight', 'ALREADY_PAID', 409)
   if (!win.amount || win.amount <= 0) return fail('Invalid prize amount', 'BAD_REQUEST')
 
   // ── Tier 1 check — must hold ≥100 NSAFL to receive rewards ──────────────────
