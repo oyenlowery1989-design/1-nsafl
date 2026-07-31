@@ -234,43 +234,6 @@ export async function POST(req: NextRequest) {
       return fail("Invalid transaction hash format", "INVALID_TX_HASH");
     }
 
-    // Verify transaction on Stellar Horizon
-    let verified = false;
-    try {
-      const txRes = await fetch(`${HORIZON_URL}/transactions/${txHash}`, {
-        signal: AbortSignal.timeout(8000),
-      });
-      if (txRes.ok) {
-        // Fetch operations for this transaction to verify destination and asset
-        const opsRes = await fetch(
-          `${HORIZON_URL}/transactions/${txHash}/operations`,
-          { signal: AbortSignal.timeout(8000) },
-        );
-        if (opsRes.ok) {
-          const opsData = await opsRes.json();
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const operations = opsData._embedded?.records ?? ([] as any[]);
-          // Check if any payment operation matches our criteria: correct destination,
-          // correct issued asset (or native XLM), and at least the claimed amount.
-          for (const op of operations) {
-            const isPayment = op.type === "payment";
-            const destMatch = op.to === SUPPORTER_WALLET;
-            const assetMatch =
-              op.asset_code === ASSET_CODE &&
-              (op.asset_type === "native" ||
-                op.asset_issuer === process.env.NEXT_PUBLIC_PRIMARY_ASSET_ISSUER);
-            const amountMatch = Number(op.amount) >= amount;
-            if (isPayment && destMatch && assetMatch && amountMatch) {
-              verified = true;
-              break;
-            }
-          }
-        }
-      }
-    } catch {
-      // Horizon unreachable — record as unverified
-    }
-
     const supabase = createServiceClient();
 
     // Resolve the caller's own wallet — never trust a client-supplied address
@@ -281,6 +244,47 @@ export async function POST(req: NextRequest) {
         "WALLET_NOT_FOUND",
       );
     }
+
+    // Verify transaction on Stellar Horizon
+    let verified = false;
+    try {
+      const txRes = await fetch(`${HORIZON_URL}/transactions/${txHash}`, {
+        signal: AbortSignal.timeout(8000),
+      });
+      if (txRes.ok) {
+        // Fetch operations for this transaction to verify source, destination and asset
+        const opsRes = await fetch(
+          `${HORIZON_URL}/transactions/${txHash}/operations`,
+          { signal: AbortSignal.timeout(8000) },
+        );
+        if (opsRes.ok) {
+          const opsData = await opsRes.json();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const operations = opsData._embedded?.records ?? ([] as any[]);
+          // Check if any payment operation matches our criteria: sent BY the caller's own
+          // wallet, correct destination, correct issued asset (or native XLM), and at
+          // least the claimed amount. The source check stops someone from claiming credit
+          // for a stranger's public on-chain payment by submitting its txHash.
+          for (const op of operations) {
+            const isPayment = op.type === "payment";
+            const sourceMatch = (op.from ?? op.source_account) === caller.address;
+            const destMatch = op.to === SUPPORTER_WALLET;
+            const assetMatch =
+              op.asset_code === ASSET_CODE &&
+              (op.asset_type === "native" ||
+                op.asset_issuer === process.env.NEXT_PUBLIC_PRIMARY_ASSET_ISSUER);
+            const amountMatch = Number(op.amount) >= amount;
+            if (isPayment && sourceMatch && destMatch && assetMatch && amountMatch) {
+              verified = true;
+              break;
+            }
+          }
+        }
+      }
+    } catch {
+      // Horizon unreachable — record as unverified
+    }
+
     // Check for duplicate tx hash
     const { data: existingDonation } = await supabase
       .from("donations")
@@ -308,6 +312,11 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (insertErr) {
+      // Unique-index race: two concurrent submits of the same txHash both pass the
+      // check-then-insert above — the DB constraint is the real guard, this is its 409.
+      if (insertErr.code === "23505") {
+        return fail("This transaction has already been recorded", "DUPLICATE_TX");
+      }
       return fail("Failed to record donation", "INSERT_ERROR", 500);
     }
 
