@@ -3,36 +3,84 @@ import { ok, fail } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { createServiceClient } from "@/lib/supabase-server";
 import { formatAmount } from "@/lib/format";
+import { validateTelegramInitData, TelegramUser } from "@/lib/telegram";
+import { verifyAdminToken } from "@/app/api/admin/route";
 
 const HORIZON_URL =
   process.env.NEXT_PUBLIC_HORIZON_URL ?? "https://horizon.stellar.org";
 const ASSET_CODE = process.env.NEXT_PUBLIC_PRIMARY_ASSET_CODE ?? "NSAFL";
 const SUPPORTER_WALLET = process.env.NEXT_PUBLIC_PRIMARY_ASSET_ISSUER ?? "";
 
+const isDev =
+  process.env.NODE_ENV !== "production" &&
+  process.env.NEXT_PUBLIC_DEV_BYPASS === "true";
+
+/** Reads initData header, validates it (dev bypass aside), returns the caller's Telegram user or null. */
+function authenticate(req: NextRequest): TelegramUser | null {
+  if (isDev) return { id: 999999999, first_name: "Dev", last_name: "User", username: "devuser" };
+  const initData = req.headers.get("x-telegram-init-data") ?? "";
+  return validateTelegramInitData(initData, process.env.TELEGRAM_BOT_TOKEN!);
+}
+
+/** Resolves the caller's own stellar wallet address from users -> wallets by telegram_id. */
+async function resolveCallerAddress(
+  supabase: ReturnType<typeof createServiceClient>,
+  telegramId: number,
+): Promise<{ walletId: string; address: string } | null> {
+  const { data: userRow } = await (supabase as any)
+    .from("users")
+    .select("id")
+    .eq("telegram_id", telegramId)
+    .maybeSingle();
+  if (!userRow?.id) return null;
+
+  const { data: wallet } = await supabase
+    .from("wallets")
+    .select("id, stellar_address")
+    .eq("user_id", userRow.id)
+    .eq("is_primary", true)
+    .maybeSingle();
+  if (!wallet) return null;
+
+  return { walletId: wallet.id, address: wallet.stellar_address };
+}
+
 export async function GET(req: NextRequest) {
-  const rateLimitError = checkRateLimit(req)
+  const rateLimitError = checkRateLimit(req, 30)
   if (rateLimitError) return rateLimitError
 
   try {
     const supabase = createServiceClient();
 
-    // If ?address= is provided, return that wallet's own donations
+    // If ?address= is provided, only the caller's own history is returned (or an admin's).
     const address = req.nextUrl.searchParams.get("address");
     if (address) {
-      const { data: wallet } = await supabase
-        .from("wallets")
-        .select("id")
-        .eq("stellar_address", address)
-        .maybeSingle();
+      const isAdmin = verifyAdminToken(req);
+      let walletId: string | null = null;
 
-      if (!wallet) return ok({ donations: [] });
+      if (isAdmin) {
+        const { data: wallet } = await supabase
+          .from("wallets")
+          .select("id")
+          .eq("stellar_address", address)
+          .maybeSingle();
+        walletId = wallet?.id ?? null;
+      } else {
+        const telegramUser = authenticate(req);
+        if (!telegramUser) return fail("Invalid Telegram auth", "INVALID_AUTH", 401);
+        const caller = await resolveCallerAddress(supabase, telegramUser.id);
+        if (!caller) return ok({ donations: [] });
+        walletId = caller.walletId;
+      }
+
+      if (!walletId) return ok({ donations: [] });
 
       const { data: rows } = await supabase
         .from("donations")
         .select(
           "id, amount, asset_code, donation_type, donation_target, stellar_tx_hash, verified, created_at",
         )
-        .eq("wallet_id", wallet.id)
+        .eq("wallet_id", walletId)
         .order("created_at", { ascending: false });
 
       return ok({ donations: rows ?? [] });
@@ -156,19 +204,20 @@ export async function POST(req: NextRequest) {
   const rateLimitError = checkRateLimit(req, 10); // 10 donations/min max
   if (rateLimitError) return rateLimitError;
 
+  const telegramUser = authenticate(req);
+  if (!telegramUser) return fail("Invalid Telegram auth", "INVALID_AUTH", 401);
+
   try {
     const body = await req.json();
-    const { stellarAddress, amount, donationType, donationTarget, txHash } =
-      body as {
-        stellarAddress: string;
-        amount: number;
-        donationType: string;
-        donationTarget?: string;
-        txHash: string;
-      };
+    const { amount, donationType, donationTarget, txHash } = body as {
+      amount: number;
+      donationType: string;
+      donationTarget?: string;
+      txHash: string;
+    };
 
     // Validate required fields
-    if (!stellarAddress || !amount || !donationType || !txHash) {
+    if (!amount || !donationType || !txHash) {
       return fail("Missing required fields", "MISSING_FIELDS");
     }
 
@@ -201,12 +250,17 @@ export async function POST(req: NextRequest) {
           const opsData = await opsRes.json();
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const operations = opsData._embedded?.records ?? ([] as any[]);
-          // Check if any payment operation matches our criteria
+          // Check if any payment operation matches our criteria: correct destination,
+          // correct issued asset (or native XLM), and at least the claimed amount.
           for (const op of operations) {
             const isPayment = op.type === "payment";
             const destMatch = op.to === SUPPORTER_WALLET;
-            const assetMatch = op.asset_code === ASSET_CODE;
-            if (isPayment && destMatch && assetMatch) {
+            const assetMatch =
+              op.asset_code === ASSET_CODE &&
+              (op.asset_type === "native" ||
+                op.asset_issuer === process.env.NEXT_PUBLIC_PRIMARY_ASSET_ISSUER);
+            const amountMatch = Number(op.amount) >= amount;
+            if (isPayment && destMatch && assetMatch && amountMatch) {
               verified = true;
               break;
             }
@@ -219,20 +273,14 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServiceClient();
 
-    // Look up wallet_id from stellar_address
-    const { data: walletData, error: walletErr } = await supabase
-      .from("wallets")
-      .select("id")
-      .eq("stellar_address", stellarAddress)
-      .single();
-
-    if (walletErr || !walletData) {
+    // Resolve the caller's own wallet — never trust a client-supplied address
+    const caller = await resolveCallerAddress(supabase, telegramUser.id);
+    if (!caller) {
       return fail(
         "Wallet not found — connect your wallet first",
         "WALLET_NOT_FOUND",
       );
     }
-
     // Check for duplicate tx hash
     const { data: existingDonation } = await supabase
       .from("donations")
@@ -248,7 +296,7 @@ export async function POST(req: NextRequest) {
     const { data: donation, error: insertErr } = await supabase
       .from("donations")
       .insert({
-        wallet_id: walletData.id,
+        wallet_id: caller.walletId,
         amount,
         asset_code: ASSET_CODE,
         donation_type: donationType,

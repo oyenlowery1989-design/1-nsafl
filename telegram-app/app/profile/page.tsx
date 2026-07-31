@@ -272,7 +272,9 @@ export default function ProfilePage() {
     if (!stellarAddress) return;
     setDonationsLoading(true);
     try {
-      const res = await fetch(`/api/donations?address=${stellarAddress}`);
+      const res = await fetch(`/api/donations?address=${stellarAddress}`, {
+        headers: { "x-telegram-init-data": getTelegramInitData() },
+      });
       const j = await res.json();
       if (j.success) {
         setDonations(j.data.donations ?? []);
