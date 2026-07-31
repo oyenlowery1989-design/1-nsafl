@@ -1,3 +1,5 @@
+import { randomInt } from 'crypto'
+
 export type GameSource = 'lucky_draw' | 'slot_machine' | 'scratch_card'
 
 export interface GamePrize {
@@ -46,7 +48,7 @@ export const PRIZE_TABLES: Record<GameSource, GamePrize[]> = {
 export function rollPrize(source: GameSource): { prize: GamePrize; index: number } {
   const table = PRIZE_TABLES[source]
   const total = table.reduce((s, p) => s + p.weight, 0)
-  let r = Math.random() * total
+  let r = randomInt(0, total) + 1
   for (let i = 0; i < table.length; i++) {
     r -= table[i].weight
     if (r <= 0) return { prize: table[i], index: i }
