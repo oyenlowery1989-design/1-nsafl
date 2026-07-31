@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, Suspense } from 'react'
+import { useState, Suspense } from 'react'
 import { useAdminToken } from '../hooks/useAdminToken'
 import { Icon } from '../components/ui'
 
