@@ -116,6 +116,16 @@ export async function POST(req: NextRequest) {
         prize_source: 'quiz',
       })
       prize = { label: picked.label, winCode }
+
+      if (picked.label === '+1 Ball') {
+        const { data: userRow } = await (supabase as any)
+          .from('users').select('bonus_balls').eq('telegram_id', telegramId).single()
+        await (supabase as any)
+          .from('users')
+          .update({ bonus_balls: (userRow?.bonus_balls ?? 0) + 1 })
+          .eq('telegram_id', telegramId)
+          .eq('bonus_balls', userRow?.bonus_balls ?? 0)
+      }
     }
   }
 
