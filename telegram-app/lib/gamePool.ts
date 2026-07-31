@@ -159,21 +159,58 @@ export async function consumeSpin(
   supabase: ReturnType<typeof createServiceClient>,
   telegramId: number,
   source: GameSource
-): Promise<{ ok: boolean }> {
+): Promise<{ ok: boolean; walletAddress: string | null }> {
   const status = await getSpinStatus(supabase, telegramId, source)
 
-  if (!status.canSpin) return { ok: false }
+  // Daily quota: atomic RPC (game_spin_counters + consume_daily_spin, migration 023) —
+  // authoritative under concurrent requests, unlike a count-then-insert check.
+  if (status.baseLimit > 0) {
+    const { data: consumed, error } = await (supabase as any).rpc('consume_daily_spin', {
+      p_telegram_id: telegramId,
+      p_source: source,
+      p_limit: status.baseLimit,
+    })
+    if (error) console.error(`consume_daily_spin RPC error for ${telegramId}/${source}:`, error.message)
+    if (!error && consumed) return { ok: true, walletAddress: status.walletAddress }
+  }
 
-  // If daily base is exhausted, consume a bonus spin — atomic decrement
-  if (status.spinsUsed >= status.baseLimit && status.bonusSpins > 0) {
+  // Tier-0 (baseLimit 0) or daily quota exhausted — fall through to the shared bonus pool.
+  if (status.bonusSpins > 0) {
     const { data: decremented } = await (supabase as any)
       .from('users')
       .update({ bonus_spins: status.bonusSpins - 1 })
       .eq('telegram_id', telegramId)
       .eq('bonus_spins', status.bonusSpins) // optimistic lock
       .select('bonus_spins')
-    if (!decremented?.length) return { ok: false }
+    if (decremented?.length) return { ok: true, walletAddress: status.walletAddress }
   }
 
-  return { ok: true }
+  return { ok: false, walletAddress: status.walletAddress }
+}
+
+/**
+ * Increment a shared bonus pool column (bonus_spins / bonus_balls) with an optimistic-locked
+ * read-then-write. Retries once on a lost lock (concurrent grant); logs and gives up after that —
+ * losing a rare race here means a bonus grant doesn't land, never a double-grant.
+ */
+export async function incrementBonusPool(
+  supabase: ReturnType<typeof createServiceClient>,
+  telegramId: number,
+  column: 'bonus_spins' | 'bonus_balls',
+  amount: number,
+  prizeLabel: string,
+): Promise<void> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const { data: userRow } = await (supabase as any)
+      .from('users').select(column).eq('telegram_id', telegramId).single()
+    const current = userRow?.[column] ?? 0
+    const { data: updated } = await (supabase as any)
+      .from('users')
+      .update({ [column]: current + amount })
+      .eq('telegram_id', telegramId)
+      .eq(column, current) // optimistic lock
+      .select(column)
+    if (updated?.length) return
+  }
+  console.error(`incrementBonusPool: lost optimistic lock twice — telegram_id=${telegramId} prize="${prizeLabel}" column=${column}`)
 }

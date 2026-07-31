@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { ok, fail } from '@/lib/api-response'
 import { createServiceClient } from '@/lib/supabase-server'
 import { validateTelegramInitData, parseTelegramUser } from '@/lib/telegram'
+import { incrementBonusPool } from '@/lib/gamePool'
 import { nanoid } from 'nanoid'
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ''
@@ -118,13 +119,7 @@ export async function POST(req: NextRequest) {
       prize = { label: picked.label, winCode }
 
       if (picked.label === '+1 Ball') {
-        const { data: userRow } = await (supabase as any)
-          .from('users').select('bonus_balls').eq('telegram_id', telegramId).single()
-        await (supabase as any)
-          .from('users')
-          .update({ bonus_balls: (userRow?.bonus_balls ?? 0) + 1 })
-          .eq('telegram_id', telegramId)
-          .eq('bonus_balls', userRow?.bonus_balls ?? 0)
+        await incrementBonusPool(supabase, telegramId, 'bonus_balls', 1, picked.label)
       }
     }
   }

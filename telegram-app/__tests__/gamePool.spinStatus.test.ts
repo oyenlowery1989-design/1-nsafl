@@ -5,6 +5,20 @@ import { GAME_LIMITS, getSpinStatus, consumeSpin } from '@/lib/gamePool'
 // .from(table).select(cols, opts?).eq(k,v)...eq(k,v).single()/.gte(k,v)
 // .from(table).update(patch).eq(k,v)...eq(k,v).select(cols)
 function fakeSupabase(tables: { users: any[]; wallets: any[]; wallet_balances: any[]; lucky_draw_wins: any[] }) {
+  // In-memory stand-in for the game_spin_counters table + consume_daily_spin RPC (migration 023).
+  // Seeded lazily from pre-existing lucky_draw_wins rows so tests that pre-seed "already played
+  // today" still see an exhausted counter on first RPC call.
+  const spinCounters: Record<string, number> = {}
+  function counterKey(telegramId: number, source: string) {
+    const key = `${telegramId}:${source}`
+    if (!(key in spinCounters)) {
+      const today = new Date(); today.setUTCHours(0, 0, 0, 0)
+      spinCounters[key] = tables.lucky_draw_wins.filter(
+        (r) => r.telegram_id === telegramId && r.prize_source === source && new Date(r.created_at) >= today
+      ).length
+    }
+    return key
+  }
   function builder(tableName: string) {
     let rows = tables[tableName as keyof typeof tables] as any[]
     let mode: 'select' | 'update' = 'select'
@@ -52,7 +66,18 @@ function fakeSupabase(tables: { users: any[]; wallets: any[]; wallet_balances: a
     }
     return api
   }
-  return { from: builder }
+  return {
+    from: builder,
+    async rpc(fnName: string, params: any) {
+      if (fnName !== 'consume_daily_spin') return { data: null, error: { message: `unknown rpc ${fnName}` } }
+      const key = counterKey(params.p_telegram_id, params.p_source)
+      if (spinCounters[key] < params.p_limit) {
+        spinCounters[key]++
+        return { data: true, error: null }
+      }
+      return { data: false, error: null }
+    },
+  }
 }
 
 describe('getSpinStatus / consumeSpin', () => {
@@ -118,5 +143,22 @@ describe('getSpinStatus / consumeSpin', () => {
 
     const second = await consumeSpin(supabase, 4, 'lucky_draw')
     expect(second.ok).toBe(false)
+  })
+
+  it('consumeSpin uses the atomic daily-quota RPC for tier 1+ and never exceeds the limit under concurrent calls', async () => {
+    const tables = {
+      users: [{ telegram_id: 5, id: 'u5', bonus_spins: 0 }],
+      wallets: [{ id: 'w5', user_id: 'u5', is_primary: true, stellar_address: 'GXYZ999' }],
+      wallet_balances: [{ wallet_id: 'w5', nsafl_balance: 5000 }], // tier 1+, baseLimit = GAME_LIMITS.lucky_draw = 3
+      lucky_draw_wins: [],
+    }
+    const supabase = fakeSupabase(tables) as any
+
+    // Simulate 5 "concurrent" POSTs racing for 3 daily spins — the RPC is the only gate,
+    // so exactly 3 should succeed regardless of call order.
+    const results = await Promise.all([1, 2, 3, 4, 5].map(() => consumeSpin(supabase, 5, 'lucky_draw')))
+    const okCount = results.filter((r) => r.ok).length
+    expect(okCount).toBe(3)
+    expect(results.every((r) => r.walletAddress === 'GXYZ999')).toBe(true)
   })
 })

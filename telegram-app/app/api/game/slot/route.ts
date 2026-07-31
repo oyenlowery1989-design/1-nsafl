@@ -6,7 +6,7 @@ import { ok, fail } from '@/lib/api-response'
 import { prizeToAsset } from '@/lib/rewardAssets'
 import { sendPrizePayment, REWARD_SENDER_SECRET, notifyPrizeSent } from '@/lib/stellar-payment'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { rollPrize, getSpinStatus, consumeSpin } from '@/lib/gamePool'
+import { rollPrize, getSpinStatus, consumeSpin, incrementBonusPool } from '@/lib/gamePool'
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ''
 const IS_DEV = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_DEV_BYPASS === 'true'
@@ -48,11 +48,9 @@ export async function POST(req: NextRequest) {
 
   let walletAddress: string | null = null
   if (!IS_DEV) {
-    const status = await getSpinStatus(supabase, user.id, 'slot_machine')
-    if (!status.canSpin) return fail('No spins remaining', 'DAILY_LIMIT', 429)
     const consumed = await consumeSpin(supabase, user.id, 'slot_machine')
     if (!consumed.ok) return fail('No spins remaining', 'DAILY_LIMIT', 429)
-    walletAddress = status.walletAddress
+    walletAddress = consumed.walletAddress
   }
 
   const winCode = `SLOT-${randomBytes(9).toString('base64url').toUpperCase()}`
@@ -76,13 +74,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (prize.label === '+2 Spins' && !IS_DEV) {
-    const { data: userRow } = await (supabase as any)
-      .from('users').select('bonus_spins').eq('telegram_id', user.id).single()
-    await (supabase as any)
-      .from('users')
-      .update({ bonus_spins: (userRow?.bonus_spins ?? 0) + 2 })
-      .eq('telegram_id', user.id)
-      .eq('bonus_spins', userRow?.bonus_spins ?? 0)
+    await incrementBonusPool(supabase, user.id, 'bonus_spins', 2, prize.label)
   }
 
   const winId: number | undefined = inserted?.id
