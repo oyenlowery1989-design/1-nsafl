@@ -178,7 +178,7 @@ function LuckyDraw({
   const [winCode, setWinCode] = useState<string | null>(null);
   const [spinError, setSpinError] = useState<string | null>(null);
   const [recentWins, setRecentWins] = useState<
-    { telegram_id: number; prize: string; created_at: string }[]
+    { display: string; prize: string; created_at: string }[]
   >([]);
 
   useEffect(() => {
