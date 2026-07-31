@@ -1,4 +1,6 @@
 import { randomInt } from 'crypto'
+import { createServiceClient } from '@/lib/supabase-server'
+import { getTierForBalance, TIERS } from '@/config/tiers'
 
 export type GameSource = 'lucky_draw' | 'slot_machine' | 'scratch_card'
 
@@ -54,4 +56,124 @@ export function rollPrize(source: GameSource): { prize: GamePrize; index: number
     if (r <= 0) return { prize: table[i], index: i }
   }
   return { prize: table[table.length - 1], index: table.length - 1 }
+}
+
+// Daily spins by tier:
+//   Tier 0 (pre-tier) → 0 daily; gets 3 welcome bonus spins once (auto-seeded on first check)
+//   Tier 1+           → per-game daily limit below (resets midnight UTC)
+export const GAME_LIMITS: Record<GameSource, number> = {
+  lucky_draw: 3,
+  slot_machine: 3,
+  scratch_card: 1,
+}
+
+const WELCOME_SPINS_TIER0 = 3
+
+export interface SpinStatus {
+  baseLimit: number         // daily count based on tier (0 for pre-tier, GAME_LIMITS[source] for tier 1+)
+  bonusSpins: number        // one-time pool — shared across all games, consumed when used
+  spinsUsed: number         // this source's plays today
+  spinsRemaining: number
+  canSpin: boolean
+  walletAddress: string | null  // primary wallet's stellar_address — payout destination
+}
+
+export async function getSpinStatus(
+  supabase: ReturnType<typeof createServiceClient>,
+  telegramId: number,
+  source: GameSource
+): Promise<SpinStatus> {
+  const { data: userRow } = await (supabase as any)
+    .from('users')
+    .select('id, bonus_spins')
+    .eq('telegram_id', telegramId)
+    .single()
+
+  let tierIndex = 0
+  let walletAddress: string | null = null
+  if (userRow?.id) {
+    const { data: wallet } = await (supabase as any)
+      .from('wallets').select('id, stellar_address').eq('user_id', userRow.id).eq('is_primary', true).single()
+    if (wallet?.id) {
+      walletAddress = wallet.stellar_address ?? null
+      const { data: balanceRow } = await (supabase as any)
+        .from('wallet_balances').select('nsafl_balance').eq('wallet_id', wallet.id).single()
+      if (balanceRow?.nsafl_balance != null) {
+        const tier = getTierForBalance(Number(balanceRow.nsafl_balance))
+        tierIndex = Math.max(0, TIERS.findIndex((t) => t.id === tier.id))
+      }
+    }
+  }
+
+  const isTier0 = tierIndex === 0
+  const dailyBase = isTier0 ? 0 : GAME_LIMITS[source]
+
+  let bonusSpins = userRow?.bonus_spins ?? 0
+
+  // Auto-seed welcome spins for first-time Tier 0 users — one seed for the whole pool, race-free.
+  // Gate: user has never played ANY game AND pool is exactly 0. The .eq('bonus_spins', 0) makes
+  // the write atomic — of parallel calls, only one wins.
+  if (isTier0 && bonusSpins === 0 && userRow?.id) {
+    const { count: everPlayed } = await (supabase as any)
+      .from('lucky_draw_wins')
+      .select('id', { count: 'exact', head: true })
+      .eq('telegram_id', telegramId) // NOTE: no prize_source filter — all games
+    if ((everPlayed ?? 0) === 0) {
+      const { data: seeded } = await (supabase as any)
+        .from('users')
+        .update({ bonus_spins: WELCOME_SPINS_TIER0 })
+        .eq('telegram_id', telegramId)
+        .eq('bonus_spins', 0) // optimistic lock: seed exactly once
+        .select('bonus_spins')
+      if (seeded?.length) bonusSpins = WELCOME_SPINS_TIER0
+      else {
+        const { data: fresh } = await (supabase as any)
+          .from('users').select('bonus_spins').eq('telegram_id', telegramId).single()
+        bonusSpins = fresh?.bonus_spins ?? 0
+      }
+    }
+  }
+
+  const today = new Date(); today.setUTCHours(0, 0, 0, 0)
+  const { count } = await (supabase as any)
+    .from('lucky_draw_wins')
+    .select('id', { count: 'exact', head: true })
+    .eq('telegram_id', telegramId)
+    .eq('prize_source', source)
+    .gte('created_at', today.toISOString())
+
+  const spinsUsed = count ?? 0
+  const spinsRemaining = Math.max(0, dailyBase - spinsUsed) + bonusSpins
+
+  return {
+    baseLimit: dailyBase,
+    bonusSpins,
+    spinsUsed,
+    spinsRemaining,
+    canSpin: spinsUsed < dailyBase || bonusSpins > 0,
+    walletAddress,
+  }
+}
+
+export async function consumeSpin(
+  supabase: ReturnType<typeof createServiceClient>,
+  telegramId: number,
+  source: GameSource
+): Promise<{ ok: boolean }> {
+  const status = await getSpinStatus(supabase, telegramId, source)
+
+  if (!status.canSpin) return { ok: false }
+
+  // If daily base is exhausted, consume a bonus spin — atomic decrement
+  if (status.spinsUsed >= status.baseLimit && status.bonusSpins > 0) {
+    const { data: decremented } = await (supabase as any)
+      .from('users')
+      .update({ bonus_spins: status.bonusSpins - 1 })
+      .eq('telegram_id', telegramId)
+      .eq('bonus_spins', status.bonusSpins) // optimistic lock
+      .select('bonus_spins')
+    if (!decremented?.length) return { ok: false }
+  }
+
+  return { ok: true }
 }
