@@ -22,6 +22,7 @@ NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY
 TELEGRAM_BOT_TOKEN
+TELEGRAM_WEBHOOK_SECRET
 NEXT_PUBLIC_PRIMARY_ASSET_CODE
 NEXT_PUBLIC_PRIMARY_ASSET_ISSUER
 NEXT_PUBLIC_SHOWN_ASSETS
@@ -55,8 +56,10 @@ Or use the `/vercel:deploy` skill from Claude Code.
 
 ### 1. Set Telegram Bot Webhook
 ```
-https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook?url=https://your-app.vercel.app/api/webhook
+https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook?url=https://your-app.vercel.app/api/bot/webhook&secret_token=<TELEGRAM_WEBHOOK_SECRET>
 ```
+
+**TODO:** After setting `TELEGRAM_WEBHOOK_SECRET` in Vercel env vars, re-run the `setWebhook` call above with the same `secret_token` to enable secret validation on the webhook route.
 
 ### 2. Configure Telegram Mini App
 In @BotFather:

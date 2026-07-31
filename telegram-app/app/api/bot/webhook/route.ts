@@ -18,6 +18,11 @@ async function sendMessage(chatId: number, text: string, replyMarkup?: object) {
 }
 
 export async function POST(req: NextRequest) {
+  const secret = process.env.TELEGRAM_WEBHOOK_SECRET ?? ''
+  if (!secret || req.headers.get('x-telegram-bot-api-secret-token') !== secret) {
+    return new Response('forbidden', { status: 403 })
+  }
+
   let update: {
     message?: {
       chat: { id: number }

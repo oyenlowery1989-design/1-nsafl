@@ -4,7 +4,7 @@ import { createServiceClient } from '@/lib/supabase-server'
 import { validateTelegramInitData, parseTelegramUser } from '@/lib/telegram'
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ''
-const DEV_BYPASS = process.env.NEXT_PUBLIC_DEV_BYPASS === 'true'
+const DEV_BYPASS = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_DEV_BYPASS === 'true'
 
 export async function POST(req: NextRequest) {
   const initData = req.headers.get('x-telegram-init-data') ?? ''

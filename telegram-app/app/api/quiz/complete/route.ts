@@ -6,7 +6,7 @@ import { incrementBonusPool } from '@/lib/gamePool'
 import { nanoid } from 'nanoid'
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ''
-const DEV_BYPASS = process.env.NEXT_PUBLIC_DEV_BYPASS === 'true'
+const DEV_BYPASS = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_DEV_BYPASS === 'true'
 
 const MODE_MULT: Record<string, number> = { quick: 1, standard: 1.5, champion: 2 }
 const BASE_POINTS = 10
