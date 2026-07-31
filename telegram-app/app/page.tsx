@@ -19,6 +19,7 @@ export default function HomePage() {
   const tokenBalance = useWalletStore((s) => s.tokenBalance)
   const isConnected = useWalletStore((s) => s.isConnected)
   const favoriteTeam = useWalletStore((s) => s.favoriteTeam)
+  const setFavoriteWaflTeam = useWalletStore((s) => s.setFavoriteWaflTeam)
   const setWallet = useWalletStore((s) => s.setWallet)
   const setBalances = useWalletStore((s) => s.setBalances)
   const setTelegramUser = useWalletStore((s) => s.setTelegramUser)
@@ -80,9 +81,12 @@ export default function HomePage() {
           username: authJson.data.telegramUsername ?? undefined,
           photoUrl: authJson.data.telegramPhotoUrl ?? undefined,
         })
-        // Restore team choice if user already picked one before
+        // Restore team choices if user already picked them before
         if (authJson.data.favoriteTeam) {
           setFavoriteTeam(authJson.data.favoriteTeam)
+        }
+        if (authJson.data.favoriteWaflTeam) {
+          setFavoriteWaflTeam(authJson.data.favoriteWaflTeam)
         }
       }
       const res = await fetch(`/api/stellar/balance?address=${addr}`)
@@ -148,7 +152,7 @@ export default function HomePage() {
   if (phase === 'team-select') {
     return (
       <TeamSelectScreen
-        onSelect={async (teamId) => {
+        onSelect={async (aflTeamId, waflTeamId) => {
           haptic.success()
           try {
             await fetch('/api/user/team', {
@@ -157,12 +161,13 @@ export default function HomePage() {
                 'Content-Type': 'application/json',
                 'x-telegram-init-data': getTelegramInitData(),
               },
-              body: JSON.stringify({ teamId }),
+              body: JSON.stringify({ teamId: aflTeamId, waflTeamId }),
             })
           } catch {
-            // Non-blocking — team is saved locally even if API fails
+            // Non-blocking — teams are saved locally even if API fails
           }
-          setFavoriteTeam(teamId)
+          setFavoriteTeam(aflTeamId)
+          setFavoriteWaflTeam(waflTeamId)
           setPhase('dashboard')
         }}
       />

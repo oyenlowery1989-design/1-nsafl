@@ -31,13 +31,11 @@ async function sendTelegramMessage(
 }
 
 export async function POST(req: NextRequest) {
-  // Admin key check — skip if ADMIN_NOTIFY_KEY is not configured (dev convenience)
-  const adminKey = process.env.ADMIN_NOTIFY_KEY
-  if (adminKey) {
-    const provided = req.headers.get('x-admin-key') ?? ''
-    if (!isDev && provided !== adminKey) {
-      return fail('Unauthorized', 'UNAUTHORIZED', 401)
-    }
+  // Accept either x-admin-token (standard) or x-admin-key (legacy)
+  const adminToken = process.env.ADMIN_SECRET_TOKEN
+  if (adminToken && !isDev) {
+    const provided = req.headers.get('x-admin-token') ?? req.headers.get('x-admin-key') ?? ''
+    if (provided !== adminToken) return fail('Unauthorized', 'UNAUTHORIZED', 401)
   }
 
   let body: { telegram_id?: unknown; broadcast?: unknown; message?: unknown }

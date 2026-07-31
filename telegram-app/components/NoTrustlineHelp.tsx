@@ -191,7 +191,7 @@ export default function NoTrustlineHelp({ onTrustlineAdded }: Props) {
       </a>
 
       {/* Divider */}
-      <div className="flex items-center space-x-2">
+      <div className="hidden"><div className="flex items-center space-x-2">
         <div className="flex-1 h-px bg-white/10" />
         <span className="text-[10px] text-gray-500 uppercase tracking-widest">
           or advanced
@@ -289,7 +289,7 @@ export default function NoTrustlineHelp({ onTrustlineAdded }: Props) {
             Cancel
           </button>
         </div>
-      )}
+      )}</div>
     </div>
   );
 }

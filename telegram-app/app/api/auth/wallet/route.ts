@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   const supabase = createServiceClient()
 
   // 1. Upsert user (profile fields only — referred_by is set separately below)
-  const { data: userData } = await supabase
+  const { data: userData } = await (supabase as any)
     .from('users')
     .upsert(
       {
@@ -44,8 +44,8 @@ export async function POST(req: NextRequest) {
       },
       { onConflict: 'telegram_id' }
     )
-    .select('id, created_at, favorite_team, referred_by')
-    .single()
+    .select('id, created_at, favorite_team, favorite_wafl_team, referred_by')
+    .single() as { data: { id: string; created_at: string; favorite_team: string | null; favorite_wafl_team: string | null; referred_by: number | null } | null }
 
   // 2. Save referral on first connect — only if valid, not self-referral, not already set
   if (
@@ -115,5 +115,6 @@ export async function POST(req: NextRequest) {
     stellarAddress,
     memberSince: userData.created_at,
     favoriteTeam: userData.favorite_team ?? null,
+    favoriteWaflTeam: userData.favorite_wafl_team ?? null,
   })
 }

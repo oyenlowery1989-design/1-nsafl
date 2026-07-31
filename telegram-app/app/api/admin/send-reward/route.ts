@@ -52,6 +52,45 @@ export async function POST(req: NextRequest) {
   if (win.payout_status === 'paid') return fail('Already paid', 'ALREADY_PAID', 409)
   if (!win.amount || win.amount <= 0) return fail('Invalid prize amount', 'BAD_REQUEST')
 
+  // ── Tier 1 check — must hold ≥100 NSAFL to receive rewards ──────────────────
+  const { data: userRow } = await (supabase as any)
+    .from('users')
+    .select('id')
+    .eq('telegram_id', win.telegram_id)
+    .single()
+
+  if (userRow) {
+    const { data: walletRow } = await (supabase as any)
+      .from('wallets')
+      .select('id')
+      .eq('user_id', userRow.id)
+      .eq('stellar_address', win.wallet_address)
+      .single()
+
+    if (walletRow) {
+      const { data: balRow } = await (supabase as any)
+        .from('wallet_balances')
+        .select('nsafl_balance')
+        .eq('wallet_id', walletRow.id)
+        .single()
+
+      const nsaflBal = parseFloat(balRow?.nsafl_balance ?? '0')
+      if (nsaflBal < 100) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `User holds ${nsaflBal} $NSAFL — Tier 1 requires 100. Only active holders can receive rewards.`,
+            code: 'TIER_REQUIRED',
+            nsaflBalance: nsaflBal,
+            telegram_id: win.telegram_id,
+          },
+          { status: 402 },
+        )
+      }
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────────
+
   const payment = await sendPrizePayment(win.prize, win.amount, win.wallet_address, win.id, supabase)
 
   if (payment.sent) {

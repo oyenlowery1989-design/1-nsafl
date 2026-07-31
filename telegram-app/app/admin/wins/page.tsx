@@ -1,8 +1,9 @@
 'use client'
 import { useEffect, useState, useCallback, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { useAdminToken } from '@/app/admin/hooks/useAdminToken'
 import { REWARD_ASSETS, prizeToAsset } from '@/lib/rewardAssets'
+import { buildTrustlineMessage } from '@/lib/messages'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface WinRow {
@@ -11,6 +12,7 @@ interface WinRow {
   user_first_name: string | null
   user_username: string | null
   prize: string
+  prize_source: 'lucky_draw' | 'slot_machine' | 'scratch_card' | null
   amount: number | null
   win_code: string
   wallet_address: string | null
@@ -38,6 +40,13 @@ interface WinsApiResponse {
 }
 
 type FilterStatus = 'all' | 'pending' | 'paid' | 'skipped'
+type FilterSource = 'all' | 'lucky_draw' | 'slot_machine' | 'scratch_card'
+
+const SOURCE_LABELS: Record<string, { label: string; icon: string; color: string }> = {
+  lucky_draw:   { label: 'Lucky Draw',  icon: 'casino',        color: 'text-[#D4AF37]' },
+  slot_machine: { label: 'Slot',        icon: 'view_column',   color: 'text-purple-400' },
+  scratch_card: { label: 'Scratch',     icon: 'grid_view',     color: 'text-blue-400' },
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const ago = (iso: string) => {
@@ -131,8 +140,7 @@ function PayoutBadge({ status }: { status: WinRow['payout_status'] }) {
 
 // ── Main inner component ──────────────────────────────────────────────────────
 function WinsPageInner() {
-  const params = useSearchParams()
-  const token = params.get('token') ?? ''
+  const token = useAdminToken() ?? ''
 
   const [wins, setWins] = useState<WinRow[]>([])
   const [total, setTotal] = useState(0)
@@ -140,12 +148,30 @@ function WinsPageInner() {
   const [counts, setCounts] = useState({ pending: 0, paid: 0, skipped: 0 })
 
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
+  const [filterSource, setFilterSource] = useState<FilterSource>('all')
   const [filterPrize, setFilterPrize] = useState('')
   const [prizeInput, setPrizeInput] = useState('')
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Auto-refresh
+  const [autoRefresh, setAutoRefresh] = useState(false)
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
+
+  // CSV export
+  const [exporting, setExporting] = useState(false)
+
+  // Bulk notify no-trust
+  const [bulkNotifying, setBulkNotifying] = useState(false)
+  const [bulkNotifyDone, setBulkNotifyDone] = useState(false)
+
+  // Prize override
+  const [overrideId, setOverrideId] = useState<number | null>(null)
+  const [overrideInput, setOverrideInput] = useState('')
+  const [overrideSaving, setOverrideSaving] = useState(false)
 
   // paying: id currently being submitted; confirmPay: {id, action} awaiting confirm
   const [paying, setPaying] = useState<number | null>(null)
@@ -158,6 +184,11 @@ function WinsPageInner() {
   const [notifying, setNotifying] = useState<number | null>(null)
   const [notifyDone, setNotifyDone] = useState<Record<number, boolean>>({})
 
+  // Send All state
+  const [sendingAll, setSendingAll] = useState(false)
+  const [sendAllProgress, setSendAllProgress] = useState<{ done: number; total: number; errors: number } | null>(null)
+  const [confirmSendAll, setConfirmSendAll] = useState(false)
+
   // Sender wallet balances
   const [senderBalances, setSenderBalances] = useState<Record<string, string>>({})
   const HORIZON_URL = process.env.NEXT_PUBLIC_HORIZON_URL ?? 'https://horizon.stellar.org'
@@ -167,12 +198,15 @@ function WinsPageInner() {
     setError(null)
     try {
       const qs = new URLSearchParams({
-        token,
         page: String(page),
+        limit: String(pageSize),
         ...(filterStatus !== 'all' ? { status: filterStatus } : {}),
+        ...(filterSource !== 'all' ? { source: filterSource } : {}),
         ...(filterPrize ? { prize: filterPrize } : {}),
       })
-      const res = await fetch(`/api/admin/wins?${qs}`)
+      const res = await fetch(`/api/admin/wins?${qs}`, {
+        headers: { 'x-admin-token': token },
+      })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
         throw new Error(body?.error ?? `HTTP ${res.status}`)
@@ -183,14 +217,22 @@ function WinsPageInner() {
       setTotal(data.total ?? 0)
       setTotalPages(data.totalPages ?? 1)
       if (data.counts) setCounts(data.counts)
+      setLastRefreshed(new Date())
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error')
     } finally {
       setLoading(false)
     }
-  }, [token, page, filterStatus, filterPrize])
+  }, [token, page, pageSize, filterStatus, filterSource, filterPrize])
 
   useEffect(() => { fetchWins() }, [fetchWins])
+
+  // Auto-refresh every 30s
+  useEffect(() => {
+    if (!autoRefresh) return
+    const interval = setInterval(fetchWins, 30000)
+    return () => clearInterval(interval)
+  }, [autoRefresh, fetchWins])
 
   // Fetch sender wallet balances from Horizon
   useEffect(() => {
@@ -225,6 +267,10 @@ function WinsPageInner() {
           setSendError(p => ({ ...p, [id]: 'No trustline — user must add it first.' }))
           return
         }
+        if (json?.code === 'TIER_REQUIRED') {
+          setSendError(p => ({ ...p, [id]: json?.error ?? 'User does not meet Tier 1 (100 NSAFL) requirement.' }))
+          return
+        }
         throw new Error(json?.error ?? `HTTP ${res.status}`)
       }
       const txHash: string = json?.data?.txHash ?? ''
@@ -240,21 +286,61 @@ function WinsPageInner() {
     }
   }
 
+  const handleSendAll = async () => {
+    setConfirmSendAll(false)
+    const sendable = wins.filter(w => w.payout_status === 'pending' && !!prizeToAsset(w.prize) && !!w.wallet_address)
+    if (sendable.length === 0) return
+    setSendingAll(true)
+    setSendAllProgress({ done: 0, total: sendable.length, errors: 0 })
+    let errors = 0
+    for (let i = 0; i < sendable.length; i++) {
+      const w = sendable[i]
+      try {
+        const res = await fetch('/api/admin/send-reward', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+          body: JSON.stringify({ winId: w.id }),
+        })
+        const json = await res.json().catch(() => ({}))
+        if (res.ok) {
+          const txHash: string = json?.data?.txHash ?? ''
+          setWins(prev => prev.map(r => r.id === w.id
+            ? { ...r, payout_status: 'paid', payout_at: new Date().toISOString(), payout_tx_hash: txHash, claimed: true }
+            : r,
+          ))
+          setCounts(prev => ({ ...prev, pending: Math.max(0, prev.pending - 1), paid: prev.paid + 1 }))
+        } else {
+          errors++
+          if (json?.code === 'NO_TRUST' && json?.lobstrDeeplink) {
+            setNoTrustInfo(p => ({ ...p, [w.id]: { lobstrDeeplink: json.lobstrDeeplink, telegram_id: json.telegram_id } }))
+            setSendError(p => ({ ...p, [w.id]: 'No trustline — user must add it first.' }))
+          } else if (json?.code === 'TIER_REQUIRED') {
+            setSendError(p => ({ ...p, [w.id]: json?.error ?? 'Does not meet Tier 1 requirement.' }))
+          } else {
+            setSendError(p => ({ ...p, [w.id]: json?.error ?? `HTTP ${res.status}` }))
+          }
+        }
+      } catch {
+        errors++
+        setSendError(p => ({ ...p, [w.id]: 'Send failed' }))
+      }
+      setSendAllProgress({ done: i + 1, total: sendable.length, errors })
+    }
+    setSendingAll(false)
+  }
+
   const handleNotifyTrustline = async (winId: number) => {
     const info = noTrustInfo[winId]
     if (!info) return
+    const win = wins.find(w => w.id === winId)
     setNotifying(winId)
     try {
-      const trustlineLines = REWARD_ASSETS
-        .filter(a => a.issuer)
-        .map(a => `• <b>${a.code}</b> — ${a.lobstrDeeplink}`)
-        .join('\n')
       await fetch('/api/bot/notify', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-key': token },
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
         body: JSON.stringify({
           telegram_id: info.telegram_id,
-          message: `🏆 <b>NSAFL Lucky Draw Prize Ready!</b>\n\nTo receive prizes, your wallet needs trustlines for all reward assets. Please add them in LOBSTR:\n\n${trustlineLines}\n\nOnce all trustlines are added, contact the admin and we'll resend your reward.`,
+          message: buildTrustlineMessage(true, win?.prize, win?.win_code),
         }),
       })
       setNotifyDone(p => ({ ...p, [winId]: true }))
@@ -320,8 +406,79 @@ function WinsPageInner() {
     }
   }
 
+  const handleExportCSV = async () => {
+    setExporting(true)
+    try {
+      const qs = new URLSearchParams({
+        page: '1', limit: '500',
+        ...(filterStatus !== 'all' ? { status: filterStatus } : {}),
+        ...(filterSource !== 'all' ? { source: filterSource } : {}),
+        ...(filterPrize ? { prize: filterPrize } : {}),
+      })
+      const res = await fetch(`/api/admin/wins?${qs}`, { headers: { 'x-admin-token': token } })
+      const json = await res.json()
+      const rows: WinRow[] = (json.data ?? json).wins ?? []
+      const header = ['id','telegram_id','user','prize','source','wallet','status','payout_tx_hash','date']
+      const lines = [header.join(','), ...rows.map(w => [
+        w.id,
+        w.telegram_id,
+        `"${(w.user_first_name ?? '') + (w.user_username ? ' @'+w.user_username : '')}"`,
+        `"${w.prize}"`,
+        w.prize_source ?? '',
+        w.wallet_address ?? '',
+        w.payout_status,
+        w.payout_tx_hash ?? '',
+        new Date(w.created_at).toISOString(),
+      ].join(','))]
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a'); a.href = url
+      a.download = `wins-${new Date().toISOString().slice(0,10)}.csv`
+      a.click(); URL.revokeObjectURL(url)
+    } finally { setExporting(false) }
+  }
+
+  const handleBulkNotifyNoTrust = async () => {
+    const entries = Object.entries(noTrustInfo)
+    if (entries.length === 0) return
+    setBulkNotifying(true)
+    for (const [winIdStr, info] of entries) {
+      const win = wins.find(w => w.id === Number(winIdStr))
+      await fetch('/api/bot/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+        body: JSON.stringify({
+          telegram_id: info.telegram_id,
+          message: buildTrustlineMessage(true, win?.prize, win?.win_code),
+        }),
+      })
+      setNotifyDone(p => ({ ...p, [Number(winIdStr)]: true }))
+    }
+    setBulkNotifying(false)
+    setBulkNotifyDone(true)
+  }
+
+  const handlePrizeOverride = async (id: number) => {
+    const prize = overrideInput.trim()
+    if (!prize) return
+    setOverrideSaving(true)
+    try {
+      const res = await fetch(`/api/admin/wins/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+        body: JSON.stringify({ prize }),
+      })
+      if (res.ok) {
+        setWins(prev => prev.map(w => w.id === id ? { ...w, prize } : w))
+        setOverrideId(null)
+        setOverrideInput('')
+      }
+    } finally { setOverrideSaving(false) }
+  }
+
   const handleReset = () => {
     setFilterStatus('all')
+    setFilterSource('all')
     setFilterPrize('')
     setPrizeInput('')
     setPage(1)
@@ -348,9 +505,24 @@ function WinsPageInner() {
         <div className="w-px h-5 bg-white/10" />
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <Icon name="emoji_events" className="text-[#D4AF37] text-xl" />
-          <h1 className="text-white font-bold text-sm truncate">Lucky Draw Wins</h1>
+          <h1 className="text-white font-bold text-sm truncate">Game Wins</h1>
         </div>
-        <span className="text-[11px] text-gray-500 shrink-0">{total} total</span>
+        <div className="flex items-center gap-2 shrink-0">
+          {lastRefreshed && (
+            <span className="text-[10px] text-gray-600 hidden sm:block">
+              Updated {lastRefreshed.toLocaleTimeString()}
+            </span>
+          )}
+          <button
+            onClick={() => setAutoRefresh(p => !p)}
+            title={autoRefresh ? 'Auto-refresh ON — click to disable' : 'Auto-refresh OFF — click to enable'}
+            className={`flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg font-semibold transition ${autoRefresh ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-white/8 text-gray-500 border border-white/10 hover:bg-white/15'}`}
+          >
+            <Icon name="autorenew" className={`text-sm ${autoRefresh ? 'animate-spin' : ''}`} />
+            {autoRefresh ? '30s' : 'Auto'}
+          </button>
+          <span className="text-[11px] text-gray-500">{total} total</span>
+        </div>
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
@@ -363,18 +535,133 @@ function WinsPageInner() {
           <StatTile label="Skipped" value={counts.skipped}  accent="text-gray-400" />
         </div>
 
-        {/* ── Sender wallet balances ── */}
-        {Object.keys(senderBalances).length > 0 && (
-          <div className="bg-[#0d1424] border border-white/8 rounded-xl px-4 py-3 flex flex-wrap items-center gap-3">
-            <span className="text-[11px] text-gray-500 uppercase font-medium mr-1">Sender Wallet</span>
-            {REWARD_ASSETS.filter(a => senderBalances[a.code] !== undefined).map(a => (
-              <span key={a.code} className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/20">
-                {a.code}
-                <span className="text-white font-bold">{senderBalances[a.code]}</span>
-              </span>
-            ))}
+        {/* ── Send All Pending ── */}
+        {counts.pending > 0 && (
+          <div className="bg-[#0d1424] border border-[#D4AF37]/20 rounded-xl px-4 py-3 flex flex-wrap items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-white">
+                {counts.pending} pending reward{counts.pending !== 1 ? 's' : ''} waiting
+              </p>
+              {sendAllProgress && (
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {sendingAll ? `Sending ${sendAllProgress.done + 1} of ${sendAllProgress.total}…` : `Done — ${sendAllProgress.done} sent${sendAllProgress.errors > 0 ? `, ${sendAllProgress.errors} failed` : ', all successful ✓'}`}
+                </p>
+              )}
+            </div>
+            {confirmSendAll ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400">Send all {wins.filter(w => w.payout_status === 'pending' && !!prizeToAsset(w.prize) && !!w.wallet_address).length} sendable?</span>
+                <button
+                  onClick={handleSendAll}
+                  className="text-xs bg-[#D4AF37] text-black font-bold px-3 py-1.5 rounded-lg hover:bg-[#f0d060] transition"
+                >
+                  Confirm
+                </button>
+                <button
+                  onClick={() => setConfirmSendAll(false)}
+                  className="text-xs bg-white/10 text-gray-400 hover:bg-white/20 px-3 py-1.5 rounded-lg font-semibold transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmSendAll(true)}
+                disabled={sendingAll}
+                className="flex items-center gap-2 text-sm font-bold text-black px-4 py-2 rounded-lg disabled:opacity-50 transition"
+                style={{ background: sendingAll ? '#888' : 'linear-gradient(135deg, #D4AF37 0%, #f0d060 100%)' }}
+              >
+                {sendingAll ? (
+                  <><Icon name="progress_activity" className="text-sm animate-spin" /><span>Sending…</span></>
+                ) : (
+                  <><Icon name="send" className="text-sm" /><span>Send All Pending</span></>
+                )}
+              </button>
+            )}
           </div>
         )}
+
+        {/* ── Sender wallet balances + low-balance alert ── */}
+        {Object.keys(senderBalances).length > 0 && (
+          <div className="bg-[#0d1424] border border-white/8 rounded-xl px-4 py-3 space-y-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-[11px] text-gray-500 uppercase font-medium mr-1">Sender Wallet</span>
+              {REWARD_ASSETS.filter(a => senderBalances[a.code] !== undefined).map(a => {
+                const bal = parseFloat(senderBalances[a.code]?.replace(/,/g, '') ?? '0')
+                const isLow = bal < 50
+                return (
+                  <span key={a.code} className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${isLow ? 'bg-red-500/10 text-red-400 border-red-500/30' : 'bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/20'}`}>
+                    {isLow && <Icon name="warning" className="text-[11px]" />}
+                    {a.code}
+                    <span className="text-white font-bold">{senderBalances[a.code]}</span>
+                  </span>
+                )
+              })}
+            </div>
+            {REWARD_ASSETS.some(a => {
+              const bal = parseFloat(senderBalances[a.code]?.replace(/,/g, '') ?? '999')
+              return senderBalances[a.code] !== undefined && bal < 50
+            }) && (
+              <p className="text-[11px] text-red-400 flex items-center gap-1">
+                <Icon name="error" className="text-sm" />
+                Low balance warning — top up sender wallet before sending rewards
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* ── Bulk notify no-trust ── */}
+        {Object.keys(noTrustInfo).length > 0 && (
+          <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl px-4 py-3 flex flex-wrap items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-yellow-300">
+                {Object.keys(noTrustInfo).length} win{Object.keys(noTrustInfo).length !== 1 ? 's' : ''} blocked by missing trustline
+              </p>
+              {bulkNotifyDone && <p className="text-xs text-green-400 mt-0.5">✓ All users notified via Telegram</p>}
+            </div>
+            {!bulkNotifyDone && (
+              <button
+                onClick={handleBulkNotifyNoTrust}
+                disabled={bulkNotifying}
+                className="flex items-center gap-2 text-sm font-bold text-black px-4 py-2 rounded-lg disabled:opacity-50 bg-yellow-400 hover:bg-yellow-300 transition"
+              >
+                {bulkNotifying
+                  ? <><Icon name="progress_activity" className="text-sm animate-spin" /><span>Notifying…</span></>
+                  : <><Icon name="send" className="text-sm" /><span>Notify All</span></>}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ── Prize breakdown ── */}
+        {wins.length > 0 && (() => {
+          const breakdown: Record<string, number> = {}
+          for (const w of wins) { breakdown[w.prize] = (breakdown[w.prize] ?? 0) + 1 }
+          const sorted = Object.entries(breakdown).sort((a, b) => b[1] - a[1])
+          const max = sorted[0]?.[1] ?? 1
+          return (
+            <div className="bg-[#0d1424] border border-white/8 rounded-xl px-4 py-3">
+              <p className="text-[11px] text-gray-500 uppercase font-medium mb-3">Prize Breakdown (this page)</p>
+              <div className="space-y-1.5">
+                {sorted.map(([prize, count]) => (
+                  <div key={prize} className="flex items-center gap-3">
+                    <span className="text-xs text-[#D4AF37] w-32 truncate shrink-0" title={prize}>{prize}</span>
+                    <div className="flex-1 h-4 bg-white/5 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-[#D4AF37]/60 transition-all"
+                        style={{ width: `${(count / max) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-gray-400 w-6 text-right shrink-0">{count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* ── Secret Key Checker ── */}
+        <SecretKeyChecker token={token} />
 
         {/* ── Filter bar ── */}
         <div className="bg-[#0d1424] border border-white/8 rounded-xl px-4 py-3 flex flex-wrap items-center gap-3">
@@ -390,6 +677,21 @@ function WinsPageInner() {
               <option value="pending">Pending</option>
               <option value="paid">Paid</option>
               <option value="skipped">Skipped</option>
+            </select>
+          </div>
+
+          {/* Game filter */}
+          <div className="flex items-center gap-2">
+            <label className="text-[11px] text-gray-500 uppercase font-medium">Game</label>
+            <select
+              value={filterSource}
+              onChange={e => { setFilterSource(e.target.value as FilterSource); setPage(1) }}
+              className="bg-[#111827] border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/50"
+            >
+              <option value="all">All Games</option>
+              <option value="lucky_draw">Lucky Draw</option>
+              <option value="slot_machine">Slot Machine</option>
+              <option value="scratch_card">Scratch Card</option>
             </select>
           </div>
 
@@ -411,12 +713,36 @@ function WinsPageInner() {
             </button>
           </form>
 
-          <button
-            onClick={handleReset}
-            className="text-xs bg-white/8 text-gray-400 hover:bg-white/15 px-3 py-1.5 rounded-lg font-semibold transition ml-auto"
-          >
-            Reset
-          </button>
+          {/* Page size */}
+          <div className="flex items-center gap-2">
+            <label className="text-[11px] text-gray-500 uppercase font-medium">Per page</label>
+            <select
+              value={pageSize}
+              onChange={e => { setPageSize(Number(e.target.value)); setPage(1) }}
+              className="bg-[#111827] border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/50"
+            >
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2 ml-auto">
+            <button
+              onClick={handleExportCSV}
+              disabled={exporting}
+              className="flex items-center gap-1.5 text-xs bg-white/8 text-gray-300 hover:bg-white/15 px-3 py-1.5 rounded-lg font-semibold transition disabled:opacity-40"
+            >
+              <Icon name={exporting ? 'progress_activity' : 'download'} className={`text-sm ${exporting ? 'animate-spin' : ''}`} />
+              CSV
+            </button>
+            <button
+              onClick={handleReset}
+              className="text-xs bg-white/8 text-gray-400 hover:bg-white/15 px-3 py-1.5 rounded-lg font-semibold transition"
+            >
+              Reset
+            </button>
+          </div>
         </div>
 
         {/* ── Error ── */}
@@ -447,6 +773,7 @@ function WinsPageInner() {
                   <tr>
                     <Th>ID</Th>
                     <Th>User</Th>
+                    <Th>Game</Th>
                     <Th>Prize</Th>
                     <Th>Amount</Th>
                     <Th>Win Code</Th>
@@ -473,6 +800,13 @@ function WinsPageInner() {
                       notifying={notifying}
                       notifyDone={notifyDone[w.id]}
                       onNotify={handleNotifyTrustline}
+                      overrideId={overrideId}
+                      overrideInput={overrideInput}
+                      overrideSaving={overrideSaving}
+                      onStartOverride={(id, prize) => { setOverrideId(id); setOverrideInput(prize) }}
+                      onOverrideInput={setOverrideInput}
+                      onSaveOverride={handlePrizeOverride}
+                      onCancelOverride={() => { setOverrideId(null); setOverrideInput('') }}
                     />
                   ))}
                 </tbody>
@@ -511,6 +845,191 @@ function WinsPageInner() {
   )
 }
 
+// ── Secret Key Checker ────────────────────────────────────────────────────────
+interface KeyCheckResult {
+  valid: boolean
+  reason?: string
+  publicKey?: string
+  isRewardSender?: boolean
+  wallet?: { id: number; label: string | null; isPrimary: boolean; createdAt: string; lastConnectedAt: string | null } | null
+  user?: { telegramId: number; username: string | null; firstName: string | null; createdAt: string } | null
+  balance?: { nsafl: string | null; xlm: string | null; lastSynced: string | null } | null
+}
+
+function SecretKeyChecker({ token }: { token: string }) {
+  const [open, setOpen] = useState(false)
+  const [secretInput, setSecretInput] = useState('')
+  const [checking, setChecking] = useState(false)
+  const [result, setResult] = useState<KeyCheckResult | null>(null)
+  const [err, setErr] = useState('')
+
+  const handleCheck = async () => {
+    const secret = secretInput.trim()
+    if (!secret) return
+    setErr('')
+    setResult(null)
+    setChecking(true)
+    try {
+      // Derive public key client-side — secret NEVER sent to server
+      const { Keypair } = await import('stellar-sdk')
+      let publicKey: string
+      try {
+        publicKey = Keypair.fromSecret(secret).publicKey()
+      } catch {
+        setErr('Invalid Stellar secret key format.')
+        return
+      }
+
+      const res = await fetch('/api/admin/verify-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+        body: JSON.stringify({ publicKey }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) { setErr(json?.error ?? `HTTP ${res.status}`); return }
+      setResult(json?.data ?? json)
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Check failed')
+    } finally {
+      setChecking(false)
+    }
+  }
+
+  return (
+    <div className="bg-[#0d1424] border border-white/8 rounded-xl overflow-hidden">
+      <button
+        onClick={() => { setOpen(p => !p); setResult(null); setErr(''); setSecretInput('') }}
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/3 transition text-left"
+      >
+        <div className="flex items-center gap-2">
+          <Icon name="key" className="text-[#D4AF37] text-base" />
+          <span className="text-sm font-semibold text-gray-200">Secret Key Checker</span>
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400 border border-yellow-500/20 font-bold">ADMIN</span>
+        </div>
+        <Icon name={open ? 'expand_less' : 'expand_more'} className="text-gray-500 text-base" />
+      </button>
+
+      {open && (
+        <div className="border-t border-white/8 px-4 py-4 space-y-4">
+          <p className="text-[11px] text-gray-500 leading-relaxed">
+            Enter a Stellar secret key to derive its public key and verify it exists in Supabase.
+            The secret key is used <span className="text-yellow-400 font-medium">only in your browser</span> — only the public key is sent to the server.
+          </p>
+
+          <div className="flex gap-2">
+            <input
+              type="password"
+              placeholder="S… (Stellar secret key)"
+              value={secretInput}
+              onChange={e => { setSecretInput(e.target.value); setResult(null); setErr('') }}
+              onKeyDown={e => { if (e.key === 'Enter') handleCheck() }}
+              className="flex-1 bg-black/40 border border-white/10 text-gray-200 text-xs font-mono rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/50 placeholder-gray-600"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <button
+              onClick={handleCheck}
+              disabled={checking || !secretInput.trim()}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold text-black disabled:opacity-40 transition"
+              style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #f0d060 100%)' }}
+            >
+              {checking
+                ? <><Icon name="progress_activity" className="text-xs animate-spin" /><span>Checking…</span></>
+                : <><Icon name="search" className="text-xs" /><span>Verify</span></>}
+            </button>
+          </div>
+
+          {err && (
+            <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-red-500/10 border border-red-500/25 text-red-400 text-xs">
+              <Icon name="error" className="text-sm flex-shrink-0 mt-0.5" />
+              {err}
+            </div>
+          )}
+
+          {result && !result.valid && (
+            <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-yellow-500/10 border border-yellow-500/25 text-yellow-400 text-xs">
+              <Icon name="warning" className="text-sm flex-shrink-0 mt-0.5" />
+              {result.reason ?? 'Key not found in Supabase.'}
+            </div>
+          )}
+
+          {result?.valid && (
+            <div className="rounded-xl border border-green-500/25 bg-green-500/5 overflow-hidden">
+              {/* Reward sender badge */}
+              {result.isRewardSender && (
+                <div className="px-4 py-2.5 bg-[#D4AF37]/10 border-b border-[#D4AF37]/20 flex items-center gap-2">
+                  <Icon name="verified" className="text-[#D4AF37] text-base" />
+                  <span className="text-xs font-bold text-[#D4AF37]">Reward Sender Wallet — key is correct ✓</span>
+                </div>
+              )}
+              {/* Public key */}
+              <div className="px-4 py-3 border-b border-white/6 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-0.5">Derived Public Key</p>
+                  <p className="text-xs font-mono text-green-300 break-all">{result.publicKey}</p>
+                </div>
+                <button
+                  onClick={() => navigator.clipboard.writeText(result.publicKey ?? '')}
+                  className="text-gray-600 hover:text-[#D4AF37] transition flex-shrink-0"
+                  title="Copy public key"
+                >
+                  <Icon name="content_copy" className="text-sm" />
+                </button>
+              </div>
+
+              {/* Wallet info */}
+              {result.wallet && (
+                <div className="px-4 py-3 border-b border-white/6 grid grid-cols-2 gap-x-6 gap-y-1.5">
+                  <p className="text-[10px] text-gray-500 uppercase tracking-widest col-span-2 mb-0.5">Wallet</p>
+                  <KeyVal label="Wallet ID" value={String(result.wallet.id)} />
+                  <KeyVal label="Primary" value={result.wallet.isPrimary ? '✅ Yes' : 'No'} />
+                  <KeyVal label="Label" value={result.wallet.label ?? '—'} />
+                  <KeyVal label="Created" value={new Date(result.wallet.createdAt).toLocaleDateString()} />
+                  {result.wallet.lastConnectedAt && (
+                    <KeyVal label="Last Connected" value={new Date(result.wallet.lastConnectedAt).toLocaleDateString()} />
+                  )}
+                </div>
+              )}
+
+              {/* User info */}
+              {result.user && (
+                <div className="px-4 py-3 border-b border-white/6 grid grid-cols-2 gap-x-6 gap-y-1.5">
+                  <p className="text-[10px] text-gray-500 uppercase tracking-widest col-span-2 mb-0.5">Owner</p>
+                  <KeyVal label="Telegram ID" value={String(result.user.telegramId)} />
+                  <KeyVal label="Username" value={result.user.username ? `@${result.user.username}` : '—'} />
+                  <KeyVal label="Name" value={result.user.firstName ?? '—'} />
+                  <KeyVal label="Joined" value={new Date(result.user.createdAt).toLocaleDateString()} />
+                </div>
+              )}
+
+              {/* Balance */}
+              {result.balance && (
+                <div className="px-4 py-3 grid grid-cols-2 gap-x-6 gap-y-1.5">
+                  <p className="text-[10px] text-gray-500 uppercase tracking-widest col-span-2 mb-0.5">Balance</p>
+                  <KeyVal label="NSAFL" value={result.balance.nsafl != null ? Number(result.balance.nsafl).toLocaleString() : '—'} accent="text-[#D4AF37]" />
+                  <KeyVal label="XLM" value={result.balance.xlm != null ? Number(result.balance.xlm).toLocaleString() : '—'} />
+                  {result.balance.lastSynced && (
+                    <KeyVal label="Last Synced" value={new Date(result.balance.lastSynced).toLocaleString()} />
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function KeyVal({ label, value, accent = 'text-gray-200' }: { label: string; value: string; accent?: string }) {
+  return (
+    <div>
+      <p className="text-[10px] text-gray-600">{label}</p>
+      <p className={`text-xs font-semibold ${accent}`}>{value}</p>
+    </div>
+  )
+}
+
 // ── Win table row (extracted to avoid re-render thrash) ───────────────────────
 function WinTableRow({
   win: w,
@@ -525,6 +1044,13 @@ function WinTableRow({
   notifying,
   notifyDone,
   onNotify,
+  overrideId,
+  overrideInput,
+  overrideSaving,
+  onStartOverride,
+  onOverrideInput,
+  onSaveOverride,
+  onCancelOverride,
 }: {
   win: WinRow
   paying: number | null
@@ -538,13 +1064,32 @@ function WinTableRow({
   notifying: number | null
   notifyDone?: boolean
   onNotify: (id: number) => void
+  overrideId: number | null
+  overrideInput: string
+  overrideSaving: boolean
+  onStartOverride: (id: number, prize: string) => void
+  onOverrideInput: (v: string) => void
+  onSaveOverride: (id: number) => void
+  onCancelOverride: () => void
 }) {
+  const [showMsg, setShowMsg] = useState(false)
+  const [copied, setCopied] = useState(false)
+
   const isPaying = paying === w.id
   const isSending = sending === w.id
   const isConfirmingPaid    = confirmPay?.id === w.id && confirmPay?.action === 'paid'
   const isConfirmingSkipped = confirmPay?.id === w.id && confirmPay?.action === 'skipped'
   const alreadyDone = w.payout_status !== 'pending'
   const isSendable = !!prizeToAsset(w.prize) && !!w.wallet_address
+
+  const trustlineMessageFull = buildTrustlineMessage(false, w.prize, w.win_code)
+
+  function handleCopy() {
+    navigator.clipboard.writeText(trustlineMessageFull).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
 
   return (
     <tr className="hover:bg-white/5 transition-colors">
@@ -563,7 +1108,51 @@ function WinTableRow({
         </div>
       </Td>
       <Td>
-        <span className="text-[#D4AF37] font-medium">{w.prize}</span>
+        {w.prize_source ? (
+          <div className="flex items-center gap-1">
+            <span className={`material-symbols-outlined text-sm leading-none ${SOURCE_LABELS[w.prize_source]?.color ?? 'text-gray-400'}`}>
+              {SOURCE_LABELS[w.prize_source]?.icon ?? 'casino'}
+            </span>
+            <span className={`text-xs font-semibold ${SOURCE_LABELS[w.prize_source]?.color ?? 'text-gray-400'}`}>
+              {SOURCE_LABELS[w.prize_source]?.label ?? w.prize_source}
+            </span>
+          </div>
+        ) : (
+          <span className="text-gray-600 text-xs">—</span>
+        )}
+      </Td>
+      <Td>
+        {overrideId === w.id ? (
+          <div className="flex items-center gap-1">
+            <input
+              type="text"
+              value={overrideInput}
+              onChange={e => onOverrideInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') onSaveOverride(w.id); if (e.key === 'Escape') onCancelOverride() }}
+              className="bg-black/40 border border-[#D4AF37]/40 text-gray-200 text-xs font-mono rounded px-2 py-1 w-28 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/50"
+              autoFocus
+            />
+            <button onClick={() => onSaveOverride(w.id)} disabled={overrideSaving} className="text-green-400 hover:text-green-300 transition disabled:opacity-40">
+              <Icon name="check" className="text-sm" />
+            </button>
+            <button onClick={onCancelOverride} className="text-gray-500 hover:text-gray-300 transition">
+              <Icon name="close" className="text-sm" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 group">
+            <span className="text-[#D4AF37] font-medium">{w.prize}</span>
+            {w.payout_status === 'pending' && (
+              <button
+                onClick={() => onStartOverride(w.id, w.prize)}
+                className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-gray-300 transition ml-1"
+                title="Override prize"
+              >
+                <Icon name="edit" className="text-[11px]" />
+              </button>
+            )}
+          </div>
+        )}
       </Td>
       <Td>
         {w.amount != null
@@ -645,6 +1234,18 @@ function WinTableRow({
                 Explorer
               </a>
             )}
+            {/* Resend for paid wins — in case tx dropped */}
+            {w.payout_status === 'paid' && isSendable && (
+              <button
+                onClick={() => onSend(w.id)}
+                disabled={isSending}
+                className="flex items-center gap-1 text-[10px] text-orange-400 hover:text-orange-300 transition disabled:opacity-40"
+                title="Resend payment (use if original tx dropped)"
+              >
+                <Icon name="replay" className="text-[10px]" />
+                Resend
+              </button>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-1.5">
@@ -677,6 +1278,32 @@ function WinTableRow({
                     }
                     Notify User
                   </button>
+                )}
+                {/* Toggle to preview + manually copy the message */}
+                <button
+                  onClick={() => setShowMsg(v => !v)}
+                  className="text-[10px] text-gray-500 hover:text-gray-300 transition flex items-center gap-0.5"
+                >
+                  <span className="material-symbols-outlined text-[10px] leading-none">
+                    {showMsg ? 'expand_less' : 'expand_more'}
+                  </span>
+                  {showMsg ? 'Hide message' : 'View message'}
+                </button>
+                {showMsg && (
+                  <div className="mt-0.5 rounded bg-black/30 border border-white/10 p-2 space-y-1.5">
+                    <pre className="text-[9px] text-gray-400 whitespace-pre-wrap leading-relaxed font-mono">
+                      {trustlineMessageFull}
+                    </pre>
+                    <button
+                      onClick={handleCopy}
+                      className="text-[9px] bg-white/5 hover:bg-white/10 text-gray-400 hover:text-gray-200 px-2 py-0.5 rounded transition flex items-center gap-1"
+                    >
+                      <span className="material-symbols-outlined text-[9px] leading-none">
+                        {copied ? 'check' : 'content_copy'}
+                      </span>
+                      {copied ? 'Copied!' : 'Copy'}
+                    </button>
+                  </div>
                 )}
                 <a
                   href={noTrustInfo.lobstrDeeplink}

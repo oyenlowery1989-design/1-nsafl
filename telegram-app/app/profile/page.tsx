@@ -158,8 +158,10 @@ export default function ProfilePage() {
   const xlmBalance = useWalletStore((s) => s.xlmBalance);
   const telegramUser = useWalletStore((s) => s.telegramUser);
   const favoriteTeam = useWalletStore((s) => s.favoriteTeam);
+  const favoriteWaflTeam = useWalletStore((s) => s.favoriteWaflTeam);
   const disconnect = useWalletStore((s) => s.disconnect);
   const setFavoriteTeam = useWalletStore((s) => s.setFavoriteTeam);
+  const setFavoriteWaflTeam = useWalletStore((s) => s.setFavoriteWaflTeam);
   const displayPreference = useWalletStore((s) => s.displayPreference);
   const setDisplayPreference = useWalletStore((s) => s.setDisplayPreference);
 
@@ -401,7 +403,7 @@ export default function ProfilePage() {
     router.push("/");
   }
 
-  async function handleTeamChange(teamId: string) {
+  async function handleTeamChange(aflTeamId: string, waflTeamId: string | null) {
     haptic.medium();
     setChangingTeam(false);
     try {
@@ -411,20 +413,21 @@ export default function ProfilePage() {
           "Content-Type": "application/json",
           "x-telegram-init-data": getTelegramInitData(),
         },
-        body: JSON.stringify({ teamId }),
+        body: JSON.stringify({ teamId: aflTeamId, waflTeamId }),
       });
       const j = await res.json();
       if (j.success) {
         haptic.success();
-        setFavoriteTeam(teamId);
-        toast.success("Team updated!");
+        setFavoriteTeam(aflTeamId);
+        setFavoriteWaflTeam(waflTeamId);
+        toast.success("Teams updated!");
       } else {
         haptic.error();
-        toast.error(j.error ?? "Failed to update team");
+        toast.error(j.error ?? "Failed to update teams");
       }
     } catch {
       haptic.error();
-      toast.error("Failed to update team — try again");
+      toast.error("Failed to update teams — try again");
     }
   }
 
@@ -639,7 +642,7 @@ export default function ProfilePage() {
                   <div className="flex-1 min-w-0">
                     {tgUser && (
                       <>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 flex-wrap gap-y-1">
                           <h2 className="text-sm font-bold text-white truncate">
                             {tgUser.firstName}
                             {tgUser.lastName ? ` ${tgUser.lastName}` : ""}
@@ -647,6 +650,12 @@ export default function ProfilePage() {
                           <span className="flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-semibold bg-green-500/20 text-green-400 border border-green-500/30 uppercase">
                             Active
                           </span>
+                          {favoriteTeam === 'whiplash347' && (
+                            <span className="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase" style={{ background: 'rgba(232,25,44,0.15)', color: '#E8192C', border: '1px solid rgba(232,25,44,0.35)' }}>
+                              <img src="/whiplash347.png" alt="" width={10} height={10} className="rounded-full object-cover" />
+                              WL347
+                            </span>
+                          )}
                         </div>
                         {tgUser.username && (
                           <p className="text-xs text-[#D4AF37] font-medium">
@@ -666,59 +675,62 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                {/* Right: Club logo + name + change button */}
-                {club ? (
-                  <div
-                    className="flex flex-col items-center flex-shrink-0 ml-3"
-                    style={{ minWidth: 72 }}
-                  >
-                    <img
-                      src={club.logo}
-                      alt={club.name}
-                      width={40}
-                      height={40}
-                      className="object-contain"
-                    />
-                    <p
-                      className="text-[10px] font-semibold text-white text-center mt-1 leading-tight"
-                      style={{ maxWidth: 72 }}
-                    >
-                      {club.name}
-                    </p>
+                {/* Right: Club logos + change button */}
+                <div className="flex flex-col items-center flex-shrink-0 ml-3 gap-1">
+                  <div className="flex items-center gap-1.5">
+                    {club ? (
+                      <div className="flex flex-col items-center" style={{ minWidth: 44 }}>
+                        <img src={club.logo} alt={club.name} width={36} height={36} className="object-contain" />
+                        <p className="text-[8px] font-semibold text-gray-300 text-center mt-0.5 leading-tight" style={{ maxWidth: 44 }}>{club.shortName}</p>
+                        <span className="text-[7px] text-[#D4AF37] font-bold uppercase">AFL</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center" style={{ minWidth: 44 }}>
+                        <div className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                          <span className="material-symbols-outlined text-gray-500 text-base">stadium</span>
+                        </div>
+                        <span className="text-[7px] text-gray-500 font-bold uppercase mt-0.5">AFL</span>
+                      </div>
+                    )}
+                    {(() => {
+                      const waflClub = favoriteWaflTeam ? ALL_CLUBS.find((c) => c.id === favoriteWaflTeam) : null
+                      return waflClub ? (
+                        <div className="flex flex-col items-center" style={{ minWidth: 44 }}>
+                          {waflClub.logo ? (
+                            <img src={waflClub.logo} alt={waflClub.name} width={36} height={36} className="object-contain" />
+                          ) : (
+                            <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-[9px]" style={{ background: waflClub.color }}>{waflClub.shortName}</div>
+                          )}
+                          <p className="text-[8px] font-semibold text-gray-300 text-center mt-0.5 leading-tight" style={{ maxWidth: 44 }}>{waflClub.shortName}</p>
+                          <span className="text-[7px] text-blue-400 font-bold uppercase">WAFL</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center" style={{ minWidth: 44 }}>
+                          <div className="w-9 h-9 rounded-full bg-white/5 border border-white/10 border-dashed flex items-center justify-center">
+                            <span className="material-symbols-outlined text-gray-600 text-base">add</span>
+                          </div>
+                          <span className="text-[7px] text-gray-600 font-bold uppercase mt-0.5">WAFL</span>
+                        </div>
+                      )
+                    })()}
+                  </div>
+                  {favoriteTeam ? (
                     <button
-                      onClick={() => {
-                        haptic.light();
-                        setChangingTeam(true);
-                      }}
-                      className="mt-1.5 flex items-center space-x-0.5 px-2 py-1 rounded-lg border border-white/10 hover:bg-white/5 transition text-[9px] font-semibold text-gray-400 hover:text-white"
+                      onClick={() => { haptic.light(); setChangingTeam(true); }}
+                      className="flex items-center space-x-0.5 px-2 py-1 rounded-lg border border-white/10 hover:bg-white/5 transition text-[9px] font-semibold text-gray-400 hover:text-white"
                     >
-                      <span className="material-symbols-outlined text-[11px]">
-                        swap_horiz
-                      </span>
+                      <span className="material-symbols-outlined text-[11px]">swap_horiz</span>
                       <span>Change</span>
                     </button>
-                  </div>
-                ) : !favoriteTeam ? (
-                  <div
-                    className="flex flex-col items-center flex-shrink-0 ml-3"
-                    style={{ minWidth: 72 }}
-                  >
-                    <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-gray-500 text-lg">
-                        stadium
-                      </span>
-                    </div>
+                  ) : (
                     <button
-                      onClick={() => {
-                        haptic.light();
-                        router.push("/");
-                      }}
-                      className="mt-1.5 text-[9px] font-semibold text-[#D4AF37] underline"
+                      onClick={() => { haptic.light(); router.push("/"); }}
+                      className="text-[9px] font-semibold text-[#D4AF37] underline"
                     >
-                      Pick team
+                      Pick teams
                     </button>
-                  </div>
-                ) : null}
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -949,7 +961,7 @@ export default function ProfilePage() {
 
             {/* Asset balances — main assets */}
             <div className="space-y-2">
-              {SHOWN_ASSET_CONFIGS.map((cfg) => {
+              {SHOWN_ASSET_CONFIGS.filter(cfg => !REWARD_ASSETS.some(r => r.code === cfg.code)).map((cfg) => {
                 const bal =
                   allBalances[cfg.code] ??
                   (cfg.code === "XLM" ? xlmBalance : tokenBalance);

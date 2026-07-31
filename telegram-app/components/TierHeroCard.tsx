@@ -25,7 +25,7 @@ export default function TierHeroCard() {
 
   return (
     <div
-      className="glass-card rounded-2xl p-5 relative overflow-hidden border"
+      className="glass-card rounded-2xl p-4 relative overflow-hidden border"
       style={{ borderColor: `${currentTier.color}4D`, background: '#0A0E1A' }}
     >
       {/* Ambient glow */}
@@ -36,11 +36,11 @@ export default function TierHeroCard() {
 
       {/* TOP — current tier */}
       <div className="relative z-10">
-        <div className="flex items-center space-x-3 mb-4">
-          <span className="text-4xl leading-none">{currentTier.emoji}</span>
+        <div className="flex items-center space-x-2.5 mb-3">
+          <span className="text-2xl leading-none">{currentTier.emoji}</span>
           <div>
-            <p className="text-xs text-gray-400 uppercase tracking-widest mb-0.5">Your Tier</p>
-            <h2 className="text-2xl font-serif font-bold leading-tight" style={{ color: currentTier.color }}>
+            <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-0.5">Your Tier</p>
+            <h2 className="text-base font-serif font-bold leading-tight" style={{ color: currentTier.color }}>
               {currentTier.label} — {currentTier.name}
             </h2>
           </div>
@@ -54,35 +54,35 @@ export default function TierHeroCard() {
             </p>
           </div>
         ) : currentTier.rewards ? (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {/* XLM Refund */}
-            <span className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border"
+            <span className="inline-flex items-center space-x-1 px-2 py-1 rounded-full text-[11px] font-semibold border"
               style={{ background: `${currentTier.color}1A`, borderColor: `${currentTier.color}33`, color: currentTier.color }}>
-              <span className="material-symbols-outlined text-sm leading-none">currency_exchange</span>
+              <span className="material-symbols-outlined text-xs leading-none">currency_exchange</span>
               <span>+{currentTier.rewards.xlmRefundPct}% XLM Refund</span>
             </span>
             {/* Gold */}
-            <span className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border"
+            <span className="inline-flex items-center space-x-1 px-2 py-1 rounded-full text-[11px] font-semibold border"
               style={{ background: `${currentTier.color}1A`, borderColor: `${currentTier.color}33`, color: currentTier.color }}>
-              <span className="material-symbols-outlined text-sm leading-none">diamond</span>
+              <span className="material-symbols-outlined text-xs leading-none">diamond</span>
               <span>{formatReward(currentTier.rewards.gold)} GOLD</span>
             </span>
             {/* Silver */}
-            <span className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border"
+            <span className="inline-flex items-center space-x-1 px-2 py-1 rounded-full text-[11px] font-semibold border"
               style={{ background: `${currentTier.color}1A`, borderColor: `${currentTier.color}33`, color: currentTier.color }}>
-              <span className="material-symbols-outlined text-sm leading-none">toll</span>
+              <span className="material-symbols-outlined text-xs leading-none">toll</span>
               <span>{formatReward(currentTier.rewards.silver)} SILVER</span>
             </span>
             {/* Trustline multiplier */}
-            <span className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border"
+            <span className="inline-flex items-center space-x-1 px-2 py-1 rounded-full text-[11px] font-semibold border"
               style={{ background: `${currentTier.color}1A`, borderColor: `${currentTier.color}33`, color: currentTier.color }}>
-              <span className="material-symbols-outlined text-sm leading-none">hub</span>
+              <span className="material-symbols-outlined text-xs leading-none">hub</span>
               <span>X{currentTier.rewards.trustlineMultiplier} Trustline</span>
             </span>
             {/* Physical gold badge for Tier 10 */}
             {currentTier.rewards.physicalGold && (
-              <span className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-[#D4AF37]/50 bg-[#D4AF37]/20 text-[#D4AF37]">
-                <span className="material-symbols-outlined text-sm leading-none">local_shipping</span>
+              <span className="inline-flex items-center space-x-1 px-2 py-1 rounded-full text-[11px] font-semibold border border-[#D4AF37]/50 bg-[#D4AF37]/20 text-[#D4AF37]">
+                <span className="material-symbols-outlined text-xs leading-none">local_shipping</span>
                 <span>1 Physical Gold / Month</span>
               </span>
             )}
@@ -91,57 +91,38 @@ export default function TierHeroCard() {
       </div>
 
       {/* Divider */}
-      <div className="relative my-5 border-t border-white/10" style={{ boxShadow: `0 1px 0 ${currentTier.glowColor}` }} />
+      <div className="relative my-2 border-t border-white/10" />
 
       {/* BOTTOM — next tier / max */}
       <div className="relative z-10">
         {isMaxTier ? (
-          <div className="flex flex-col items-center text-center py-2 space-y-2">
-            <p className="text-2xl">✨⭐️✨</p>
-            <p className="text-base font-bold text-white">👑 Maximum Tier — Hall of Fame</p>
-            <p className="text-xs text-gray-400">You&apos;ve reached the pinnacle of the {PRIMARY_CUSTOM_ASSET_LABEL} ecosystem.</p>
-          </div>
+          <p className="text-xs font-bold text-center" style={{ color: currentTier.color }}>👑 Maximum Tier — Hall of Fame</p>
         ) : (
           <>
-            <div className="mb-3">
-              <div className="flex items-center justify-between mb-1.5">
-                <p className="text-xs text-gray-400">
-                  {isPreTier || !isConnected
-                    ? `Hold 100 ${PRIMARY_CUSTOM_ASSET_LABEL} to unlock ${nextTier!.label}`
-                    : `${Math.round(toNextTier).toLocaleString()} more to unlock ${nextTier!.label} — ${nextTier!.name} 🔥`}
-                </p>
-                <span className="text-xs font-semibold" style={{ color: currentTier.color }}>
-                  {isPreTier || !isConnected ? '0%' : `${progressPct}%`}
-                </span>
-              </div>
-              <div className="h-2 rounded-full bg-white/10 overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{
-                    width: `${isPreTier || !isConnected ? 0 : progressPct}%`,
-                    background: `linear-gradient(90deg, ${currentTier.color}99, ${currentTier.color})`,
-                    boxShadow: `0 0 8px ${currentTier.color}80`,
-                  }}
-                />
-              </div>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] text-gray-400 truncate pr-2">
+                {isPreTier || !isConnected
+                  ? `Hold 100 ${PRIMARY_CUSTOM_ASSET_LABEL} to unlock Tier 1`
+                  : `${Math.round(toNextTier).toLocaleString()} more → ${nextTier!.label}`}
+              </p>
+              <span className="text-[10px] font-semibold flex-shrink-0" style={{ color: currentTier.color }}>
+                {isPreTier || !isConnected ? '0%' : `${progressPct}%`}
+              </span>
             </div>
-
-            {/* Next tier teaser */}
-            {isConnected && !isPreTier && nextTier?.rewards && (
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border"
-                  style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: '#D4AF37' }}>
-                  <span className="material-symbols-outlined text-sm leading-none">trending_up</span>
-                  <span>+{nextTier.rewards.xlmRefundPct}% XLM Refund at {nextTier.label}</span>
-                </div>
-              </div>
-            )}
-
+            <div className="h-1.5 rounded-full bg-white/10 overflow-hidden mb-2">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{
+                  width: `${isPreTier || !isConnected ? 0 : progressPct}%`,
+                  background: `linear-gradient(90deg, ${currentTier.color}99, ${currentTier.color})`,
+                }}
+              />
+            </div>
             <Link
               href="/buy"
-              className="mt-3 flex items-center justify-center space-x-2 w-full py-3 rounded-xl text-sm font-bold bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 transition active:scale-[0.98] shadow-[0_4px_20px_rgba(212,175,55,0.3)]"
+              className="flex items-center justify-center space-x-1.5 w-full py-2 rounded-xl text-xs font-bold bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 transition active:scale-[0.98]"
             >
-              <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>rocket_launch</span>
+              <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>rocket_launch</span>
               <span>Buy {PRIMARY_CUSTOM_ASSET_LABEL} — Level Up</span>
             </Link>
           </>

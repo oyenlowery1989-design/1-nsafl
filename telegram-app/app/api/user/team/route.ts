@@ -17,7 +17,7 @@ function getUser(req: NextRequest): TelegramUser | null {
   return null
 }
 
-// GET — fetch current team + any pending request
+// GET — fetch current team
 export async function GET(req: NextRequest) {
   const rateLimitError = checkRateLimit(req)
   if (rateLimitError) return rateLimitError
@@ -27,39 +27,25 @@ export async function GET(req: NextRequest) {
 
   const supabase = createServiceClient()
 
-  const [{ data: userRow }, { data: pendingRow }] = await Promise.all([
-    supabase
-      .from('users')
-      .select('favorite_team')
-      .eq('telegram_id', telegramUser.id)
-      .single(),
-    supabase
-      .from('team_change_requests')
-      .select('id, requested_team, status, created_at, admin_note')
-      .eq('telegram_id', telegramUser.id)
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  ])
+  const { data: userRow } = await (supabase as any)
+    .from('users')
+    .select('favorite_team, favorite_wafl_team')
+    .eq('telegram_id', telegramUser.id)
+    .single() as { data: { favorite_team: string | null; favorite_wafl_team: string | null } | null }
 
-  return ok({
-    favoriteTeam: userRow?.favorite_team ?? null,
-    pendingRequest: pendingRow ?? null,
-  })
+  return ok({ favoriteTeam: userRow?.favorite_team ?? null, favoriteWaflTeam: userRow?.favorite_wafl_team ?? null })
 }
 
-// POST — submit a team change request (not instant)
+// POST — instantly update team (no approval needed)
 export async function POST(req: NextRequest) {
   const telegramUser = getUser(req)
   if (!telegramUser) return fail('Invalid auth', 'INVALID_AUTH', 401)
 
-  // Rate-limit per user: max 10 team submissions per minute (covers initial pick + retries)
   const rateLimitError = checkRateLimit(req, 10, `team:${telegramUser.id}`)
   if (rateLimitError) return rateLimitError
 
   const body = await req.json()
-  const { teamId } = body as { teamId: string }
+  const { teamId, waflTeamId } = body as { teamId: string; waflTeamId?: string | null }
 
   if (!teamId || typeof teamId !== 'string') {
     return fail('Missing team ID', 'MISSING_TEAM')
@@ -69,36 +55,21 @@ export async function POST(req: NextRequest) {
     return fail('Invalid team', 'INVALID_TEAM')
   }
 
+  if (waflTeamId !== undefined && waflTeamId !== null && !ALL_CLUBS.find((c) => c.id === waflTeamId)) {
+    return fail('Invalid WAFL team', 'INVALID_TEAM')
+  }
+
   const supabase = createServiceClient()
 
-  // Block if they already have a pending request
-  const { data: existing } = await supabase
-    .from('team_change_requests')
-    .select('id')
-    .eq('telegram_id', telegramUser.id)
-    .eq('status', 'pending')
-    .maybeSingle()
+  const updatePayload: Record<string, string | null> = { favorite_team: teamId }
+  if (waflTeamId !== undefined) updatePayload.favorite_wafl_team = waflTeamId ?? null
 
-  if (existing) {
-    return fail('You already have a pending team change request', 'ALREADY_PENDING')
-  }
-
-  // Check they're not requesting the same team they already have
-  const { data: userRow } = await supabase
+  const { error } = await (supabase as any)
     .from('users')
-    .select('favorite_team')
+    .update(updatePayload)
     .eq('telegram_id', telegramUser.id)
-    .single()
 
-  if (userRow?.favorite_team === teamId) {
-    return fail('That is already your current team', 'SAME_TEAM')
-  }
+  if (error) return fail('Failed to update team', 'DB_ERROR', 500)
 
-  const { error } = await supabase
-    .from('team_change_requests')
-    .insert({ telegram_id: telegramUser.id, requested_team: teamId })
-
-  if (error) return fail('Failed to submit request', 'DB_ERROR', 500)
-
-  return ok({ requested: true, teamId })
+  return ok({ teamId, waflTeamId: waflTeamId ?? null })
 }

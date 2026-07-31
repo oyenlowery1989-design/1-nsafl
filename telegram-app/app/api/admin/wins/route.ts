@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
 
   const status = searchParams.get('status') ?? 'all'
   const prize  = searchParams.get('prize') ?? null
+  const source = searchParams.get('source') ?? null
   const page   = Math.max(1, parseInt(searchParams.get('page')  ?? '1',  10))
   const limit  = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '20', 10)))
   const from   = (page - 1) * limit
@@ -20,6 +21,10 @@ export async function GET(req: NextRequest) {
   let query = (supabase as any)
     .from('lucky_draw_wins')
     .select('*', { count: 'exact' })
+    .neq('prize', 'Better Luck')
+    .neq('prize', 'Free Spin')
+    .not('prize', 'ilike', '%Spin%')
+    .not('prize', 'ilike', '%spin%')
     .order('created_at', { ascending: false })
     .range(from, to)
 
@@ -29,6 +34,10 @@ export async function GET(req: NextRequest) {
 
   if (prize) {
     query = query.eq('prize', prize)
+  }
+
+  if (source) {
+    query = query.eq('prize_source', source)
   }
 
   const { data: wins, count, error } = await query
@@ -57,10 +66,14 @@ export async function GET(req: NextRequest) {
     user_username: userMap[w.telegram_id]?.username ?? null,
   }))
 
-  // fetch counts per payout_status for stat tiles
+  // fetch counts per payout_status for stat tiles (exclude no-value misses)
   const { data: countRows } = await (supabase as any)
     .from('lucky_draw_wins')
     .select('payout_status')
+    .neq('prize', 'Better Luck')
+    .neq('prize', 'Free Spin')
+    .not('prize', 'ilike', '%Spin%')
+    .not('prize', 'ilike', '%spin%')
 
   const counts = { pending: 0, paid: 0, skipped: 0 }
   for (const row of (countRows ?? [])) {

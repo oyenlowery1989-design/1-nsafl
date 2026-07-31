@@ -352,6 +352,7 @@ export default function StatsPage() {
 
               const aflEntries = allEntries.filter((e) => e.club!.league === 'AFL')
               const waflEntries = allEntries.filter((e) => e.club!.league === 'WAFL')
+              const partnerEntries = allEntries.filter((e) => e.club!.league === 'PARTNER')
               const totalFans = allEntries.reduce((sum, e) => sum + e.count, 0)
 
               const AllegianceRows = ({ entries, limit = 6 }: { entries: typeof aflEntries; limit?: number }) => {
@@ -403,6 +404,28 @@ export default function StatsPage() {
                         {aflEntries.length > 0 && <div className="h-px bg-white/8 mb-3" />}
                         <p className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-widest mb-2">WAFL</p>
                         <AllegianceRows entries={waflEntries} />
+                      </div>
+                    )}
+                    {partnerEntries.length > 0 && (
+                      <div>
+                        <div className="h-px mb-3" style={{ background: 'rgba(232,25,44,0.2)' }} />
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <img src="/whiplash347.png" alt="" width={12} height={12} className="rounded-full object-cover" style={{ boxShadow: '0 0 4px rgba(232,25,44,0.7)' }} />
+                          <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#E8192C' }}>⚡ Partner Team</p>
+                        </div>
+                        {partnerEntries.map(({ teamId, count, club }) => {
+                          const pct = totalFans > 0 ? Math.round((count / totalFans) * 100) : 0
+                          return (
+                            <div key={teamId} className="flex items-center space-x-2">
+                              <img src={club!.logo} alt={club!.shortName} width={22} height={22} className="rounded-full object-cover flex-shrink-0" style={{ boxShadow: '0 0 6px rgba(232,25,44,0.5)' }} />
+                              <span className="text-[11px] text-gray-300 w-24 truncate">{club!.name}</span>
+                              <div className="flex-1 rounded-full h-1.5" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                                <div className="h-1.5 rounded-full transition-all duration-700" style={{ width: `${Math.max(pct, 3)}%`, background: 'linear-gradient(90deg, #E8192C, #00D4FF)' }} />
+                              </div>
+                              <span className="text-[10px] font-bold w-6 text-right" style={{ color: '#E8192C' }}>{count}</span>
+                            </div>
+                          )
+                        })}
                       </div>
                     )}
                   </div>
