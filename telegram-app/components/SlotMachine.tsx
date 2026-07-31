@@ -3,8 +3,6 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { haptic } from '@/lib/telegram-ui'
 import { getTelegramInitData, openTelegramLink, buildBotStartLink } from '@/lib/telegram'
 
-const DEV_BYPASS = process.env.NEXT_PUBLIC_DEV_BYPASS === 'true'
-
 // ── Constants ──────────────────────────────────────────────────────────────────
 const SYM_SIZE = 64       // px per symbol cell
 const STRIP_COUNT = 27    // 9 symbols × 3 repetitions per reel
@@ -25,6 +23,9 @@ interface SlotPrize {
   amount?: number
 }
 
+// Client-side reel rendering ONLY (labels/symbols) — the server (lib/gamePool.ts
+// PRIZE_TABLES.slot_machine) rolls the prize and returns its index. This array's order MUST
+// match PRIZE_TABLES.slot_machine exactly so `prizeIndex` from the server maps to the right prize.
 const SLOT_PRIZES: SlotPrize[] = [
   { label: '100 wXLM',    symbol: '💎', weight: 10,  isAsset: true, isWXLM: true,   amount: 100  },
   { label: '5000 wNSAFL', symbol: '🏆', weight: 15,  isAsset: true, isWNSAFL: true, amount: 5000 },
@@ -39,14 +40,16 @@ const SLOT_PRIZES: SlotPrize[] = [
 
 const SYMBOLS = SLOT_PRIZES.map(p => p.symbol)
 
-function pickPrize(): number {
-  const total = SLOT_PRIZES.reduce((s, p) => s + p.weight, 0)
-  let r = Math.random() * total
-  for (let i = 0; i < SLOT_PRIZES.length; i++) {
-    r -= SLOT_PRIZES[i].weight
-    if (r <= 0) return i
-  }
-  return SLOT_PRIZES.length - 1
+interface SpinResult {
+  prize: string
+  amount: number | null
+  prizeIndex: number
+  winCode: string | null
+  freeSpin?: boolean
+  autoSent: boolean
+  txHash?: string
+  paymentError?: string
+  lobstrDeeplink?: string
 }
 
 function getAssetLabel(p: SlotPrize): string {
@@ -149,7 +152,7 @@ interface Props {
 }
 
 export default function SlotMachine({
-  onBack, stellarAddress, onSpinComplete,
+  onBack, onSpinComplete,
   initialCanSpin, initialSpinsRemaining, initialDailyLimit, initialBonusSpins, tierLabel,
 }: Props) {
   // ── Strips (one per reel) ──────────────────────────────────────────────────
@@ -179,7 +182,9 @@ export default function SlotMachine({
   const [autoSentTxHash, setAutoSentTxHash] = useState<string | null>(null)
   const [claimed, setClaimed] = useState(false)
   const [processing, setProcessing] = useState(false)
+  const [spinError, setSpinError] = useState<string | null>(null)
   const winSentRef = useRef(false)
+  const serverResultRef = useRef<SpinResult | null>(null)
 
   const [canSpin, setCanSpin] = useState(initialCanSpin)
   const [spinsRemaining, setSpinsRemaining] = useState(initialSpinsRemaining)
@@ -242,16 +247,34 @@ export default function SlotMachine({
     if (spinning || processing) return
     if (!canSpin && !freeSpin) return
 
-    if (!DEV_BYPASS && !freeSpin) {
-      const check = await fetch('/api/game/slot', {
-        headers: { 'x-telegram-init-data': getTelegramInitData() },
-      }).then(r => r.json()).catch(() => null)
-      if (!(check?.data?.canSpin ?? false)) {
-        setCanSpin(false)
-        setSpinsRemaining(0)
+    setSpinError(null)
+    setProcessing(true)
+    let data: SpinResult | null = null
+    try {
+      const res = await fetch('/api/game/slot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': getTelegramInitData() },
+        body: JSON.stringify({}),
+      })
+      const json = await res.json()
+      if (!json.success) {
+        setProcessing(false)
+        if (json.code === 'DAILY_LIMIT' || json.code === 'RATE_LIMITED') {
+          setCanSpin(false)
+          setSpinsRemaining(0)
+        } else {
+          setSpinError(json.error ?? 'Something went wrong — try again.')
+        }
         return
       }
+      data = json.data
+    } catch {
+      setProcessing(false)
+      setSpinError('Network error — try again.')
+      return
     }
+    setProcessing(false)
+    if (!data) return
 
     winSentRef.current = false
     setResult(null)
@@ -262,9 +285,9 @@ export default function SlotMachine({
     setFreeSpin(false)
     setSpinning(true)
     haptic.medium()
+    serverResultRef.current = data
 
-    const prizeIdx = pickPrize()
-    const prize = SLOT_PRIZES[prizeIdx]
+    const prize = SLOT_PRIZES[data.prizeIndex]
     const isLoss = prize.label === 'Better Luck'
 
     // Reel symbols: win = all 3 match; loss = near-miss (reels 0+1 match, reel 2 is off)
@@ -306,13 +329,11 @@ export default function SlotMachine({
       return
     }
 
+    // The server already rolled + recorded this win in the POST that kicked off the spin
+    // (handleSpin) — read that response back out of the ref, no second request.
+    const data = serverResultRef.current
     const isAsset = result.isAsset
-    let code: string | undefined
-    if (isAsset) {
-      const tag = `${result.amount}${getAssetLabel(result)}`
-      code = `SLOT-${tag}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
-      setWinCode(code)
-    }
+    if (isAsset && data?.winCode) setWinCode(data.winCode)
 
     const isWin = isAsset || result.label === '+2 Spins'
     if (isWin) {
@@ -323,25 +344,12 @@ export default function SlotMachine({
       haptic.warning()
     }
 
-    setProcessing(true)
-    fetch('/api/game/slot', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': getTelegramInitData() },
-      body: JSON.stringify({ prize: result.label, amount: result.amount ?? null, code, wallet: stellarAddress }),
-      keepalive: true,
+    if (data?.autoSent) { setAutoSent(true); setAutoSentTxHash(data.txHash ?? null) }
+
+    void onSpinComplete((can, remaining, bonus) => {
+      setCanSpin(can); setSpinsRemaining(remaining); setBonusSpinsLeft(bonus)
     })
-      .then(r => r.json())
-      .then(j => {
-        if (j.data?.autoSent) { setAutoSent(true); setAutoSentTxHash(j.data.txHash ?? null) }
-      })
-      .catch(() => null)
-      .finally(async () => {
-        await onSpinComplete((can, remaining, bonus) => {
-          setCanSpin(can); setSpinsRemaining(remaining); setBonusSpinsLeft(bonus)
-        })
-        setProcessing(false)
-      })
-  }, [result, stellarAddress, onSpinComplete])
+  }, [result, onSpinComplete])
 
   const handleClaimViaBot = useCallback(() => {
     if (!winCode || claimed) return
@@ -465,11 +473,6 @@ export default function SlotMachine({
                     <p className="text-[10px] text-gray-500">Check your Stellar wallet — {getAssetLabel(result)} is on its way.</p>
                     {autoSentTxHash && <p className="text-[9px] text-gray-600 font-mono break-all">{autoSentTxHash}</p>}
                   </div>
-                ) : processing ? (
-                  <div className="rounded-xl border border-white/10 px-4 py-3 text-center"
-                    style={{ background: 'rgba(255,255,255,0.03)' }}>
-                    <p className="text-xs text-gray-400">⏳ Sending prize to your wallet…</p>
-                  </div>
                 ) : (
                   <button onClick={handleClaimViaBot} disabled={claimed}
                     className="w-full py-2.5 rounded-xl text-sm font-bold text-black active:scale-95 transition disabled:opacity-50"
@@ -483,6 +486,16 @@ export default function SlotMachine({
         </div>
       )}
 
+      {/* Spin error */}
+      {spinError && (
+        <div className="px-4 mb-2 flex-shrink-0">
+          <div className="rounded-2xl border border-red-500/30 px-4 py-2.5 text-center text-xs text-red-400"
+            style={{ background: 'rgba(248,113,113,0.08)' }}>
+            {spinError}
+          </div>
+        </div>
+      )}
+
       {/* Spin button */}
       <div className="px-4 pb-8 flex-shrink-0 space-y-2">
         {canSpin || freeSpin ? (
@@ -492,7 +505,7 @@ export default function SlotMachine({
               background: spinning ? '#a08020' : 'linear-gradient(135deg, #D4AF37 0%, #f0d060 50%, #D4AF37 100%)',
               boxShadow: spinning ? 'none' : '0 4px 24px rgba(212,175,55,0.4)',
             }}>
-            {spinning ? '🎰 Spinning...' : processing ? '⏳ Saving...' : freeSpin ? '🔄 Free Spin!' : '🎰 Pull the Lever'}
+            {spinning ? '🎰 Spinning...' : processing ? '🎲 Rolling...' : freeSpin ? '🔄 Free Spin!' : '🎰 Pull the Lever'}
           </button>
         ) : (
           <>

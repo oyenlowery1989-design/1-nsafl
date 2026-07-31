@@ -3,8 +3,6 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { haptic } from '@/lib/telegram-ui'
 import { getTelegramInitData, openTelegramLink, buildBotStartLink } from '@/lib/telegram'
 
-const DEV_BYPASS = process.env.NEXT_PUBLIC_DEV_BYPASS === 'true'
-
 // ── Prize table ────────────────────────────────────────────────────────────────
 interface ScratchPrize {
   label: string
@@ -19,6 +17,9 @@ interface ScratchPrize {
   isMiss?: boolean
 }
 
+// Client-side grid rendering ONLY (labels/emoji) — the server (lib/gamePool.ts
+// PRIZE_TABLES.scratch_card) rolls the prize and returns its index. This array's order MUST
+// match PRIZE_TABLES.scratch_card exactly so `prizeIndex` from the server maps to the right prize.
 const SCRATCH_PRIZES: ScratchPrize[] = [
   { label: '100 wXLM',    emoji: '💎', weight: 8,   isAsset: true, isWXLM: true,   amount: 100  },
   { label: '5000 wNSAFL', emoji: '🏆', weight: 12,  isAsset: true, isWNSAFL: true, amount: 5000 },
@@ -32,14 +33,15 @@ const SCRATCH_PRIZES: ScratchPrize[] = [
 const WIN_PRIZES = SCRATCH_PRIZES.filter(p => !p.isMiss)
 const ALL_EMOJIS = SCRATCH_PRIZES.map(p => p.emoji)
 
-function pickPrize(): number {
-  const total = SCRATCH_PRIZES.reduce((s, p) => s + p.weight, 0)
-  let r = Math.random() * total
-  for (let i = 0; i < SCRATCH_PRIZES.length; i++) {
-    r -= SCRATCH_PRIZES[i].weight
-    if (r <= 0) return i
-  }
-  return SCRATCH_PRIZES.length - 1
+interface ScratchResult {
+  prize: string
+  amount: number | null
+  prizeIndex: number
+  winCode: string | null
+  autoSent: boolean
+  txHash?: string
+  paymentError?: string
+  lobstrDeeplink?: string
 }
 
 function getAssetLabel(p: ScratchPrize): string {
@@ -155,7 +157,7 @@ interface Props {
 }
 
 export default function ScratchCard({
-  onBack, stellarAddress, onCardComplete,
+  onBack, onCardComplete,
   initialCanScratch, initialCardsRemaining, initialDailyLimit, initialBonusCards, tierLabel,
 }: Props) {
   const [canScratch, setCanScratch] = useState(initialCanScratch)
@@ -164,6 +166,9 @@ export default function ScratchCard({
   const [bonusCardsLeft, setBonusCardsLeft] = useState(initialBonusCards)
 
   // Card state
+  const [cardDealt, setCardDealt] = useState(false)
+  const [cardPending, setCardPending] = useState(false) // POST for this card's prize is in flight
+  const [scratchError, setScratchError] = useState<string | null>(null)
   const [prizeIdx, setPrizeIdx] = useState<number | null>(null)
   const [grid, setGrid] = useState<string[]>([])
   const [revealed, setRevealed] = useState<boolean[]>(Array(9).fill(false))
@@ -172,9 +177,10 @@ export default function ScratchCard({
   const [autoSentTxHash, setAutoSentTxHash] = useState<string | null>(null)
   const [winCode, setWinCode] = useState<string | null>(null)
   const [claimed, setClaimed] = useState(false)
-  const [processing, setProcessing] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [isRevealingAll, setIsRevealingAll] = useState(false)
+  const fetchingRef = useRef(false)
+  const serverResultRef = useRef<ScratchResult | null>(null)
 
   // History
   const [history, setHistory] = useState<{ prize: string; created_at: string }[]>([])
@@ -197,7 +203,6 @@ export default function ScratchCard({
   const isAsset = prize?.isAsset ?? false
   const allRevealed = revealed.every(Boolean)
   const revealedCount = revealed.filter(Boolean).length
-  const cardActive = prizeIdx !== null
 
   const winPositions = prizeIdx !== null && prize && !prize.isMiss
     ? grid.reduce<number[]>((acc, sym, i) => sym === prize.emoji ? [...acc, i] : acc, [])
@@ -231,37 +236,91 @@ export default function ScratchCard({
     })
   }, [])
 
+  // ── Fetch the server-rolled prize on first scratch interaction ────────────
+  // POST resolves before we know the grid contents — the returned prizeIndex decides
+  // what goes under the cover. Returns the prize index, or null on failure (caller bails).
+  const ensurePrizeFetched = useCallback(async (): Promise<number | null> => {
+    if (fetchingRef.current) return null
+    fetchingRef.current = true
+    setCardPending(true)
+    let data: ScratchResult | null = null
+    try {
+      const res = await fetch('/api/game/scratch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': getTelegramInitData() },
+        body: JSON.stringify({}),
+      })
+      const json = await res.json()
+      if (!json.success) {
+        fetchingRef.current = false
+        setCardPending(false)
+        setCardDealt(false)
+        if (json.code === 'DAILY_LIMIT' || json.code === 'RATE_LIMITED') {
+          setCanScratch(false)
+          setCardsRemaining(0)
+        } else {
+          setScratchError(json.error ?? 'Something went wrong — try again.')
+        }
+        return null
+      }
+      data = json.data
+    } catch {
+      fetchingRef.current = false
+      setCardPending(false)
+      setCardDealt(false)
+      setScratchError('Network error — try again.')
+      return null
+    }
+    fetchingRef.current = false
+    if (!data) return null
+
+    serverResultRef.current = data
+    setPrizeIdx(data.prizeIndex)
+    setGrid(buildGrid(data.prizeIndex))
+    setCardPending(false)
+    return data.prizeIndex
+  }, [])
+
   // ── Pointer handlers for drag-to-scratch ──────────────────────────────────
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (submitted || allRevealed || isRevealingAll) return
+    if (!cardDealt || submitted || allRevealed || isRevealingAll || cardPending) return
     scratchingRef.current = true
     gridRef.current?.setPointerCapture(e.pointerId)
     // Reveal the tile under the initial press
     const el = document.elementFromPoint(e.clientX, e.clientY)
     const tileEl = el?.closest('[data-tile-idx]') as HTMLElement | null
-    if (tileEl) {
-      const idx = parseInt(tileEl.dataset.tileIdx ?? '', 10)
-      if (!isNaN(idx)) revealTile(idx)
+    if (!tileEl) return
+    const idx = parseInt(tileEl.dataset.tileIdx ?? '', 10)
+    if (isNaN(idx)) return
+    if (prizeIdx === null) {
+      ensurePrizeFetched().then(resolved => { if (resolved !== null) revealTile(idx) })
+      return
     }
-  }, [submitted, allRevealed, isRevealingAll, revealTile])
+    revealTile(idx)
+  }, [cardDealt, submitted, allRevealed, isRevealingAll, cardPending, prizeIdx, ensurePrizeFetched, revealTile])
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!scratchingRef.current || submitted || allRevealed || isRevealingAll) return
+    if (!scratchingRef.current || submitted || allRevealed || isRevealingAll || cardPending || prizeIdx === null) return
     const el = document.elementFromPoint(e.clientX, e.clientY)
     const tileEl = el?.closest('[data-tile-idx]') as HTMLElement | null
     if (tileEl) {
       const idx = parseInt(tileEl.dataset.tileIdx ?? '', 10)
       if (!isNaN(idx)) revealTile(idx)
     }
-  }, [submitted, allRevealed, isRevealingAll, revealTile])
+  }, [submitted, allRevealed, isRevealingAll, cardPending, prizeIdx, revealTile])
 
   const handlePointerUp = useCallback(() => {
     scratchingRef.current = false
   }, [])
 
   // ── Staggered "Reveal All" ─────────────────────────────────────────────────
-  const revealAllTiles = useCallback(() => {
-    if (isRevealingAll) return
+  const revealAllTiles = useCallback(async () => {
+    if (isRevealingAll || cardPending) return
+    // Prize may not be known yet if the player hits "Reveal All" before ever scratching
+    if (prizeIdx === null) {
+      const resolved = await ensurePrizeFetched()
+      if (resolved === null) return
+    }
     setIsRevealingAll(true)
     haptic.medium()
 
@@ -292,7 +351,7 @@ export default function ScratchCard({
       }, pos * 80)
       revealTimers.current.push(t)
     })
-  }, [isRevealingAll])
+  }, [isRevealingAll, cardPending, prizeIdx, ensurePrizeFetched])
 
   // Cleanup timers on unmount
   useEffect(() => () => { revealTimers.current.forEach(clearTimeout) }, [])
@@ -312,40 +371,29 @@ export default function ScratchCard({
       haptic.warning()
     }
 
-    let code: string | undefined
-    if (p.isAsset) {
-      const tag = `${p.amount}${getAssetLabel(p)}`
-      code = `SCRATCH-${tag}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
-      setWinCode(code)
-    }
+    // The server already rolled + recorded this card in the POST fired on first scratch
+    // (ensurePrizeFetched) — read that response back out of the ref, no second request.
+    const data = serverResultRef.current
+    if (p.isAsset && data?.winCode) setWinCode(data.winCode)
+    if (data?.autoSent) { setAutoSent(true); setAutoSentTxHash(data.txHash ?? null) }
 
-    setProcessing(true)
-    fetch('/api/game/scratch', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': getTelegramInitData() },
-      body: JSON.stringify({ prize: p.label, amount: p.amount ?? null, code, wallet: stellarAddress }),
-      keepalive: true,
+    void onCardComplete((can, remaining, bonus) => {
+      setCanScratch(can); setCardsRemaining(remaining); setBonusCardsLeft(bonus)
     })
-      .then(r => r.json())
-      .then(j => {
-        if (j.data?.winCode && !code) setWinCode(j.data.winCode)
-        if (j.data?.autoSent) { setAutoSent(true); setAutoSentTxHash(j.data.txHash ?? null) }
-      })
-      .catch(() => null)
-      .finally(async () => {
-        await onCardComplete((can, remaining, bonus) => {
-          setCanScratch(can); setCardsRemaining(remaining); setBonusCardsLeft(bonus)
-        })
-        setProcessing(false)
-      })
-  }, [allRevealed, prizeIdx, stellarAddress, onCardComplete])
+  }, [allRevealed, prizeIdx, onCardComplete])
 
   // ── Deal a new card ────────────────────────────────────────────────────────
+  // Prize is unknown until the first scratch (fetchPrize) — deal a covered placeholder
+  // grid so there's something to touch; real symbols land once the server responds.
   const dealCard = useCallback(() => {
     revealTimers.current.forEach(clearTimeout)
-    const idx = pickPrize()
-    setPrizeIdx(idx)
-    setGrid(buildGrid(idx))
+    setCardDealt(true)
+    setCardPending(false)
+    setScratchError(null)
+    fetchingRef.current = false
+    serverResultRef.current = null
+    setPrizeIdx(null)
+    setGrid(Array(9).fill(''))
     setRevealed(Array(9).fill(false))
     revealedRef.current = Array(9).fill(false)
     setSubmitted(false)
@@ -400,6 +448,16 @@ export default function ScratchCard({
         <div className="w-16" />
       </div>
 
+      {/* Scratch error */}
+      {scratchError && (
+        <div className="px-4 mb-2 flex-shrink-0">
+          <div className="rounded-2xl border border-red-500/30 px-4 py-2.5 text-center text-xs text-red-400"
+            style={{ background: 'rgba(248,113,113,0.08)' }}>
+            {scratchError}
+          </div>
+        </div>
+      )}
+
       {/* Card history row */}
       {history.length > 0 && (
         <div className="px-4 mb-1 flex-shrink-0">
@@ -413,7 +471,7 @@ export default function ScratchCard({
       {/* Card area */}
       <div className="flex-1 flex flex-col items-center px-4 py-2">
 
-        {!cardActive ? (
+        {!cardDealt ? (
           /* No card yet */
           <div className="w-full max-w-xs rounded-3xl border border-dashed border-[#D4AF37]/30 flex flex-col items-center justify-center py-14 space-y-4"
             style={{ background: 'rgba(212,175,55,0.04)' }}>
@@ -432,7 +490,9 @@ export default function ScratchCard({
             {/* Card header — reveal counter + match indicator */}
             <div className="flex items-center justify-between mb-3">
               <p className="text-[10px] text-[#D4AF37]/60 font-bold uppercase tracking-widest">
-                {allRevealed ? (isWin ? '🎉 You won!' : '💨 Better luck next time') : 'Scratch to reveal'}
+                {allRevealed
+                  ? (isWin ? '🎉 You won!' : '💨 Better luck next time')
+                  : cardPending ? '⏳ Dealing…' : 'Scratch to reveal'}
               </p>
               <div className="flex items-center space-x-2">
                 {/* Match counter — shown while scratching, hides on allRevealed */}
@@ -490,7 +550,7 @@ export default function ScratchCard({
             )}
 
             {/* Reveal All button */}
-            {!allRevealed && !submitted && !isRevealingAll && (
+            {!allRevealed && !submitted && !isRevealingAll && !cardPending && (
               <button onClick={revealAllTiles}
                 className="w-full py-2.5 rounded-xl text-xs font-bold text-[#D4AF37] border border-[#D4AF37]/30 active:scale-95 transition"
                 style={{ background: 'rgba(212,175,55,0.06)' }}>
@@ -551,11 +611,6 @@ export default function ScratchCard({
                       <p className="text-[10px] text-gray-500">Check your Stellar wallet — {getAssetLabel(prize)} is on its way.</p>
                       {autoSentTxHash && <p className="text-[9px] text-gray-600 font-mono break-all">{autoSentTxHash}</p>}
                     </div>
-                  ) : processing ? (
-                    <div className="rounded-xl border border-white/10 px-4 py-3 text-center"
-                      style={{ background: 'rgba(255,255,255,0.03)' }}>
-                      <p className="text-xs text-gray-400">⏳ Sending prize to your wallet…</p>
-                    </div>
                   ) : (
                     <button onClick={handleClaimViaBot} disabled={claimed}
                       className="w-full py-2.5 rounded-xl text-sm font-bold text-black active:scale-95 transition disabled:opacity-50"
@@ -572,7 +627,7 @@ export default function ScratchCard({
 
       {/* Bottom actions */}
       <div className="px-4 pb-8 flex-shrink-0 space-y-2 mt-3">
-        {allRevealed && canScratch && !processing && (
+        {allRevealed && canScratch && (
           <button onClick={dealCard}
             className="w-full py-4 rounded-2xl text-base font-bold text-black active:scale-95 transition"
             style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #f0d060 50%, #D4AF37 100%)', boxShadow: '0 4px 24px rgba(212,175,55,0.4)' }}>
@@ -580,7 +635,7 @@ export default function ScratchCard({
           </button>
         )}
 
-        {!cardActive && canScratch && (
+        {!cardDealt && canScratch && (
           <button onClick={dealCard}
             className="w-full py-4 rounded-2xl text-base font-bold text-black active:scale-95 transition"
             style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #f0d060 50%, #D4AF37 100%)', boxShadow: '0 4px 24px rgba(212,175,55,0.4)' }}>
@@ -588,14 +643,14 @@ export default function ScratchCard({
           </button>
         )}
 
-        {!canScratch && (allRevealed || !cardActive) && (
+        {!canScratch && (allRevealed || !cardDealt) && (
           <div className="w-full py-3 rounded-2xl border border-white/10 text-center text-xs text-gray-500"
             style={{ background: 'rgba(255,255,255,0.03)' }}>
             {dailyLimit > 0 ? '⏳ Daily card used — resets midnight UTC' : '🎯 Get Tier 1 for 1 daily scratch card'}
           </div>
         )}
 
-        {(allRevealed || !cardActive) && (
+        {(allRevealed || !cardDealt) && (
           <button onClick={onBack}
             className="w-full py-3 rounded-2xl text-sm font-semibold text-gray-300 border border-white/10 active:scale-95 transition"
             style={{ background: 'rgba(255,255,255,0.04)' }}>

@@ -54,8 +54,9 @@ function getAssetSymbol(p: Prize): string {
   return "wUSDC";
 }
 
-// Weighted prize table — asset prizes ~35%, free spin ~25%, better luck ~35%, +2 spins ~5%
-// Total weight: 1000
+// Client-side wheel rendering ONLY (labels/colors/emoji) — the server (lib/gamePool.ts
+// PRIZE_TABLES.lucky_draw) rolls the prize and returns its index. This array's order MUST
+// match PRIZE_TABLES.lucky_draw exactly so `prizeIndex` from the server points at the right segment.
 const PRIZES: Prize[] = [
   {
     label: "100 wXLM",
@@ -126,14 +127,16 @@ const PRIZES: Prize[] = [
   { label: "Better Luck", emoji: "💨", color: "#1a202c", weight: 450 },
 ];
 
-function pickPrize(): number {
-  const total = PRIZES.reduce((s, p) => s + p.weight, 0);
-  let r = Math.random() * total;
-  for (let i = 0; i < PRIZES.length; i++) {
-    r -= PRIZES[i].weight;
-    if (r <= 0) return i;
-  }
-  return PRIZES.length - 1;
+interface SpinResult {
+  prize: string;
+  amount: number | null;
+  prizeIndex: number;
+  winCode: string | null;
+  freeSpin?: boolean;
+  autoSent: boolean;
+  txHash?: string;
+  paymentError?: string;
+  lobstrDeeplink?: string;
 }
 
 function LuckyDraw({
@@ -164,6 +167,7 @@ function LuckyDraw({
   const targetAngleRef = useRef(0);
   const targetPrizeIdxRef = useRef(0);
   const winSentRef = useRef(false);
+  const serverResultRef = useRef<SpinResult | null>(null);
   const segCount = PRIZES.length;
   const segAngle = (Math.PI * 2) / segCount;
 
@@ -172,6 +176,7 @@ function LuckyDraw({
   const [freeSpin, setFreeSpin] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [winCode, setWinCode] = useState<string | null>(null);
+  const [spinError, setSpinError] = useState<string | null>(null);
   const [recentWins, setRecentWins] = useState<
     { telegram_id: number; prize: string; created_at: string }[]
   >([]);
@@ -192,7 +197,6 @@ function LuckyDraw({
   const [bonusSpinsLeft, setBonusSpinsLeft] = useState(initialBonusSpins);
   const [processing, setProcessing] = useState(false); // true while POSTing + refetching
 
-  const spinStatusLoaded = true;
   const usingBonus = spinsRemaining === 0 && bonusSpinsLeft > 0;
 
   // ── Canvas wheel draw ─────────────────────────────────────────────────────
@@ -320,20 +324,37 @@ function LuckyDraw({
     if (spinning || processing) return;
     if (!canSpin && !freeSpin) return;
 
-    // Server-verify spin count before allowing (prevents client state drift)
-    if (!DEV_BYPASS && !freeSpin) {
-      const check = await fetch("/api/game/win", {
-        headers: { "x-telegram-init-data": getTelegramInitData() },
-      })
-        .then((r) => r.json())
-        .catch(() => null);
-      const serverCanSpin = check?.data?.canSpin ?? check?.canSpin ?? false;
-      if (!serverCanSpin) {
-        setCanSpin(false);
-        setSpinsRemaining(0);
+    setSpinError(null);
+    setProcessing(true);
+    let data: SpinResult | null = null;
+    try {
+      const res = await fetch("/api/game/win", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-telegram-init-data": getTelegramInitData(),
+        },
+        body: JSON.stringify({}),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        setProcessing(false);
+        if (json.code === "DAILY_LIMIT" || json.code === "RATE_LIMITED") {
+          setCanSpin(false);
+          setSpinsRemaining(0);
+        } else {
+          setSpinError(json.error ?? "Something went wrong — try again.");
+        }
         return;
       }
+      data = json.data;
+    } catch {
+      setProcessing(false);
+      setSpinError("Network error — try again.");
+      return;
     }
+    setProcessing(false);
+    if (!data) return;
 
     winSentRef.current = false;
     setResult(null);
@@ -341,8 +362,9 @@ function LuckyDraw({
     setAutoSent(false);
     setAutoSentTxHash(null);
     setFreeSpin(false);
+    serverResultRef.current = data;
 
-    const idx = pickPrize();
+    const idx = data.prizeIndex;
     targetPrizeIdxRef.current = idx;
     const fullRotations = (5 + Math.floor(Math.random() * 4)) * Math.PI * 2;
     // Place winning segment centre under the pointer (top = -π/2 in canvas coords)
@@ -375,14 +397,11 @@ function LuckyDraw({
       return;
     }
 
-    // All other prizes: POST to server (consumes spin, records win, handles +2 Spins increment)
+    // All other prizes: the server already rolled + recorded this win in the POST that kicked
+    // off the spin (handleSpin). Read that response back out of the ref — no second request.
+    const data = serverResultRef.current;
     const isAsset = isAssetPrize(result);
-    let code: string | undefined;
-    if (isAsset) {
-      const tag = `${result.amount}${getAssetSymbol(result)}`;
-      code = `SPIN-${tag}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
-      setWinCode(code);
-    }
+    if (isAsset && data?.winCode) setWinCode(data.winCode);
 
     if (isAsset || result.label === "+2 Spins") {
       haptic.success();
@@ -392,41 +411,18 @@ function LuckyDraw({
       haptic.warning();
     }
 
-    setProcessing(true);
-    setAutoSent(false);
-    setAutoSentTxHash(null);
-    fetch("/api/game/win", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-telegram-init-data": getTelegramInitData(),
-      },
-      body: JSON.stringify({
-        prize: result.label,
-        amount: result.amount ?? null,
-        code,
-        wallet: stellarAddress,
-      }),
-      keepalive: true,
-    })
-      .then((r) => r.json())
-      .then((j) => {
-        if (j.data?.autoSent) {
-          setAutoSent(true);
-          setAutoSentTxHash(j.data.txHash ?? null);
-        }
-      })
-      .catch(() => null)
-      .finally(async () => {
-        // Refresh server state after spin is fully recorded; update local display
-        await onSpinComplete((can, remaining, bonus) => {
-          setCanSpin(can);
-          setSpinsRemaining(remaining);
-          setBonusSpinsLeft(bonus);
-        });
-        setProcessing(false);
-      });
-  }, [result, stellarAddress, onSpinComplete]);
+    if (data?.autoSent) {
+      setAutoSent(true);
+      setAutoSentTxHash(data.txHash ?? null);
+    }
+
+    // Refresh server state now that the win is fully recorded; update local display
+    void onSpinComplete((can, remaining, bonus) => {
+      setCanSpin(can);
+      setSpinsRemaining(remaining);
+      setBonusSpinsLeft(bonus);
+    });
+  }, [result, onSpinComplete]);
 
   const isWin =
     result &&
@@ -502,15 +498,13 @@ function LuckyDraw({
             Lucky Draw
           </p>
           <p className="text-white/40 text-[10px] mt-0.5">
-            {!spinStatusLoaded
-              ? "⏳ Checking…"
-              : freeSpin
-                ? "🔄 Free spin ready!"
-                : usingBonus
-                  ? `🎁 ${bonusSpinsLeft} bonus spin${bonusSpinsLeft !== 1 ? "s" : ""} available`
-                  : canSpin
-                    ? `${spinsRemaining} spin${spinsRemaining !== 1 ? "s" : ""} remaining today`
-                    : "⏳ No spins left — resets at midnight UTC"}
+            {freeSpin
+              ? "🔄 Free spin ready!"
+              : usingBonus
+                ? `🎁 ${bonusSpinsLeft} bonus spin${bonusSpinsLeft !== 1 ? "s" : ""} available`
+                : canSpin
+                  ? `${spinsRemaining} spin${spinsRemaining !== 1 ? "s" : ""} remaining today`
+                  : "⏳ No spins left — resets at midnight UTC"}
           </p>
         </div>
         <div className="w-16" />
@@ -664,15 +658,6 @@ function LuckyDraw({
                       </p>
                     )}
                   </div>
-                ) : processing ? (
-                  <div
-                    className="rounded-xl border border-white/10 px-4 py-3 text-center"
-                    style={{ background: "rgba(255,255,255,0.03)" }}
-                  >
-                    <p className="text-xs text-gray-400">
-                      ⏳ Sending prize to your wallet…
-                    </p>
-                  </div>
                 ) : (
                   /* Auto-send failed (e.g. no trustline) — show trustline checker + bot fallback */
                   <>
@@ -712,12 +697,24 @@ function LuckyDraw({
         </div>
       )}
 
+      {/* spin error */}
+      {spinError && (
+        <div className="px-4 mb-2 flex-shrink-0">
+          <div
+            className="rounded-2xl border border-red-500/30 px-4 py-2.5 text-center text-xs text-red-400"
+            style={{ background: "rgba(248,113,113,0.08)" }}
+          >
+            {spinError}
+          </div>
+        </div>
+      )}
+
       {/* spin button */}
       <div className="px-4 pb-8 flex-shrink-0 space-y-2">
         {canSpin || freeSpin ? (
           <button
             onClick={handleSpin}
-            disabled={spinning || processing || !spinStatusLoaded}
+            disabled={spinning || processing}
             className="w-full py-4 rounded-2xl text-base font-bold text-black active:scale-95 transition disabled:opacity-50"
             style={{
               background: spinning
@@ -739,7 +736,7 @@ function LuckyDraw({
               {spinning
                 ? "⏳ Spinning..."
                 : processing
-                  ? "⏳ Saving..."
+                  ? "🎲 Rolling..."
                   : freeSpin
                     ? "🔄 Free Spin!"
                     : "🎰 Spin the Wheel"}
