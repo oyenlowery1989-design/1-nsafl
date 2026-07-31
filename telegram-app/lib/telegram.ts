@@ -33,7 +33,14 @@ export function validateTelegramInitData(
       .update(sorted)
       .digest("hex");
 
-    if (expectedHash !== hash) return null;
+    const a = Buffer.from(expectedHash, "hex");
+    const b = Buffer.from(hash, "hex");
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+
+    // Reject stale initData — a captured string must not be a permanent credential
+    const authDate = Number(params.get("auth_date") ?? 0);
+    const MAX_AGE_SECONDS = 24 * 60 * 60;
+    if (!authDate || Date.now() / 1000 - authDate > MAX_AGE_SECONDS) return null;
 
     const userStr = params.get("user");
     if (!userStr) return null;
@@ -115,7 +122,7 @@ export function parseTelegramUser(
     const params = new URLSearchParams(initData);
     const userStr = params.get("user");
     if (!userStr) return null;
-    return JSON.parse(decodeURIComponent(userStr));
+    return JSON.parse(userStr);
   } catch {
     return null;
   }
