@@ -7,6 +7,7 @@ import WalletGuard from "@/components/WalletGuard";
 import PageLoader, { useMinLoader } from "@/components/PageLoader";
 import { useWalletStore } from "@/hooks/useStore";
 import { ALL_CLUBS } from "@/config/afl";
+import { PARTNER_CLUB } from "@/config/partnerClub";
 import { TIERS, getTierForBalance } from "@/config/tiers";
 import { PRIMARY_CUSTOM_ASSET_LABEL } from "@/lib/constants";
 import { getTelegramInitData, buildReferralLink, shareReferralLink } from "@/lib/telegram";
@@ -295,11 +296,13 @@ export default function LeaderboardPage() {
         </div>
       </header>
 
-      {/* WhipLash347 sponsor strip */}
-      <div className="flex items-center justify-center gap-2 py-2 border-b border-white/6" style={{ background: 'linear-gradient(90deg, rgba(232,25,44,0.06) 0%, rgba(0,212,255,0.03) 100%)' }}>
-        <img src="/whiplash347.png" alt="WhipLash347" width={16} height={16} className="rounded-full object-cover" style={{ boxShadow: '0 0 6px rgba(232,25,44,0.6)' }} />
-        <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: 'rgba(232,25,44,0.8)' }}>⚡ Powered by WhipLash347</span>
-      </div>
+      {/* Partner club sponsor strip */}
+      {PARTNER_CLUB.enabled && (
+        <div className="flex items-center justify-center gap-2 py-2 border-b border-white/6" style={{ background: 'linear-gradient(90deg, rgba(232,25,44,0.06) 0%, rgba(0,212,255,0.03) 100%)' }}>
+          <img src={PARTNER_CLUB.logo} alt={PARTNER_CLUB.name} width={16} height={16} className="rounded-full object-cover" style={{ boxShadow: '0 0 6px rgba(232,25,44,0.6)' }} />
+          <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: `${PARTNER_CLUB.color}CC` }}>⚡ {PARTNER_CLUB.sponsorLabel}</span>
+        </div>
+      )}
 
       <main className="px-4 py-4 space-y-3 pb-28">
         {error && <ErrorCard error={error} context="Leaderboard" onRetry={load} />}

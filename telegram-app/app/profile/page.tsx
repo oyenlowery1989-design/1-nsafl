@@ -34,6 +34,7 @@ import { haptic } from "@/lib/telegram-ui";
 import TeamSelectScreen from "@/components/TeamSelectScreen";
 import { getTelegramInitData } from "@/lib/telegram";
 import { toast } from "@/components/Toast";
+import { PARTNER_CLUB } from "@/config/partnerClub";
 
 const ASSET_ISSUER = process.env.NEXT_PUBLIC_PRIMARY_ASSET_ISSUER ?? "";
 const MOVEMENT_WALLET = process.env.NEXT_PUBLIC_DIRECT_BUY_XLM_ADDRESS ?? "";
@@ -652,10 +653,10 @@ export default function ProfilePage() {
                           <span className="flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-semibold bg-green-500/20 text-green-400 border border-green-500/30 uppercase">
                             Active
                           </span>
-                          {favoriteTeam === 'whiplash347' && (
-                            <span className="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase" style={{ background: 'rgba(232,25,44,0.15)', color: '#E8192C', border: '1px solid rgba(232,25,44,0.35)' }}>
-                              <img src="/whiplash347.png" alt="" width={10} height={10} className="rounded-full object-cover" />
-                              WL347
+                          {PARTNER_CLUB.enabled && favoriteTeam === PARTNER_CLUB.id && (
+                            <span className="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase" style={{ background: 'rgba(232,25,44,0.15)', color: PARTNER_CLUB.color, border: '1px solid rgba(232,25,44,0.35)' }}>
+                              <img src={PARTNER_CLUB.logo} alt="" width={10} height={10} className="rounded-full object-cover" />
+                              {PARTNER_CLUB.shortName}
                             </span>
                           )}
                         </div>

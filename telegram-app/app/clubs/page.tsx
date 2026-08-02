@@ -10,6 +10,7 @@ import { toast } from "@/components/Toast";
 import { getTelegramInitData } from "@/lib/telegram";
 import { PRIMARY_CUSTOM_ASSET_LABEL } from "@/lib/constants";
 import { BRANDING } from "@/config/branding";
+import { PARTNER_CLUB, PARTNER_SQUAD } from "@/config/partnerClub";
 import {
   ALL_CLUBS,
   AFL_CLUBS,
@@ -17,8 +18,6 @@ import {
   AFL_ROUNDS,
   WAFL_ROUND_1_FIXTURES,
   MATCH_REPORTS,
-  WHIPLASH347_CLUB,
-  WHIPLASH347_SQUAD,
   type AflClub,
   type AflFixture,
   type AflMatchReport,
@@ -245,7 +244,9 @@ function FixtureCard({
   const homeWins = (f.homeScore ?? 0) > (f.awayScore ?? 0);
   const awayWins = (f.awayScore ?? 0) > (f.homeScore ?? 0);
   const isUpcoming = f.status === "UPCOMING";
-  const hasWL347Player = f.homeTeam.includes('West Coast') || f.awayTeam.includes('West Coast') || f.homeTeam.includes('Fremantle') || f.awayTeam.includes('Fremantle');
+  const hasWL347Player = PARTNER_CLUB.enabled && PARTNER_CLUB.fixtureMatchTerms.some(
+    (term) => f.homeTeam.includes(term) || f.awayTeam.includes(term)
+  );
   const report = hideReport
     ? null
     : (MATCH_REPORTS.find((r) => r.fixtureId === f.id) ?? null);
@@ -278,8 +279,8 @@ function FixtureCard({
           <div className="text-right min-w-0 flex items-start gap-1.5">
             {hasWL347Player && (
               <span className="flex-shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded-full leading-none mt-0.5"
-                style={{ background: 'rgba(232,25,44,0.15)', color: '#E8192C', border: '1px solid rgba(232,25,44,0.3)' }}>
-                Whip347
+                style={{ background: 'rgba(232,25,44,0.15)', color: PARTNER_CLUB.color, border: '1px solid rgba(232,25,44,0.3)' }}>
+                {PARTNER_CLUB.shortName}
               </span>
             )}
             <div>
@@ -585,15 +586,16 @@ function WhipLash347Tab({
   isJoining: boolean
 }) {
   const favoriteTeam = useWalletStore((s) => s.favoriteTeam)
-  const isMember = favoriteTeam === 'whiplash347'
-  const fanCount = teamDistribution?.['whiplash347'] ?? 0
-  const captain = WHIPLASH347_SQUAD.find((p) => p.captain)
+  const isMember = favoriteTeam === PARTNER_CLUB.id
+  const fanCount = teamDistribution?.[PARTNER_CLUB.id] ?? 0
+  const captain = PARTNER_SQUAD.find((p) => p.captain)
 
-  // Group players by club
-  const wcePlayers = WHIPLASH347_SQUAD.filter((p) => p.clubId === 'west-coast')
-  const frePlayers = WHIPLASH347_SQUAD.filter((p) => p.clubId === 'fremantle')
-  const wceClub = ALL_CLUBS.find((c) => c.id === 'west-coast')
-  const freClub = ALL_CLUBS.find((c) => c.id === 'fremantle')
+  // Group players by source club — the layout below assumes exactly two
+  const [sourceA, sourceB] = PARTNER_CLUB.sourceClubs
+  const wcePlayers = PARTNER_SQUAD.filter((p) => p.clubId === sourceA.id)
+  const frePlayers = PARTNER_SQUAD.filter((p) => p.clubId === sourceB.id)
+  const wceClub = ALL_CLUBS.find((c) => c.id === sourceA.id)
+  const freClub = ALL_CLUBS.find((c) => c.id === sourceB.id)
 
   // Leaderboard (top 5)
   const [leaders, setLeaders] = useState<{ displayName: string; stellarAddress: string; balance: number }[]>([])
@@ -617,27 +619,27 @@ function WhipLash347Tab({
       <div className="rounded-2xl relative overflow-hidden" style={{ background: '#0d0608' }}>
         {/* colour streaks */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -left-10 top-0 bottom-0 w-32 opacity-40" style={{ background: 'linear-gradient(90deg, #E8192C, transparent)' }} />
-          <div className="absolute -right-10 top-0 bottom-0 w-32 opacity-30" style={{ background: 'linear-gradient(270deg, #00D4FF, transparent)' }} />
-          <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, #E8192C88, #00D4FF88)' }} />
+          <div className="absolute -left-10 top-0 bottom-0 w-32 opacity-40" style={{ background: `linear-gradient(90deg, ${PARTNER_CLUB.color}, transparent)` }} />
+          <div className="absolute -right-10 top-0 bottom-0 w-32 opacity-30" style={{ background: `linear-gradient(270deg, ${PARTNER_CLUB.secondaryColor}, transparent)` }} />
+          <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: `linear-gradient(90deg, ${PARTNER_CLUB.color}88, ${PARTNER_CLUB.secondaryColor}88)` }} />
         </div>
         <div className="relative z-[1] flex items-center gap-4 px-4 py-5">
           <div className="relative flex-shrink-0">
-            <div className="absolute inset-0 rounded-full blur-xl opacity-70" style={{ background: '#E8192C' }} />
-            <img src={WHIPLASH347_CLUB.logo} alt="WhipLash347" width={80} height={80}
+            <div className="absolute inset-0 rounded-full blur-xl opacity-70" style={{ background: PARTNER_CLUB.color }} />
+            <img src={PARTNER_CLUB.logo} alt={PARTNER_CLUB.name} width={80} height={80}
               className="relative rounded-full object-cover"
-              style={{ border: '2px solid #E8192C', boxShadow: '0 0 20px rgba(232,25,44,0.6)' }} />
+              style={{ border: `2px solid ${PARTNER_CLUB.color}`, boxShadow: '0 0 20px rgba(232,25,44,0.6)' }} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[9px] font-bold uppercase tracking-widest mb-0.5" style={{ color: '#E8192C' }}>⚡ Official Partner</p>
-            <h2 className="text-2xl font-black text-white leading-none tracking-tight">WhipLash347</h2>
-            <p className="text-[10px] mt-1" style={{ color: '#00D4FF99' }}>{WHIPLASH347_SQUAD.length} players · WCE &amp; Fremantle</p>
+            <p className="text-[9px] font-bold uppercase tracking-widest mb-0.5" style={{ color: PARTNER_CLUB.color }}>⚡ {PARTNER_CLUB.tagline}</p>
+            <h2 className="text-2xl font-black text-white leading-none tracking-tight">{PARTNER_CLUB.name}</h2>
+            <p className="text-[10px] mt-1" style={{ color: `${PARTNER_CLUB.secondaryColor}99` }}>{PARTNER_SQUAD.length} players · {sourceA.name} &amp; {sourceB.name}</p>
             <div className="flex items-center gap-2 mt-2">
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(232,25,44,0.2)', color: '#E8192C', border: '1px solid rgba(232,25,44,0.4)' }}>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(232,25,44,0.2)', color: PARTNER_CLUB.color, border: '1px solid rgba(232,25,44,0.4)' }}>
                 {fanCount} fan{fanCount === 1 ? '' : 's'}
               </span>
               {isMember && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(0,212,255,0.15)', color: '#00D4FF', border: '1px solid rgba(0,212,255,0.3)' }}>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(0,212,255,0.15)', color: PARTNER_CLUB.secondaryColor, border: '1px solid rgba(0,212,255,0.3)' }}>
                   ✓ Your Team
                 </span>
               )}
@@ -648,8 +650,8 @@ function WhipLash347Tab({
           <div className="relative z-[1] px-4 pb-4">
             <button onClick={onJoinTeam} disabled={isJoining}
               className="w-full py-2.5 rounded-xl text-sm font-black tracking-wide transition-all active:scale-[0.98] disabled:opacity-50"
-              style={{ background: 'linear-gradient(90deg, #E8192C, #c0102a)', color: 'white', boxShadow: '0 4px 20px rgba(232,25,44,0.4)' }}>
-              {isJoining ? 'Joining...' : '⚡ Join WhipLash347'}
+              style={{ background: `linear-gradient(90deg, ${PARTNER_CLUB.color}, #c0102a)`, color: 'white', boxShadow: '0 4px 20px rgba(232,25,44,0.4)' }}>
+              {isJoining ? 'Joining...' : `⚡ Join ${PARTNER_CLUB.name}`}
             </button>
           </div>
         )}
@@ -681,8 +683,8 @@ function WhipLash347Tab({
 
       {/* ── Squad by club ───────────────────────────────────────── */}
       {[
-        { label: 'West Coast Eagles', abbr: 'WCE', accentColor: '#003087', club: wceClub, players: wcePlayers },
-        { label: 'Fremantle', abbr: 'FRE', accentColor: '#2A1A54', club: freClub, players: frePlayers },
+        { label: sourceA.name, abbr: wceClub?.shortName ?? sourceA.name, accentColor: wceClub?.color ?? PARTNER_CLUB.color, club: wceClub, players: wcePlayers },
+        { label: sourceB.name, abbr: freClub?.shortName ?? sourceB.name, accentColor: freClub?.color ?? PARTNER_CLUB.secondaryColor, club: freClub, players: frePlayers },
       ].map(({ label, abbr, accentColor, club, players }) => (
         <div key={label}>
           {/* Section header */}
@@ -710,7 +712,7 @@ function WhipLash347Tab({
       {/* ── Fan Leaderboard ─────────────────────────────────────── */}
       <div className="rounded-2xl overflow-hidden" style={{ background: '#0d0608', border: '1px solid rgba(232,25,44,0.25)' }}>
         <div className="flex items-center gap-2 px-4 py-3" style={{ background: 'rgba(232,25,44,0.08)', borderBottom: '1px solid rgba(232,25,44,0.15)' }}>
-          <span className="material-symbols-outlined text-sm" style={{ color: '#E8192C', fontVariationSettings: "'FILL' 1" }}>leaderboard</span>
+          <span className="material-symbols-outlined text-sm" style={{ color: PARTNER_CLUB.color, fontVariationSettings: "'FILL' 1" }}>leaderboard</span>
           <span className="text-xs font-black text-white">Top {PRIMARY_CUSTOM_ASSET_LABEL} Holders</span>
           <span className="ml-auto text-[9px] text-gray-500">Global ranking</span>
         </div>
@@ -730,7 +732,7 @@ function WhipLash347Tab({
           </div>
         ) : (
           <div className="flex items-center justify-center py-8 gap-2">
-            <div className="w-3 h-3 rounded-full border border-[#E8192C]/40 border-t-[#E8192C] animate-spin" />
+            <div className="w-3 h-3 rounded-full animate-spin" style={{ border: `1px solid ${PARTNER_CLUB.color}66`, borderTopColor: PARTNER_CLUB.color }} />
             <p className="text-xs text-gray-600">Loading…</p>
           </div>
         )}
@@ -740,8 +742,8 @@ function WhipLash347Tab({
       {!isMember && (
         <button onClick={onJoinTeam} disabled={isJoining}
           className="w-full py-3 rounded-xl text-sm font-black tracking-wide transition-all active:scale-[0.98] disabled:opacity-50"
-          style={{ background: 'linear-gradient(90deg, #E8192C 0%, #00D4FF 100%)', color: 'white', boxShadow: '0 4px 24px rgba(232,25,44,0.35)' }}>
-          {isJoining ? 'Joining...' : '⚡ Join WhipLash347 Now'}
+          style={{ background: `linear-gradient(90deg, ${PARTNER_CLUB.color} 0%, ${PARTNER_CLUB.secondaryColor} 100%)`, color: 'white', boxShadow: '0 4px 24px rgba(232,25,44,0.35)' }}>
+          {isJoining ? 'Joining...' : `⚡ Join ${PARTNER_CLUB.name} Now`}
         </button>
       )}
     </div>
@@ -757,7 +759,7 @@ function FanHubTab({
 }) {
   const favoriteTeam = useWalletStore((s) => s.favoriteTeam);
   const setFavoriteTeam = useWalletStore((s) => s.setFavoriteTeam);
-  const [league, setLeague] = useState<"AFL" | "WAFL" | "WL347">("WL347");
+  const [league, setLeague] = useState<"AFL" | "WAFL" | "WL347">(PARTNER_CLUB.enabled ? "WL347" : "AFL");
   const [isJoining, setIsJoining] = useState(false);
 
   const handleJoinWL347 = async () => {
@@ -767,12 +769,12 @@ function FanHubTab({
       const res = await fetch('/api/user/team', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
-        body: JSON.stringify({ teamId: 'whiplash347' }),
+        body: JSON.stringify({ teamId: PARTNER_CLUB.id }),
       })
       const json = await res.json()
       if (json.success) {
-        setFavoriteTeam('whiplash347')
-        toast.success('You joined WhipLash347!')
+        setFavoriteTeam(PARTNER_CLUB.id)
+        toast.success(`You joined ${PARTNER_CLUB.name}!`)
       } else {
         toast.error('Failed to join team')
       }
@@ -855,7 +857,7 @@ function FanHubTab({
         {[
           { id: "AFL" as const, label: "AFL", count: AFL_CLUBS.length },
           { id: "WAFL" as const, label: "WAFL", count: WAFL_CLUBS.length },
-          { id: "WL347" as const, label: "⚡ Whip347", count: WHIPLASH347_SQUAD.length },
+          ...(PARTNER_CLUB.enabled ? [{ id: "WL347" as const, label: `⚡ ${PARTNER_CLUB.shortName}`, count: PARTNER_SQUAD.length }] : []),
         ].map(({ id, label, count }) => (
           <button
             key={id}
@@ -865,7 +867,7 @@ function FanHubTab({
                 ? id === "WL347" ? "text-white" : "bg-primary text-background-dark"
                 : "text-gray-400 hover:text-white"
             }`}
-            style={league === id && id === "WL347" ? { background: 'linear-gradient(135deg, #E8192C, #00D4FF)' } : undefined}
+            style={league === id && id === "WL347" ? { background: `linear-gradient(135deg, ${PARTNER_CLUB.color}, ${PARTNER_CLUB.secondaryColor})` } : undefined}
           >
             {label}
             <span

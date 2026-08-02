@@ -1,3 +1,5 @@
+import { PARTNER_CLUB } from './partnerClub'
+
 export interface AflClub {
   id: string
   name: string
@@ -8,47 +10,6 @@ export interface AflClub {
 }
 
 export type PlayerPosition = 'MID' | 'FWD' | 'DEF' | 'RUCK'
-
-export interface PartnerPlayer {
-  name: string
-  club: string   // AFL club they play for
-  clubId: string // matches AflClub.id
-  position: PlayerPosition
-  captain?: boolean
-}
-
-export const WHIPLASH347_CLUB: AflClub = {
-  id: 'whiplash347',
-  name: 'WhipLash347',
-  shortName: 'Whip347',
-  color: '#E8192C',
-  logo: '/whiplash347.png',
-  league: 'PARTNER',
-}
-
-export const WHIPLASH347_SQUAD: PartnerPlayer[] = [
-  // WCE picks
-  { name: 'Nasiah Wanganeen-Milera', club: 'West Coast Eagles',  clubId: 'west-coast', position: 'MID' },
-  { name: 'Chad Warner',             club: 'West Coast Eagles',  clubId: 'west-coast', position: 'MID' },
-  { name: 'Finn Callaghan',          club: 'West Coast Eagles',  clubId: 'west-coast', position: 'MID' },
-  { name: 'Patrick Cripps',          club: 'West Coast Eagles',  clubId: 'west-coast', position: 'MID', captain: true },
-  { name: 'Daniel Curtin',           club: 'West Coast Eagles',  clubId: 'west-coast', position: 'DEF' },
-  { name: 'Nick Martin',             club: 'West Coast Eagles',  clubId: 'west-coast', position: 'MID' },
-  { name: 'Tristan Xerri',           club: 'West Coast Eagles',  clubId: 'west-coast', position: 'RUCK' },
-  { name: 'Trent Rivers',            club: 'West Coast Eagles',  clubId: 'west-coast', position: 'MID' },
-  { name: 'Sam Taylor',              club: 'West Coast Eagles',  clubId: 'west-coast', position: 'DEF' },
-  { name: 'Kysiah Pickett',          club: 'West Coast Eagles',  clubId: 'west-coast', position: 'FWD' },
-  { name: 'Darcy Jones',             club: 'West Coast Eagles',  clubId: 'west-coast', position: 'FWD' },
-  { name: 'Bobby Hill',              club: 'West Coast Eagles',  clubId: 'west-coast', position: 'FWD' },
-  { name: 'Shannon Neale',           club: 'West Coast Eagles',  clubId: 'west-coast', position: 'FWD' },
-  // Fremantle picks
-  { name: 'Aaron Naughton',          club: 'Fremantle',          clubId: 'fremantle', position: 'FWD' },
-  { name: 'Will Powell',             club: 'Fremantle',          clubId: 'fremantle', position: 'MID' },
-  { name: 'Koltyn Tholstrup',        club: 'Fremantle',          clubId: 'fremantle', position: 'DEF' },
-  { name: 'Ed Allan',                club: 'Fremantle',          clubId: 'fremantle', position: 'DEF' },
-  { name: 'Lachie Neale',            club: 'Fremantle',          clubId: 'fremantle', position: 'MID' },
-  { name: 'Jedd Busslinger',         club: 'Fremantle',          clubId: 'fremantle', position: 'MID' },
-]
 
 export interface AflFixture {
   id: string
@@ -106,7 +67,11 @@ export const WAFL_CLUBS: AflClub[] = [
   { id: 'wafl-west-coast',      name: 'West Coast',        shortName: 'WCT', color: '#003087', league: 'WAFL', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/b/b5/West_Coast_Eagles_logo_2017.svg/120px-West_Coast_Eagles_logo_2017.svg.png' },
 ]
 
-export const ALL_CLUBS: AflClub[] = [...AFL_CLUBS, ...WAFL_CLUBS, WHIPLASH347_CLUB]
+export const ALL_CLUBS: AflClub[] = [
+  ...AFL_CLUBS,
+  ...WAFL_CLUBS,
+  ...(PARTNER_CLUB.enabled ? [PARTNER_CLUB as AflClub] : []),
+]
 
 const AFL_URL = 'https://www.afl.com.au/fixture'
 

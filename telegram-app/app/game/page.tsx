@@ -11,6 +11,7 @@ import {
   PRIMARY_CUSTOM_ASSET_LABEL,
 } from "@/lib/constants";
 import { BRANDING } from "@/config/branding";
+import { PARTNER_CLUB } from "@/config/partnerClub";
 import WalletGuard from "@/components/WalletGuard";
 import TrustlineChecker from "@/components/TrustlineChecker";
 import BottomNav from "@/components/BottomNav";
@@ -928,19 +929,21 @@ function HubView({
           </button>
         </div>
 
-        {/* ── WhipLash347 sponsor tile ── */}
-        <div
-          className="rounded-2xl overflow-hidden relative flex items-center gap-3 px-4 py-3"
-          style={{ background: 'linear-gradient(90deg, rgba(232,25,44,0.10) 0%, rgba(0,212,255,0.05) 100%)', border: '1px solid rgba(232,25,44,0.30)' }}
-        >
-          <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, #E8192C, #00D4FF, transparent)' }} />
-          <img src="/whiplash347.png" alt="WhipLash347" width={36} height={36} className="rounded-full object-cover shrink-0" style={{ boxShadow: '0 0 10px rgba(232,25,44,0.60)' }} />
-          <div className="flex-1 min-w-0">
-            <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#E8192C' }}>⚡ Games Sponsored by</p>
-            <p className="text-sm font-bold text-white leading-tight">WhipLash347</p>
+        {/* ── Partner club sponsor tile ── */}
+        {PARTNER_CLUB.enabled && (
+          <div
+            className="rounded-2xl overflow-hidden relative flex items-center gap-3 px-4 py-3"
+            style={{ background: 'linear-gradient(90deg, rgba(232,25,44,0.10) 0%, rgba(0,212,255,0.05) 100%)', border: '1px solid rgba(232,25,44,0.30)' }}
+          >
+            <div className="absolute top-0 left-0 right-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${PARTNER_CLUB.color}, ${PARTNER_CLUB.secondaryColor}, transparent)` }} />
+            <img src={PARTNER_CLUB.logo} alt={PARTNER_CLUB.name} width={36} height={36} className="rounded-full object-cover shrink-0" style={{ boxShadow: '0 0 10px rgba(232,25,44,0.60)' }} />
+            <div className="flex-1 min-w-0">
+              <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: PARTNER_CLUB.color }}>⚡ {PARTNER_CLUB.gamesSponsorLabel}</p>
+              <p className="text-sm font-bold text-white leading-tight">{PARTNER_CLUB.name}</p>
+            </div>
+            <span className="text-[9px] text-gray-500 shrink-0">{PARTNER_CLUB.tagline}</span>
           </div>
-          <span className="text-[9px] text-gray-500 shrink-0">Official Partner</span>
-        </div>
+        )}
 
         {/* ── Lucky Draw card ── */}
         <div

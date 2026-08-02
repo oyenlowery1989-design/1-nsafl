@@ -6,6 +6,7 @@ import PageLoader, { useMinLoader } from './PageLoader'
 import NotificationDrawer from './NotificationDrawer'
 import { PRIMARY_CUSTOM_ASSET_CODE, PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
 import { BRANDING } from '@/config/branding'
+import { PARTNER_CLUB, PARTNER_SQUAD } from '@/config/partnerClub'
 import { getTierForBalance, getNextTier } from '@/config/tiers'
 import { useWalletStore } from '@/hooks/useStore'
 import { getTelegramInitData, buildReferralLink, shareReferralLink } from '@/lib/telegram'
@@ -128,7 +129,7 @@ export default function DashboardView({ address, balance }: Props) {
 
     Promise.all([fetchBalance, fetchNotifs, fetchStats]).finally(() => {
       setBalanceReady(true)
-      setSponsorOpen(true)
+      if (PARTNER_CLUB.enabled) setSponsorOpen(true)
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address]) // setBalances is stable from Zustand — omitting prevents fetch loop
@@ -249,14 +250,16 @@ export default function DashboardView({ address, balance }: Props) {
         </div>
       </header>
 
-      {/* WhipLash347 sponsor bar — always visible below header */}
-      <div
-        className="flex items-center justify-center gap-2 py-1.5 border-b border-white/5"
-        style={{ background: 'linear-gradient(90deg, rgba(232,25,44,0.08) 0%, rgba(0,212,255,0.04) 100%)' }}
-      >
-        <img src="/whiplash347.png" alt="" width={14} height={14} className="rounded-full object-cover" style={{ boxShadow: '0 0 6px rgba(232,25,44,0.7)' }} />
-        <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#E8192C', opacity: 0.85 }}>⚡ Powered by WhipLash347</span>
-      </div>
+      {/* Partner club sponsor bar — always visible below header */}
+      {PARTNER_CLUB.enabled && (
+        <div
+          className="flex items-center justify-center gap-2 py-1.5 border-b border-white/5"
+          style={{ background: 'linear-gradient(90deg, rgba(232,25,44,0.08) 0%, rgba(0,212,255,0.04) 100%)' }}
+        >
+          <img src={PARTNER_CLUB.logo} alt="" width={14} height={14} className="rounded-full object-cover" style={{ boxShadow: '0 0 6px rgba(232,25,44,0.7)' }} />
+          <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: PARTNER_CLUB.color, opacity: 0.85 }}>⚡ {PARTNER_CLUB.sponsorLabel}</span>
+        </div>
+      )}
 
       <main className="px-4 py-4 space-y-4 pb-32">
         <WalletTierCard balance={balance} address={address} xlmBalance={xlmBalance} />
@@ -413,7 +416,7 @@ export default function DashboardView({ address, balance }: Props) {
             onClick={e => e.stopPropagation()}
           >
             {/* Top glow line */}
-            <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, transparent 0%, #E8192C 35%, #00D4FF 65%, transparent 100%)' }} />
+            <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: `linear-gradient(90deg, transparent 0%, ${PARTNER_CLUB.color} 35%, ${PARTNER_CLUB.secondaryColor} 65%, transparent 100%)` }} />
 
             {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-1">
@@ -422,8 +425,8 @@ export default function DashboardView({ address, balance }: Props) {
 
             {/* Badge */}
             <div className="flex justify-center mt-2 mb-4">
-              <span className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full" style={{ background: 'rgba(232,25,44,0.15)', color: '#E8192C', border: '1px solid rgba(232,25,44,0.35)' }}>
-                ⚡ Official Partner &amp; Co-Owner
+              <span className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full" style={{ background: 'rgba(232,25,44,0.15)', color: PARTNER_CLUB.color, border: '1px solid rgba(232,25,44,0.35)' }}>
+                ⚡ {PARTNER_CLUB.coOwnerTagline}
               </span>
             </div>
 
@@ -431,30 +434,30 @@ export default function DashboardView({ address, balance }: Props) {
             <div className="flex flex-col items-center px-6 pb-4">
               <div className="relative mb-4">
                 <img
-                  src="/whiplash347.png"
-                  alt="WhipLash347"
+                  src={PARTNER_CLUB.logo}
+                  alt={PARTNER_CLUB.name}
                   width={96}
                   height={96}
                   className="rounded-full object-cover"
                   style={{ boxShadow: '0 0 32px rgba(232,25,44,0.80), 0 0 60px rgba(0,212,255,0.25)' }}
                 />
-                <span className="absolute inset-0 rounded-full animate-ping opacity-15" style={{ border: '3px solid #E8192C' }} />
+                <span className="absolute inset-0 rounded-full animate-ping opacity-15" style={{ border: `3px solid ${PARTNER_CLUB.color}` }} />
               </div>
-              <h2 className="text-2xl font-bold text-white tracking-tight">WhipLash347</h2>
+              <h2 className="text-2xl font-bold text-white tracking-tight">{PARTNER_CLUB.name}</h2>
               <p className="text-[12px] text-gray-400 mt-1 text-center leading-snug">
-                The force co-building {PRIMARY_CUSTOM_ASSET_CODE} — powering the<br/>Homecoming Hub with vision &amp; fire.
+                The force co-building {PRIMARY_CUSTOM_ASSET_CODE} — powering the<br/>{BRANDING.appName} with vision &amp; fire.
               </p>
             </div>
 
             {/* Stat tiles */}
             <div className="grid grid-cols-3 gap-px mx-4 rounded-xl overflow-hidden mb-4" style={{ background: 'rgba(255,255,255,0.04)' }}>
               {[
-                { value: '19', label: 'Players Selected', icon: 'sports_football' },
-                { value: '2',  label: 'AFL Clubs',        icon: 'stadium' },
+                { value: String(PARTNER_SQUAD.length), label: 'Players Selected', icon: 'sports_football' },
+                { value: String(PARTNER_CLUB.sourceClubs.length), label: 'AFL Clubs', icon: 'stadium' },
                 { value: '#1', label: 'Partner Rank',     icon: 'workspace_premium' },
               ].map(({ value, label, icon }) => (
                 <div key={label} className="flex flex-col items-center py-3 text-center" style={{ background: BRANDING.colors.background }}>
-                  <span className="material-symbols-outlined text-lg mb-0.5" style={{ color: '#E8192C', fontVariationSettings: "'FILL' 1" }}>{icon}</span>
+                  <span className="material-symbols-outlined text-lg mb-0.5" style={{ color: PARTNER_CLUB.color, fontVariationSettings: "'FILL' 1" }}>{icon}</span>
                   <p className="text-lg font-bold text-white leading-none">{value}</p>
                   <p className="text-[9px] text-gray-500 mt-0.5 leading-tight">{label}</p>
                 </div>
@@ -463,17 +466,14 @@ export default function DashboardView({ address, balance }: Props) {
 
             {/* Club logos */}
             <div className="flex items-center justify-center gap-3 mx-4 mb-4 py-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              {[
-                { logo: 'https://r2.thesportsdb.com/images/media/team/badge/xpcp2f1647870746.png', name: 'West Coast Eagles' },
-                { logo: 'https://r2.thesportsdb.com/images/media/team/badge/hw34ii1647870691.png', name: 'Fremantle' },
-              ].map(({ logo, name }) => (
+              {PARTNER_CLUB.sourceClubs.map(({ logo, name }) => (
                 <div key={name} className="flex items-center gap-2">
                   <img src={logo} alt={name} width={28} height={28} className="object-contain" />
                   <span className="text-[11px] text-gray-300 font-semibold">{name}</span>
                 </div>
               ))}
               <span className="text-gray-600 text-xs">·</span>
-              <span className="text-[10px] text-gray-500">19 picks</span>
+              <span className="text-[10px] text-gray-500">{PARTNER_SQUAD.length} picks</span>
             </div>
 
             {/* CTA buttons */}
@@ -482,13 +482,13 @@ export default function DashboardView({ address, balance }: Props) {
                 onClick={() => { setSponsorOpen(false); router.push('/clubs') }}
                 className="w-full py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition active:scale-[0.98]"
                 style={{
-                  background: 'linear-gradient(90deg, #E8192C 0%, #a0000f 100%)',
+                  background: `linear-gradient(90deg, ${PARTNER_CLUB.color} 0%, #a0000f 100%)`,
                   boxShadow: '0 0 24px rgba(232,25,44,0.45)',
                   color: '#fff',
                 }}
               >
-                <img src="/whiplash347.png" alt="" width={20} height={20} className="rounded-full object-cover" />
-                View WhipLash347 Team
+                <img src={PARTNER_CLUB.logo} alt="" width={20} height={20} className="rounded-full object-cover" />
+                View {PARTNER_CLUB.name} Team
                 <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
               </button>
               <button

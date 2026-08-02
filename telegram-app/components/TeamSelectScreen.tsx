@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
-import { AFL_CLUBS, WAFL_CLUBS, WHIPLASH347_CLUB, type AflClub } from '@/config/afl'
+import { AFL_CLUBS, WAFL_CLUBS, type AflClub } from '@/config/afl'
+import { PARTNER_CLUB, PARTNER_SQUAD } from '@/config/partnerClub'
 import { haptic } from '@/lib/telegram-ui'
 
 interface Props {
@@ -17,9 +18,9 @@ function WhipLash347Card({ selected, onSelect }: { selected: boolean; onSelect: 
       style={
         selected
           ? {
-              background: 'linear-gradient(135deg, #E8192C18 0%, #00D4FF10 100%)',
-              border: '2px solid #E8192C',
-              boxShadow: '0 0 32px #E8192C40, inset 0 0 32px #00D4FF08',
+              background: `linear-gradient(135deg, ${PARTNER_CLUB.color}18 0%, ${PARTNER_CLUB.secondaryColor}10 100%)`,
+              border: `2px solid ${PARTNER_CLUB.color}`,
+              boxShadow: `0 0 32px ${PARTNER_CLUB.color}40, inset 0 0 32px ${PARTNER_CLUB.secondaryColor}08`,
             }
           : {
               background: 'rgba(232,25,44,0.06)',
@@ -28,32 +29,32 @@ function WhipLash347Card({ selected, onSelect }: { selected: boolean; onSelect: 
       }
     >
       {/* Glow line top */}
-      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, #E8192C, #00D4FF, transparent)' }} />
+      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${PARTNER_CLUB.color}, ${PARTNER_CLUB.secondaryColor}, transparent)` }} />
 
       {/* Logo */}
       <div className="relative shrink-0">
         <img
-          src={WHIPLASH347_CLUB.logo}
-          alt="WhipLash347"
+          src={PARTNER_CLUB.logo}
+          alt={PARTNER_CLUB.name}
           width={56}
           height={56}
           className="rounded-full object-cover"
-          style={{ boxShadow: selected ? '0 0 16px #E8192C80' : '0 0 8px #E8192C40' }}
+          style={{ boxShadow: selected ? `0 0 16px ${PARTNER_CLUB.color}80` : `0 0 8px ${PARTNER_CLUB.color}40` }}
         />
       </div>
 
       {/* Text */}
       <div className="flex-1 text-left">
         <div className="flex items-center gap-2 mb-0.5">
-          <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#E8192C' }}>⚡ Partner Team</span>
+          <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: PARTNER_CLUB.color }}>⚡ {PARTNER_CLUB.partnerTeamLabel}</span>
         </div>
-        <p className="text-base font-bold text-white tracking-tight">WhipLash347</p>
-        <p className="text-[10px] text-gray-500 mt-0.5">19 players · WCE &amp; Fremantle picks</p>
+        <p className="text-base font-bold text-white tracking-tight">{PARTNER_CLUB.name}</p>
+        <p className="text-[10px] text-gray-500 mt-0.5">{PARTNER_SQUAD.length} players · {PARTNER_CLUB.sourceClubs.map(c => c.name).join(' & ')} picks</p>
       </div>
 
       {/* Check / chevron */}
       {selected ? (
-        <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: '#E8192C' }}>
+        <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: PARTNER_CLUB.color }}>
           <span className="material-symbols-outlined text-white text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
         </div>
       ) : (
@@ -117,8 +118,8 @@ function AflPicker({ onNext, onSelectPartner }: {
         </div>
       </div>
 
-      {/* WhipLash347 partner card */}
-      <WhipLash347Card selected={false} onSelect={onSelectPartner} />
+      {/* Partner club card */}
+      {PARTNER_CLUB.enabled && <WhipLash347Card selected={false} onSelect={onSelectPartner} />}
 
       {/* Divider */}
       <div className="flex items-center gap-3 mb-4">
@@ -322,7 +323,7 @@ export default function TeamSelectScreen({ onSelect }: Props) {
     return (
       <AflPicker
         onNext={setAflTeamId}
-        onSelectPartner={() => onSelect(WHIPLASH347_CLUB.id, null)}
+        onSelectPartner={() => onSelect(PARTNER_CLUB.id, null)}
       />
     )
   }
