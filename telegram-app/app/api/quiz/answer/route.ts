@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { ok, fail } from '@/lib/api-response'
 import { createServiceClient } from '@/lib/supabase-server'
 import { validateTelegramInitData, parseTelegramUser } from '@/lib/telegram'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ''
 const DEV_BYPASS = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_DEV_BYPASS === 'true'
@@ -19,6 +20,9 @@ export async function POST(req: NextRequest) {
     if (!user) return fail('No user', 'NO_USER', 400)
     telegramId = user.id
   }
+
+  const limited = checkRateLimit(req, 30, `quiz:answer:${telegramId}`)
+  if (limited) return limited
 
   const body = await req.json().catch(() => null)
   if (!body?.sessionId || !body?.questionId || !body?.chosen) {

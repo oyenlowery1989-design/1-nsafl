@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { ok, fail } from '@/lib/api-response'
 import { createServiceClient } from '@/lib/supabase-server'
 import { validateTelegramInitData, parseTelegramUser } from '@/lib/telegram'
+import { checkRateLimit } from '@/lib/rate-limit'
 import { incrementBonusPool } from '@/lib/gamePool'
 import { nanoid } from 'nanoid'
 import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
@@ -45,6 +46,9 @@ export async function POST(req: NextRequest) {
     if (!user) return fail('No user', 'NO_USER', 400)
     telegramId = user.id
   }
+
+  const limited = checkRateLimit(req, 10, `quiz:complete:${telegramId}`)
+  if (limited) return limited
 
   const body = await req.json().catch(() => null)
   if (!body?.sessionId) return fail('Missing sessionId', 'BAD_REQUEST', 400)

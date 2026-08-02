@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { ok, fail } from '@/lib/api-response'
 import { createServiceClient } from '@/lib/supabase-server'
 import { validateTelegramInitData, parseTelegramUser } from '@/lib/telegram'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 const MODE_Q: Record<string, number> = { quick: 5, standard: 10, champion: 20 }
 const DAILY_LIMIT = 3
@@ -21,6 +22,9 @@ export async function GET(req: NextRequest) {
     if (!user) return fail('No user', 'NO_USER', 400)
     telegramId = user.id
   }
+
+  const limited = checkRateLimit(req, 10, `quiz:session:${telegramId}`)
+  if (limited) return limited
 
   const mode = req.nextUrl.searchParams.get('mode') ?? 'quick'
   if (!MODE_Q[mode]) return fail('Invalid mode', 'INVALID_MODE', 400)
