@@ -12,7 +12,6 @@ import {
   PRIMARY_CUSTOM_ASSET_CODE,
   PRIMARY_CUSTOM_ASSET_ISSUER,
 } from "@/lib/constants";
-import { toast } from "@/components/Toast";
 import { haptic } from "@/lib/telegram-ui";
 import ErrorCard from "@/components/ErrorCard";
 
@@ -40,14 +39,6 @@ export default function BuyPage() {
   // Direct buy form state
   const [xlmAmount, setXlmAmount] = useState("");
   const [copied, setCopied] = useState(false);
-
-  // Advanced section state
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [advSecretKey, setAdvSecretKey] = useState("");
-  const [advXlmAmount, setAdvXlmAmount] = useState("");
-  const [advSubmitting, setAdvSubmitting] = useState(false);
-  const [advStep, setAdvStep] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [advError, setAdvError] = useState("");
 
   const calculatedTokens = xlmAmount
     ? (parseFloat(xlmAmount) * XLM_TO_TOKEN_RATE).toFixed(2)
@@ -77,93 +68,6 @@ export default function BuyPage() {
       tg.openTelegramLink(botUrl);
     } else {
       window.open(botUrl, "_blank");
-    }
-  };
-
-  const handleAdvancedBuy = async () => {
-    const key = advSecretKey.trim();
-    const xlm = parseFloat(advXlmAmount);
-    if (!key) { setAdvError("Enter your secret key."); return; }
-    if (!xlm || xlm <= 0) { setAdvError("Enter a valid XLM amount."); return; }
-
-    haptic.medium();
-    setAdvSubmitting(true);
-    setAdvStep('loading');
-    setAdvError('');
-
-    try {
-      const { Keypair, Asset, TransactionBuilder, Operation, Networks, BASE_FEE, Memo } =
-        await import('stellar-sdk');
-
-      let keypair: ReturnType<typeof Keypair.fromSecret>;
-      try {
-        keypair = Keypair.fromSecret(key);
-      } catch {
-        setAdvStep('error');
-        setAdvError('Invalid secret key format.');
-        setAdvSubmitting(false);
-        return;
-      }
-
-      const publicKey = keypair.publicKey();
-      const HORIZON_URL = process.env.NEXT_PUBLIC_HORIZON_URL ?? 'https://horizon.stellar.org';
-
-      const accountRes = await fetch(`${HORIZON_URL}/accounts/${publicKey}`);
-      if (!accountRes.ok) {
-        setAdvStep('error');
-        setAdvError('Could not load account from Stellar. Is the wallet funded?');
-        setAdvSubmitting(false);
-        return;
-      }
-      const accountData = await accountRes.json();
-
-      const account = {
-        id: accountData.id,
-        sequence: accountData.sequence,
-        incrementSequenceNumber() { this.sequence = (Number(this.sequence) + 1).toString(); },
-      };
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const tx = new TransactionBuilder(account as any, {
-        fee: BASE_FEE,
-        networkPassphrase: Networks.PUBLIC,
-      })
-        .addOperation(Operation.payment({
-          destination: DIRECT_BUY_ADDRESS,
-          asset: Asset.native(),
-          amount: xlm.toFixed(7),
-        }))
-        .addMemo(Memo.text(`${PRIMARY_CUSTOM_ASSET_CODE} buy`))
-        .setTimeout(30)
-        .build();
-
-      tx.sign(keypair);
-      const xdr = tx.toEnvelope().toXDR('base64');
-
-      const submitRes = await fetch('/api/stellar/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ xdr, type: 'purchase' }),
-      });
-      const submitJson = await submitRes.json();
-
-      if (submitJson.success) {
-        haptic.success();
-        setAdvStep('success');
-        setAdvSecretKey('');
-        setAdvXlmAmount('');
-        toast.success(`Payment sent! TX: ${(submitJson.data?.hash ?? '').slice(0, 8)}…`);
-      } else {
-        haptic.error();
-        setAdvStep('error');
-        setAdvError(submitJson.error ?? 'Transaction failed.');
-      }
-    } catch {
-      haptic.error();
-      setAdvStep('error');
-      setAdvError('Unexpected error. Please try again.');
-    } finally {
-      setAdvSubmitting(false);
     }
   };
 
@@ -366,108 +270,6 @@ export default function BuyPage() {
             </a>
           </div>
         </div>
-
-        {/* Section 4 — Advanced (Admin Only) */}
-        <div className="hidden"><div className="glass-card rounded-xl overflow-hidden">
-          <button
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition"
-          >
-            <div className="flex items-center space-x-2">
-              <span className="material-symbols-outlined text-gray-500 text-lg">
-                admin_panel_settings
-              </span>
-              <span className="text-sm text-gray-400 font-semibold">
-                Advanced Purchase (Admin)
-              </span>
-            </div>
-            <span
-              className={`material-symbols-outlined text-gray-500 text-lg transition-transform ${showAdvanced ? "rotate-180" : ""}`}
-            >
-              expand_more
-            </span>
-          </button>
-
-          {showAdvanced && (
-            <div className="px-4 pb-4 space-y-3">
-              {/* Warning */}
-              <div className="flex items-start space-x-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
-                <span className="material-symbols-outlined text-red-400 text-sm mt-0.5">warning</span>
-                <p className="text-[11px] text-red-300 leading-relaxed">
-                  Your secret key signs the payment <strong>locally only</strong>. It is never sent to our servers.
-                </p>
-              </div>
-
-              {/* Secret key */}
-              <div>
-                <label className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mb-1 block">Secret Key (S…)</label>
-                <input
-                  type="password"
-                  value={advSecretKey}
-                  onChange={(e) => setAdvSecretKey(e.target.value)}
-                  placeholder="SXXXXXXXXXXXXXXXXXXXX..."
-                  disabled={advSubmitting || advStep === 'success'}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white font-mono placeholder-gray-600 focus:outline-none focus:border-[#D4AF37]/50 disabled:opacity-50"
-                />
-              </div>
-
-              {/* XLM Amount */}
-              <div>
-                <label className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mb-1 block">XLM Amount to Send</label>
-                <input
-                  type="number"
-                  value={advXlmAmount}
-                  onChange={(e) => setAdvXlmAmount(e.target.value)}
-                  placeholder="0.00"
-                  min="0"
-                  step="any"
-                  disabled={advSubmitting || advStep === 'success'}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#D4AF37]/50 disabled:opacity-50"
-                />
-              </div>
-
-              {advError && (
-                <p className="text-[11px] text-red-400 flex items-center space-x-1">
-                  <span className="material-symbols-outlined text-sm">error</span>
-                  <span>{advError}</span>
-                </p>
-              )}
-              {advStep === 'success' && (
-                <p className="text-[11px] text-green-400 flex items-center space-x-1">
-                  <span className="material-symbols-outlined text-sm">check_circle</span>
-                  <span>Payment sent successfully!</span>
-                </p>
-              )}
-
-              <button
-                onClick={handleAdvancedBuy}
-                disabled={advSubmitting || advStep === 'success' || !advSecretKey.trim() || !advXlmAmount}
-                className="w-full py-2.5 rounded-lg font-semibold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 active:scale-[0.98]"
-              >
-                {advSubmitting ? (
-                  <span className="flex items-center justify-center space-x-2">
-                    <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
-                    <span>Signing & Sending…</span>
-                  </span>
-                ) : (
-                  <span className="flex items-center justify-center space-x-2">
-                    <span className="material-symbols-outlined text-base">bolt</span>
-                    <span>Sign & Send Payment</span>
-                  </span>
-                )}
-              </button>
-
-              {advStep === 'success' && (
-                <button
-                  onClick={() => { setAdvStep('idle'); setAdvError(''); }}
-                  className="w-full text-[10px] text-gray-500 hover:text-gray-300 transition"
-                >
-                  Send another
-                </button>
-              )}
-            </div>
-          )}
-        </div></div>
       </main>
 
       <BottomNav />
