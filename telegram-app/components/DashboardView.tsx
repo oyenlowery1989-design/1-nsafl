@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import BottomNav from './BottomNav'
 import PageLoader, { useMinLoader } from './PageLoader'
@@ -7,9 +7,7 @@ import NotificationDrawer from './NotificationDrawer'
 import { PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
 import { getTierForBalance, getNextTier } from '@/config/tiers'
 import { useWalletStore } from '@/hooks/useStore'
-import { supabase } from '@/lib/supabase'
 import { getTelegramInitData, buildReferralLink, shareReferralLink } from '@/lib/telegram'
-import type { RealtimeChannel } from '@supabase/supabase-js'
 import { toast } from './Toast'
 import { haptic } from '@/lib/telegram-ui'
 
@@ -93,7 +91,6 @@ export default function DashboardView({ address, balance }: Props) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
   const [sponsorOpen, setSponsorOpen] = useState(false)
-  const channelRef = useRef<RealtimeChannel | null>(null)
 
   // Fetch balance and unread count in parallel on mount
   useEffect(() => {
@@ -152,56 +149,36 @@ export default function DashboardView({ address, balance }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address]) // setBalances is stable from Zustand — omitting prevents unnecessary re-registrations
 
-  // After balance ready, set up Supabase Realtime subscription on wallet_balances
+  // After balance ready, poll the authed wallet-live route (replaces direct
+  // anon-key table reads + Realtime subscription on wallets/wallet_balances)
   useEffect(() => {
     if (!balanceReady) return
 
-    let active = true
+    let lastToken: string | null = null
 
-    async function setupRealtime() {
-      // Fetch wallet_id for this stellar address
-      const { data: walletRow } = await supabase
-        .from('wallets')
-        .select('id')
-        .eq('stellar_address', address)
-        .maybeSingle()
-
-      if (!walletRow || !active) return
-
-      const walletId = (walletRow as { id: string }).id
-
-      const channel = supabase
-        .channel(`wallet-balances-${walletId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'wallet_balances',
-            filter: `wallet_id=eq.${walletId}`,
-          },
-          (payload) => {
-            const row = payload.new as { nsafl_balance?: string; xlm_balance?: string }
-            setBalances(row.nsafl_balance ?? '0.00', row.xlm_balance ?? '0.00')
+    const poll = () => {
+      fetch('/api/user/wallet-live', {
+        headers: { 'x-telegram-init-data': getTelegramInitData() },
+      })
+        .then(r => r.json())
+        .then(j => {
+          if (!j.success) return
+          const { tokenBalance, xlmBalance } = j.data
+          if (lastToken !== null && lastToken !== tokenBalance) {
             haptic.light()
             toast.info('Balance updated')
           }
-        )
-        .subscribe()
-
-      channelRef.current = channel
+          lastToken = tokenBalance
+          setBalances(tokenBalance, xlmBalance)
+        })
+        .catch(() => {})
     }
 
-    setupRealtime()
+    poll()
+    const intervalId = setInterval(poll, 60_000)
 
-    return () => {
-      active = false
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current)
-        channelRef.current = null
-      }
-    }
-  }, [balanceReady, address, setBalances])
+    return () => clearInterval(intervalId)
+  }, [balanceReady, setBalances])
 
   const handleRefresh = async () => {
     if (refreshing) return
