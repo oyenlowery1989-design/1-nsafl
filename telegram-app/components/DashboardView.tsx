@@ -24,7 +24,7 @@ interface LiveStats {
   activeWallets: number
   totalFunding: string
   weeklyChange: string
-  tierDistribution: { preTier: number; tier1_4: number; tier5_8: number; tier9_12: number }
+  tierDistribution: { preTier: number; tier1_4: number; tier5_9: number; top: number }
   topSupporters: { rank: number; name: string; amount: string }[]
   tokenStats?: { holderCount: number }
 }
@@ -359,9 +359,9 @@ export default function DashboardView({ address, balance }: Props) {
             </div>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { value: (liveStats.holderCount * 10).toLocaleString(), label: 'Holders', color: 'text-[#D4AF37]' },
-                { value: String(Math.round(parseFloat(liveStats.totalFunding) * 10).toLocaleString()), label: 'Total Held', color: 'text-white' },
-                { value: (liveStats.activeWallets * 10).toLocaleString(),  label: 'Active', color: 'text-green-400' },
+                { value: liveStats.holderCount.toLocaleString(), label: 'Holders', color: 'text-[#D4AF37]' },
+                { value: String(Math.round(parseFloat(liveStats.totalFunding)).toLocaleString()), label: 'Total Held', color: 'text-white' },
+                { value: liveStats.activeWallets.toLocaleString(),  label: 'Active', color: 'text-green-400' },
               ].map(({ value, label, color }) => (
                 <div key={label} className="text-center">
                   <p className={`text-base font-bold ${color}`}>{value}</p>

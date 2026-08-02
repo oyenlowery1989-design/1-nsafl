@@ -597,7 +597,7 @@ function WhipLash347Tab({
   // Leaderboard (top 5)
   const [leaders, setLeaders] = useState<{ displayName: string; stellarAddress: string; balance: number }[]>([])
   useEffect(() => {
-    fetch('/api/leaderboard')
+    fetch('/api/leaderboard', { headers: { 'x-telegram-init-data': getTelegramInitData() } })
       .then((r) => r.json())
       .then((json) => {
         if (json.success && Array.isArray(json.data?.entries)) {

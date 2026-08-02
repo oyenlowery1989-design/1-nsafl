@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useWalletStore } from '@/hooks/useStore'
 import DashboardView from '@/components/DashboardView'
 import TeamSelectScreen from '@/components/TeamSelectScreen'
@@ -31,12 +31,20 @@ export default function HomePage() {
     : null
 
   const [phase, setPhase] = useState<Phase>(
-    !hasSeenOnboarding && referrerId
-      ? 'referral-welcome'
-      : !hasSeenOnboarding
-        ? 'onboarding'
-        : isConnected ? (favoriteTeam ? 'dashboard' : 'team-select') : 'gate'
+    !hasSeenOnboarding
+      ? 'onboarding'
+      : isConnected ? (favoriteTeam ? 'dashboard' : 'team-select') : 'gate'
   )
+
+  // TelegramGuard writes 'nsafl_referrer' to sessionStorage after mount, so the
+  // referral-welcome upgrade must happen post-mount, not during useState init.
+  useEffect(() => {
+    if (!hasSeenOnboarding && referrerId && (phase === 'onboarding' || phase === 'gate')) {
+      setPhase('referral-welcome')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [referrerId, hasSeenOnboarding])
+
   const [inputAddress, setInputAddress] = useState('')
   const [pendingAddress, setPendingAddress] = useState('')   // address waiting on trustline
   const [error, setError] = useState('')

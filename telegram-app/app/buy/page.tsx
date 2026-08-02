@@ -14,15 +14,13 @@ import {
 } from "@/lib/constants";
 import { toast } from "@/components/Toast";
 import { haptic } from "@/lib/telegram-ui";
+import ErrorCard from "@/components/ErrorCard";
 
-const XLM_TO_TOKEN_RATE = parseInt(
+const XLM_TO_TOKEN_RATE = parseFloat(
   process.env.NEXT_PUBLIC_XLM_TO_TOKEN_RATE ?? "1",
-  10,
 );
 
-const DIRECT_BUY_ADDRESS =
-  process.env.NEXT_PUBLIC_DIRECT_BUY_XLM_ADDRESS ??
-  "GAWZCHDWMK43M6MZ2AX7AX52M7M5JLBJYTOEO3SV4LIMI6HJVJRYSY2Z";
+const DIRECT_BUY_ADDRESS = process.env.NEXT_PUBLIC_DIRECT_BUY_XLM_ADDRESS ?? "";
 
 const LOBSTR_URL = `https://lobstr.co/trade/${PRIMARY_CUSTOM_ASSET_CODE}:${PRIMARY_CUSTOM_ASSET_ISSUER}`;
 
@@ -135,7 +133,7 @@ export default function BuyPage() {
           asset: Asset.native(),
           amount: xlm.toFixed(7),
         }))
-        .addMemo(Memo.text('NSAFL buy'))
+        .addMemo(Memo.text(`${PRIMARY_CUSTOM_ASSET_CODE} buy`))
         .setTimeout(30)
         .build();
 
@@ -173,6 +171,20 @@ export default function BuyPage() {
     return (
       <WalletGuard>
         <PageLoader label="Loading…" />
+        <BottomNav />
+      </WalletGuard>
+    );
+  }
+
+  if (!DIRECT_BUY_ADDRESS) {
+    return (
+      <WalletGuard>
+        <main className="px-4 py-6">
+          <ErrorCard
+            error="Buy address is not configured."
+            context="Buy page"
+          />
+        </main>
         <BottomNav />
       </WalletGuard>
     );

@@ -5,6 +5,12 @@ import { createServiceClient } from '@/lib/supabase-server'
 import { resolveDisplayName } from '@/lib/display-name'
 import { PRIMARY_CUSTOM_ASSET_CODE as ASSET_CODE, PRIMARY_CUSTOM_ASSET_ISSUER as ASSET_ISSUER, HORIZON_URL } from '@/lib/constants'
 import { formatAmount } from '@/lib/format'
+import { TIERS } from '@/config/tiers'
+
+// Bucket boundaries derived from the single tier source of truth.
+const TIER_BUCKET_2_MIN = TIERS[1].minBalance                  // tier-1 start
+const TIER_BUCKET_3_MIN = TIERS[5].minBalance                  // tier-5 start
+const TIER_BUCKET_4_MIN = TIERS[TIERS.length - 1].minBalance   // top tier start
 
 // Sum all XLM received from NSAFL/XLM DEX trades (paginated)
 async function fetchXlmRaisedFromTrades(): Promise<number> {
@@ -156,25 +162,14 @@ export async function GET(req: NextRequest) {
       weeklyChange = `${sign}${pct.toFixed(1)}%`
     }
 
-    // Chart data — 5-bar growth curve
-    let chartData: number[]
-    if (totalCurrent <= 0) {
-      chartData = [30, 45, 60, 75, 100]
-    } else {
-      const base = totalCurrent * 0.2
-      const steps = [base, base * 1.6, base * 2.4, base * 3.2, totalCurrent]
-      const max = steps[steps.length - 1]
-      chartData = steps.map((v) => Math.round((v / max) * 100))
-    }
-
-    // Tier distribution from balances
-    const tierBuckets = { preTier: 0, tier1_4: 0, tier5_8: 0, tier9_12: 0 }
+    // Tier distribution from balances — buckets derived from TIERS (config/tiers.ts)
+    const tierBuckets = { preTier: 0, tier1_4: 0, tier5_9: 0, top: 0 }
     for (const r of rows) {
       const bal = Number(r.nsafl_balance) || 0
-      if (bal < 100) tierBuckets.preTier++
-      else if (bal <= 5000) tierBuckets.tier1_4++
-      else if (bal <= 100000) tierBuckets.tier5_8++
-      else tierBuckets.tier9_12++
+      if (bal < TIER_BUCKET_2_MIN) tierBuckets.preTier++
+      else if (bal < TIER_BUCKET_3_MIN) tierBuckets.tier1_4++
+      else if (bal < TIER_BUCKET_4_MIN) tierBuckets.tier5_9++
+      else tierBuckets.top++
     }
 
     // --- Process top supporters ---
@@ -228,7 +223,6 @@ export async function GET(req: NextRequest) {
       totalFunding: formatAmount(totalCurrent),
       totalFundingRaw: totalCurrent,
       weeklyChange,
-      chartData,
       target: '3M',
       topSupporters: topSupporters.length > 0 ? topSupporters : [
         { rank: 1, name: 'Be the first!', hub: 'Connect wallet', amount: '0' },
@@ -264,7 +258,6 @@ export async function GET(req: NextRequest) {
       totalFunding: '0',
       totalFundingRaw: 0,
       weeklyChange: '0%',
-      chartData: [30, 45, 60, 75, 100],
       target: '3M',
       topSupporters: [],
       walletCount: 0,
@@ -273,7 +266,7 @@ export async function GET(req: NextRequest) {
       totalXlm: '0',
       tokenStats: { totalSupply: '0', circulatingSupply: '0', holderCount: 0, issuerXlmReserve: '0', issuerXlmReserveRaw: 0, xlmRaised: 0 },
       xlmGoal: 100_000,
-      tierDistribution: { preTier: 0, tier1_4: 0, tier5_8: 0, tier9_12: 0 },
+      tierDistribution: { preTier: 0, tier1_4: 0, tier5_9: 0, top: 0 },
       teamDistribution: {},
     })
   }
