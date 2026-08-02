@@ -20,7 +20,7 @@ interface ScratchPrize {
 // Client-side grid rendering ONLY (labels/emoji) — the server (lib/gamePool.ts
 // PRIZE_TABLES.scratch_card) rolls the prize and returns its index. This array's order MUST
 // match PRIZE_TABLES.scratch_card exactly so `prizeIndex` from the server maps to the right prize.
-const SCRATCH_PRIZES: ScratchPrize[] = [
+export const SCRATCH_PRIZES: ScratchPrize[] = [
   { label: '100 wXLM',    emoji: '💎', weight: 8,   isAsset: true, isWXLM: true,   amount: 100  },
   { label: '5000 wNSAFL', emoji: '🏆', weight: 12,  isAsset: true, isWNSAFL: true, amount: 5000 },
   { label: '2500 wNSAFL', emoji: '🥇', weight: 20,  isAsset: true, isWNSAFL: true, amount: 2500 },

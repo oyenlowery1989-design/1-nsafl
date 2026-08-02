@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useTelegramBack } from '@/hooks/useTelegramBack'
 import BottomNav from '@/components/BottomNav'
 import WalletGuard from '@/components/WalletGuard'
+import ErrorCard from '@/components/ErrorCard'
 import { useWalletStore } from '@/hooks/useStore'
 import { ALL_CLUBS, AFL_CLUBS, WAFL_CLUBS } from '@/config/afl'
 import { AFL_PLAYERS } from '@/config/afl-players'
@@ -12,7 +13,7 @@ import { haptic } from '@/lib/telegram-ui'
 import { getTelegramInitData } from '@/lib/telegram'
 import { toast } from '@/components/Toast'
 
-const SUPPORTER_WALLET = process.env.NEXT_PUBLIC_PRIMARY_ASSET_ISSUER ?? 'GAWZCHDWMK43M6MZ2AX7AX52M7M5JLBJYTOEO3SV4LIMI6HJVJRYSY2Z'
+const SUPPORTER_WALLET = process.env.NEXT_PUBLIC_PRIMARY_ASSET_ISSUER ?? ''
 
 type DonationType = 'general' | 'team' | 'player' | null
 
@@ -84,6 +85,20 @@ export default function DonatePage() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  if (!SUPPORTER_WALLET) {
+    return (
+      <WalletGuard>
+        <main className="px-4 py-6">
+          <ErrorCard
+            error="Donation address is not configured."
+            context="Donate page"
+          />
+        </main>
+        <BottomNav />
+      </WalletGuard>
+    )
   }
 
   return (

@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
   }
 
   const winCode = `SCRATCH-${randomBytes(9).toString('base64url').toUpperCase()}`
+  const isAssetPrize = !!prizeToAsset(prize.label)
   const { data: inserted, error } = await (supabase as any)
     .from('lucky_draw_wins')
     .insert({
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
       wallet_address: walletAddress,
       claimed: false,
       prize_source: 'scratch_card',
-      payout_status: 'pending',
+      payout_status: isAssetPrize ? 'pending' : 'skipped',
     })
     .select('id')
     .single()
@@ -73,7 +74,6 @@ export async function POST(req: NextRequest) {
   }
 
   const winId: number | undefined = inserted?.id
-  const isAssetPrize = !!prizeToAsset(prize.label)
   if (!IS_DEV && isAssetPrize && winId && walletAddress && REWARD_SENDER_SECRET) {
     const payment = await sendPrizePayment(prize.label, prize.amount!, walletAddress, winId, supabase)
     if (payment.sent) {

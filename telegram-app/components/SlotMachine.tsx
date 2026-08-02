@@ -26,7 +26,7 @@ interface SlotPrize {
 // Client-side reel rendering ONLY (labels/symbols) — the server (lib/gamePool.ts
 // PRIZE_TABLES.slot_machine) rolls the prize and returns its index. This array's order MUST
 // match PRIZE_TABLES.slot_machine exactly so `prizeIndex` from the server maps to the right prize.
-const SLOT_PRIZES: SlotPrize[] = [
+export const SLOT_PRIZES: SlotPrize[] = [
   { label: '100 wXLM',    symbol: '💎', weight: 10,  isAsset: true, isWXLM: true,   amount: 100  },
   { label: '5000 wNSAFL', symbol: '🏆', weight: 15,  isAsset: true, isWNSAFL: true, amount: 5000 },
   { label: '2500 wNSAFL', symbol: '🥇', weight: 25,  isAsset: true, isWNSAFL: true, amount: 2500 },

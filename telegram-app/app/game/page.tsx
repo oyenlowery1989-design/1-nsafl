@@ -57,7 +57,7 @@ function getAssetSymbol(p: Prize): string {
 // Client-side wheel rendering ONLY (labels/colors/emoji) — the server (lib/gamePool.ts
 // PRIZE_TABLES.lucky_draw) rolls the prize and returns its index. This array's order MUST
 // match PRIZE_TABLES.lucky_draw exactly so `prizeIndex` from the server points at the right segment.
-const PRIZES: Prize[] = [
+export const PRIZES: Prize[] = [
   {
     label: "100 wXLM",
     emoji: "💎",

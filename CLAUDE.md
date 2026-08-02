@@ -236,6 +236,10 @@ NEXT_PUBLIC_DIRECT_BUY_XLM_ADDRESS=GAJVAQ5DCOJVZ6AL3P4QVDTGMOHRVHG6WJ6252SOCLTX5
 NEXT_PUBLIC_XLM_TO_TOKEN_RATE=1
 NEXT_PUBLIC_ADMIN_TELEGRAM_USERNAMES=americandreamer8
 ADMIN_SECRET_TOKEN=<admin secret>
+TELEGRAM_WEBHOOK_SECRET=<random secret>              # validates incoming Telegram webhook requests
+REWARD_SENDER_SECRET=<Stellar secret key>             # signs auto-payout transactions for game prizes
+REWARD_MEMO=<text>                                    # optional — overrides default memo on reward payment txns
+NEXT_PUBLIC_REWARD_ASSET_ISSUER=<Stellar public key>  # issuer account for non-primary reward assets (wXLM/wNSAFL/wXRP/wUSDC)
 ```
 
 ---
