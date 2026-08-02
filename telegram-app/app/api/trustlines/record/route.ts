@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
   if (!xdr) return fail('xdr is required', 'BAD_REQUEST', 400)
 
-  await (supabase as any)
+  await supabase
     .from('trustline_submissions')
     .insert({
       type: 'trustline',

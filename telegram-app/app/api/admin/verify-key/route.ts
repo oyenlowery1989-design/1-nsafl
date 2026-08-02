@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   const supabase = createServiceClient()
 
   // Find wallet with this stellar address
-  const { data: wallet } = await (supabase as any)
+  const { data: wallet } = await supabase
     .from('wallets')
     .select('id, stellar_address, label, is_primary, created_at, last_connected_at, user_id')
     .eq('stellar_address', publicKey)
@@ -57,14 +57,14 @@ export async function POST(req: NextRequest) {
   }
 
   // Fetch the owning user
-  const { data: user } = await (supabase as any)
+  const { data: user } = await supabase
     .from('users')
     .select('telegram_id, telegram_username, telegram_first_name, created_at')
     .eq('id', wallet.user_id)
     .single()
 
   // Fetch the wallet balance
-  const { data: balance } = await (supabase as any)
+  const { data: balance } = await supabase
     .from('wallet_balances')
     .select('nsafl_balance, xlm_balance, last_synced_at')
     .eq('wallet_id', wallet.id)

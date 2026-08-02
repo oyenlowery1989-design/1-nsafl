@@ -11,13 +11,13 @@ export async function POST(req: NextRequest) {
   const supabase = createServiceClient()
 
   // Find wallets that have no wallet_balances row at all
-  const { data: wallets } = await (supabase as any)
+  const { data: wallets } = await supabase
     .from('wallets')
     .select('id, stellar_address, wallet_balances(wallet_id)')
 
   if (!wallets?.length) return ok({ synced: 0, results: [] })
 
-  const missing = wallets.filter((w: any) => !w.wallet_balances?.length)
+  const missing = wallets.filter((w) => !w.wallet_balances)
   if (!missing.length) return ok({ synced: 0, results: [] })
 
   // Fetch balances from Horizon in parallel (cap at 8 concurrent)
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   for (let i = 0; i < missing.length; i += CONCURRENCY) {
     const batch = missing.slice(i, i + CONCURRENCY)
     const settled = await Promise.allSettled(
-      batch.map(async (w: any) => {
+      batch.map(async (w) => {
         const assets = await fetchAllShownBalances(w.stellar_address)
         const nsafl = parseFloat(assets[PRIMARY_CUSTOM_ASSET_CODE] ?? '0')
         const xlm = parseFloat(assets['XLM'] ?? '0')

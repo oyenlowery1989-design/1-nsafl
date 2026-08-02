@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   const supabase = createServiceClient()
 
   // Find wallet with this address
-  const { data: wallet } = await (supabase as any)
+  const { data: wallet } = await supabase
     .from('wallets')
     .select('user_id')
     .eq('stellar_address', body.publicKey.trim())
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   if (!wallet) return ok({ valid: false, reason: 'Key does not match any registered wallet' })
 
   // Confirm it belongs to this Telegram user
-  const { data: userRow } = await (supabase as any)
+  const { data: userRow } = await supabase
     .from('users')
     .select('id')
     .eq('telegram_id', user.id)

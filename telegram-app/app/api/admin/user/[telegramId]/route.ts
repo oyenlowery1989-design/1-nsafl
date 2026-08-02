@@ -90,7 +90,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     if (body.display_preference !== undefined) updatePayload.display_preference = body.display_preference
     if (typeof body.bonus_balls === 'number' && body.bonus_balls >= 0) updatePayload.bonus_balls = body.bonus_balls
     if (typeof body.bonus_spins === 'number' && body.bonus_spins >= 0) updatePayload.bonus_spins = body.bonus_spins
-    const { error } = await (supabase as any).from('users').update(updatePayload).eq('telegram_id', telegramId)
+    const { error } = await supabase.from('users').update(updatePayload).eq('telegram_id', telegramId)
     if (error) return fail('Failed to update user', 'DB_ERROR', 500)
     return ok({ telegramId, updated: updatePayload })
   }

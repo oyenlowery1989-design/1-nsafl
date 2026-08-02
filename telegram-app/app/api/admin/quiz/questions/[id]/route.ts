@@ -9,7 +9,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const body = await req.json().catch(() => null)
   if (!body) return fail('No body', 'BAD_REQUEST', 400)
   const supabase = createServiceClient()
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('quiz_questions')
     .update(body)
     .eq('id', id)
@@ -23,7 +23,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (!verifyAdminToken(req)) return fail('Forbidden', 'FORBIDDEN', 403)
   const { id } = await params
   const supabase = createServiceClient()
-  const { error } = await (supabase as any).from('quiz_questions').delete().eq('id', id)
+  const { error } = await supabase.from('quiz_questions').delete().eq('id', id)
   if (error) return fail('Failed to delete', 'DB_ERROR', 500)
   return ok({ deleted: id })
 }

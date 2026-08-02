@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 
   const supabase = createServiceClient()
 
-  const { data: win } = await (supabase as any)
+  const { data: win } = await supabase
     .from('lucky_draw_wins')
     .select('id, telegram_id, prize, amount, wallet_address, payout_status')
     .eq('id', winId)
@@ -55,14 +55,14 @@ export async function POST(req: NextRequest) {
   if (!win.amount || win.amount <= 0) return fail('Invalid prize amount', 'BAD_REQUEST')
 
   // ── Tier 1 check — must hold ≥100 tokens to receive rewards ──────────────────
-  const { data: userRow } = await (supabase as any)
+  const { data: userRow } = await supabase
     .from('users')
     .select('id')
     .eq('telegram_id', win.telegram_id)
     .single()
 
   if (userRow) {
-    const { data: walletRow } = await (supabase as any)
+    const { data: walletRow } = await supabase
       .from('wallets')
       .select('id')
       .eq('user_id', userRow.id)
@@ -70,13 +70,13 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (walletRow) {
-      const { data: balRow } = await (supabase as any)
+      const { data: balRow } = await supabase
         .from('wallet_balances')
         .select('nsafl_balance')
         .eq('wallet_id', walletRow.id)
         .single()
 
-      const nsaflBal = parseFloat(balRow?.nsafl_balance ?? '0')
+      const nsaflBal = Number(balRow?.nsafl_balance ?? 0)
       if (nsaflBal < 100) {
         return NextResponse.json(
           {

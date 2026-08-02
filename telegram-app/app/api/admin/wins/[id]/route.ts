@@ -19,11 +19,10 @@ export async function PATCH(
   if (!prize) return fail('prize is required', 'BAD_REQUEST', 400)
 
   const supabase = createServiceClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('lucky_draw_wins')
     .update({ prize })
-    .eq('id', id)
+    .eq('id', Number(id))
     .eq('payout_status', 'pending') // only allow override on pending wins
 
   if (error) return fail('Failed to update prize', 'DB_ERROR', 500)
@@ -57,11 +56,10 @@ export async function POST(
 
   const supabase = createServiceClient()
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: existing, error: fetchError } = await (supabase as any)
+  const { data: existing, error: fetchError } = await supabase
     .from('lucky_draw_wins')
     .select('id, payout_status')
-    .eq('id', id)
+    .eq('id', Number(id))
     .single()
 
   if (fetchError || !existing) return fail('Win not found', 'NOT_FOUND', 404)
@@ -70,8 +68,7 @@ export async function POST(
     return fail('Win already marked as paid', 'ALREADY_PAID', 409)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: updateError } = await (supabase as any)
+  const { error: updateError } = await supabase
     .from('lucky_draw_wins')
     .update({
       payout_status:  status,
@@ -80,7 +77,7 @@ export async function POST(
       payout_tx_hash: tx_hash ?? null,
       paid_by:        'admin',
     })
-    .eq('id', id)
+    .eq('id', Number(id))
 
   if (updateError) return fail('Failed to update win', 'DB_ERROR', 500)
 

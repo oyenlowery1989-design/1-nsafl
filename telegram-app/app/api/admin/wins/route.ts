@@ -17,8 +17,8 @@ export async function GET(req: NextRequest) {
   const from   = (page - 1) * limit
   const to     = from + limit - 1
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (supabase as any)
+   
+  let query = supabase
     .from('lucky_draw_wins')
     .select('*', { count: 'exact' })
     .neq('prize', 'Better Luck')
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
   const telegramIds: number[] = [...new Set<number>((wins ?? []).map((w: { telegram_id: number }) => w.telegram_id))]
   const userMap: Record<number, { first_name: string | null; username: string | null }> = {}
   if (telegramIds.length > 0) {
-    const { data: users } = await (supabase as any)
+    const { data: users } = await supabase
       .from('users')
       .select('telegram_id, telegram_first_name, telegram_username')
       .in('telegram_id', telegramIds)
@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
   }))
 
   // fetch counts per payout_status for stat tiles (exclude no-value misses)
-  const { data: countRows } = await (supabase as any)
+  const { data: countRows } = await supabase
     .from('lucky_draw_wins')
     .select('payout_status')
     .neq('prize', 'Better Luck')

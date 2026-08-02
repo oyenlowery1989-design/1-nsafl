@@ -37,8 +37,8 @@ export async function POST(req: NextRequest) {
   const supabase = createServiceClient()
 
   // Fetch eligible users (not blocked)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (supabase as any)
+   
+  let query = supabase
     .from('users')
     .select('telegram_id, opt_in_telegram_notifications')
     .eq('is_blocked', false)

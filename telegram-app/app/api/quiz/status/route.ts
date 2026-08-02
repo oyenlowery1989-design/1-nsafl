@@ -29,13 +29,13 @@ export async function GET(req: NextRequest) {
   const today = new Date(); today.setHours(0, 0, 0, 0)
 
   const [sessionRows, userData] = await Promise.all([
-    (supabase as any)
+    supabase
       .from('quiz_sessions')
       .select('mode')
       .eq('telegram_id', telegramId)
       .neq('status', 'abandoned')
       .gte('created_at', today.toISOString()),
-    (supabase as any)
+    supabase
       .from('users')
       .select('quiz_points')
       .eq('telegram_id', telegramId)

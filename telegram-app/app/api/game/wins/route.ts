@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   if (rateLimitError) return rateLimitError
 
   const supabase = createServiceClient()
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('lucky_draw_wins')
     .select('telegram_id, prize, prize_source, created_at, wallet_address')
     .neq('prize', 'Better Luck')
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   const telegramIds: number[] = [...new Set<number>(wins.map((w: { telegram_id: number }) => w.telegram_id))]
   const userMap: Record<number, { username: string | null; first_name: string | null; display_preference: string | null }> = {}
   if (telegramIds.length > 0) {
-    const { data: users } = await (supabase as any)
+    const { data: users } = await supabase
       .from('users')
       .select('telegram_id, telegram_username, telegram_first_name, display_preference')
       .in('telegram_id', telegramIds)

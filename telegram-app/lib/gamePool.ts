@@ -83,7 +83,7 @@ export async function getSpinStatus(
   telegramId: number,
   source: GameSource
 ): Promise<SpinStatus> {
-  const { data: userRow } = await (supabase as any)
+  const { data: userRow } = await supabase
     .from('users')
     .select('id, bonus_spins')
     .eq('telegram_id', telegramId)
@@ -92,11 +92,11 @@ export async function getSpinStatus(
   let tierIndex = 0
   let walletAddress: string | null = null
   if (userRow?.id) {
-    const { data: wallet } = await (supabase as any)
+    const { data: wallet } = await supabase
       .from('wallets').select('id, stellar_address').eq('user_id', userRow.id).eq('is_primary', true).single()
     if (wallet?.id) {
       walletAddress = wallet.stellar_address ?? null
-      const { data: balanceRow } = await (supabase as any)
+      const { data: balanceRow } = await supabase
         .from('wallet_balances').select('nsafl_balance').eq('wallet_id', wallet.id).single()
       if (balanceRow?.nsafl_balance != null) {
         const tier = getTierForBalance(Number(balanceRow.nsafl_balance))
@@ -114,12 +114,12 @@ export async function getSpinStatus(
   // Gate: user has never played ANY game AND pool is exactly 0. The .eq('bonus_spins', 0) makes
   // the write atomic — of parallel calls, only one wins.
   if (isTier0 && bonusSpins === 0 && userRow?.id) {
-    const { count: everPlayed } = await (supabase as any)
+    const { count: everPlayed } = await supabase
       .from('lucky_draw_wins')
       .select('id', { count: 'exact', head: true })
       .eq('telegram_id', telegramId) // NOTE: no prize_source filter — all games
     if ((everPlayed ?? 0) === 0) {
-      const { data: seeded } = await (supabase as any)
+      const { data: seeded } = await supabase
         .from('users')
         .update({ bonus_spins: WELCOME_SPINS_TIER0 })
         .eq('telegram_id', telegramId)
@@ -127,7 +127,7 @@ export async function getSpinStatus(
         .select('bonus_spins')
       if (seeded?.length) bonusSpins = WELCOME_SPINS_TIER0
       else {
-        const { data: fresh } = await (supabase as any)
+        const { data: fresh } = await supabase
           .from('users').select('bonus_spins').eq('telegram_id', telegramId).single()
         bonusSpins = fresh?.bonus_spins ?? 0
       }
@@ -135,7 +135,7 @@ export async function getSpinStatus(
   }
 
   const today = new Date(); today.setUTCHours(0, 0, 0, 0)
-  const { count } = await (supabase as any)
+  const { count } = await supabase
     .from('lucky_draw_wins')
     .select('id', { count: 'exact', head: true })
     .eq('telegram_id', telegramId)
@@ -165,7 +165,7 @@ export async function consumeSpin(
   // Daily quota: atomic RPC (game_spin_counters + consume_daily_spin, migration 023) —
   // authoritative under concurrent requests, unlike a count-then-insert check.
   if (status.baseLimit > 0) {
-    const { data: consumed, error } = await (supabase as any).rpc('consume_daily_spin', {
+    const { data: consumed, error } = await supabase.rpc('consume_daily_spin', {
       p_telegram_id: telegramId,
       p_source: source,
       p_limit: status.baseLimit,
@@ -176,7 +176,7 @@ export async function consumeSpin(
 
   // Tier-0 (baseLimit 0) or daily quota exhausted — fall through to the shared bonus pool.
   if (status.bonusSpins > 0) {
-    const { data: decremented } = await (supabase as any)
+    const { data: decremented } = await supabase
       .from('users')
       .update({ bonus_spins: status.bonusSpins - 1 })
       .eq('telegram_id', telegramId)
@@ -201,10 +201,10 @@ export async function incrementBonusPool(
   prizeLabel: string,
 ): Promise<void> {
   for (let attempt = 0; attempt < 2; attempt++) {
-    const { data: userRow } = await (supabase as any)
-      .from('users').select(column).eq('telegram_id', telegramId).single()
-    const current = userRow?.[column] ?? 0
-    const { data: updated } = await (supabase as any)
+    const { data: userRow } = await supabase
+      .from('users').select('bonus_spins, bonus_balls').eq('telegram_id', telegramId).single()
+    const current = (userRow?.[column] ?? 0) as number
+    const { data: updated } = await supabase
       .from('users')
       .update({ [column]: current + amount })
       .eq('telegram_id', telegramId)

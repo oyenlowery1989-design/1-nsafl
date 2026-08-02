@@ -43,20 +43,19 @@ export async function POST(req: NextRequest) {
     .is('telegram_id', null)
 
   if (broadcasts && broadcasts.length > 0) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: userRow } = await (supabase as any)
+    const { data: userRow } = await supabase
       .from('users')
       .select('read_broadcast_ids')
       .eq('telegram_id', telegramUser.id)
       .maybeSingle()
 
-    const existing: string[] = userRow?.read_broadcast_ids ?? []
+    // read_broadcast_ids is jsonb — application convention is string[], not enforced by the column type
+    const existing = (userRow?.read_broadcast_ids as string[] | null) ?? []
     const merged = Array.from(
       new Set([...existing, ...broadcasts.map((b) => String(b.id))])
     )
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    await supabase
       .from('users')
       .update({ read_broadcast_ids: merged })
       .eq('telegram_id', telegramUser.id)

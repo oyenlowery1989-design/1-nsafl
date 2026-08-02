@@ -17,8 +17,8 @@ export async function GET(req: NextRequest) {
   const days7ago = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
   const [{ data: usersRaw }, { data: winsRaw }] = await Promise.all([
-    (supabase as any).from('users').select('created_at').gte('created_at', days7ago),
-    (supabase as any).from('lucky_draw_wins').select('created_at').gte('created_at', days7ago)
+    supabase.from('users').select('created_at').gte('created_at', days7ago),
+    supabase.from('lucky_draw_wins').select('created_at').gte('created_at', days7ago)
       .neq('prize', 'Better Luck').not('prize', 'ilike', '%Spin%'),
   ])
 
@@ -28,11 +28,13 @@ export async function GET(req: NextRequest) {
   const today = new Date(); today.setHours(0, 0, 0, 0)
 
   for (const r of (usersRaw ?? [])) {
+    if (!r.created_at) continue
     const d = new Date(r.created_at); d.setHours(0, 0, 0, 0)
     const diff = Math.floor((today.getTime() - d.getTime()) / 86400000)
     if (diff >= 0 && diff < 7) usersByDay[6 - diff]++
   }
   for (const r of (winsRaw ?? [])) {
+    if (!r.created_at) continue
     const d = new Date(r.created_at); d.setHours(0, 0, 0, 0)
     const diff = Math.floor((today.getTime() - d.getTime()) / 86400000)
     if (diff >= 0 && diff < 7) winsByDay[6 - diff]++
@@ -54,10 +56,10 @@ export async function GET(req: NextRequest) {
   const todayISO = new Date(today.getTime()).toISOString()
 
   const [{ data: activeTodayRaw }, { data: lastPaidRow }] = await Promise.all([
-    (supabase as any).from('lucky_draw_wins')
+    supabase.from('lucky_draw_wins')
       .select('telegram_id')
       .gte('created_at', todayISO),
-    (supabase as any).from('lucky_draw_wins')
+    supabase.from('lucky_draw_wins')
       .select('payout_at')
       .eq('payout_status', 'paid')
       .not('payout_at', 'is', null)
@@ -70,7 +72,7 @@ export async function GET(req: NextRequest) {
   const lastPaidAt: string | null = lastPaidRow?.[0]?.payout_at ?? null
 
   // ── Reward wallet balances ────────────────────────────────────────────────
-  let rewardBalances: Record<string, string> = {}
+  const rewardBalances: Record<string, string> = {}
   let senderAddress: string | null = null
   try {
     const senderSecret = process.env.REWARD_SENDER_SECRET

@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  const { count } = await (supabase as any)
+  const { count } = await supabase
     .from('quiz_sessions')
     .select('id', { count: 'exact', head: true })
     .eq('telegram_id', telegramId)
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
     return fail(`Daily limit reached (${DAILY_LIMIT} plays per mode per day)`, 'DAILY_LIMIT', 429)
   }
 
-  const { data: allQ } = await (supabase as any)
+  const { data: allQ } = await supabase
     .from('quiz_questions')
     .select('id, question, option_a, option_b, option_c, option_d, category, difficulty')
     .eq('active', true)
@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
   const questions = shuffled.slice(0, numQ)
   const questionIds = questions.map((q: { id: string }) => q.id)
 
-  const { data: session, error } = await (supabase as any)
+  const { data: session, error } = await supabase
     .from('quiz_sessions')
     .insert({
       telegram_id: telegramId,

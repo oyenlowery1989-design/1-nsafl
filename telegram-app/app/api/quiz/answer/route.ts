@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
   const supabase = createServiceClient()
 
-  const { data: session } = await (supabase as any)
+  const { data: session } = await supabase
     .from('quiz_sessions')
     .select('telegram_id, status, question_ids, answers_given, expires_at')
     .eq('id', sessionId)
@@ -43,9 +43,12 @@ export async function POST(req: NextRequest) {
   if (session.status !== 'in_progress') return fail('Session not active', 'SESSION_DONE', 409)
   if (new Date(session.expires_at) < new Date()) return fail('Session expired', 'EXPIRED', 410)
   if (!session.question_ids.includes(questionId)) return fail('Question not in session', 'BAD_QUESTION', 400)
-  if (session.answers_given[questionId]) return fail('Already answered', 'ALREADY_ANSWERED', 409)
 
-  const { data: q } = await (supabase as any)
+  // answers_given is jsonb — application convention is Record<questionId, chosenOption>
+  const answersGiven = (session.answers_given as Record<string, string> | null) ?? {}
+  if (answersGiven[questionId]) return fail('Already answered', 'ALREADY_ANSWERED', 409)
+
+  const { data: q } = await supabase
     .from('quiz_questions')
     .select('correct_option, explanation')
     .eq('id', questionId)
@@ -54,8 +57,8 @@ export async function POST(req: NextRequest) {
   if (!q) return fail('Question not found', 'NOT_FOUND', 404)
 
   const correct = chosen === q.correct_option
-  const updatedAnswers = { ...session.answers_given, [questionId]: chosen }
-  await (supabase as any)
+  const updatedAnswers = { ...answersGiven, [questionId]: chosen }
+  await supabase
     .from('quiz_sessions')
     .update({ answers_given: updatedAnswers })
     .eq('id', sessionId)

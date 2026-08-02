@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
   if (!body || !body.type || !body.id) return fail('Missing type or id', 'INVALID_DATA')
 
-  const { type, id } = body as { type: 'donation' | 'purchase'; id: number }
+  const { type, id } = body as { type: 'donation' | 'purchase'; id: string }
 
   if (type !== 'donation' && type !== 'purchase') {
     return fail('type must be donation or purchase', 'INVALID_DATA')
@@ -18,13 +18,13 @@ export async function POST(req: NextRequest) {
   const supabase = createServiceClient()
 
   if (type === 'donation') {
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('donations')
       .update({ verified: true })
       .eq('id', id)
     if (error) return fail(error.message, 'DB_ERROR', 500)
   } else {
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('purchases')
       .update({ verified: true })
       .eq('id', id)

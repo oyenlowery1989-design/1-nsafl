@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     { data: allBalances },
   ] = await Promise.all([
     // Users + wallets + balances in one shot
-    (supabase as any)
+    supabase
       .from('users')
       .select(`
         telegram_id, telegram_username, telegram_first_name, telegram_photo_url, telegram_phone,
@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: false }),
 
     // Trustline submissions (last 50)
-    (supabase as any)
+    supabase
       .from('trustline_submissions')
       .select('id, ip, xdr, horizon_result, success, tx_hash, created_at')
       .order('created_at', { ascending: false })

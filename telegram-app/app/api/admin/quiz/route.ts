@@ -8,8 +8,8 @@ export async function GET(req: NextRequest) {
   const supabase = createServiceClient()
 
   const [{ data: questions }, { data: sessions }] = await Promise.all([
-    (supabase as any).from('quiz_questions').select('*').order('created_at', { ascending: false }),
-    (supabase as any).from('quiz_sessions').select('id, mode, score, correct_count, total_questions, is_perfect, points_earned, status, created_at, telegram_id').eq('status', 'completed').order('created_at', { ascending: false }).limit(200),
+    supabase.from('quiz_questions').select('*').order('created_at', { ascending: false }),
+    supabase.from('quiz_sessions').select('id, mode, score, correct_count, total_questions, is_perfect, points_earned, status, created_at, telegram_id').eq('status', 'completed').order('created_at', { ascending: false }).limit(200),
   ])
 
   const allSessions = sessions ?? []

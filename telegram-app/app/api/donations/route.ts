@@ -27,7 +27,7 @@ async function resolveCallerAddress(
   supabase: ReturnType<typeof createServiceClient>,
   telegramId: number,
 ): Promise<{ walletId: string; address: string } | null> {
-  const { data: userRow } = await (supabase as any)
+  const { data: userRow } = await supabase
     .from("users")
     .select("id")
     .eq("telegram_id", telegramId)

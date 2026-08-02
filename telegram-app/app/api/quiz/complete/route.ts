@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
 
   const supabase = createServiceClient()
 
-  const { data: session } = await (supabase as any)
+  const { data: session } = await supabase
     .from('quiz_sessions')
     .select('telegram_id, mode, status, question_ids, answers_given, expires_at, total_questions')
     .eq('id', body.sessionId)
@@ -66,17 +66,19 @@ export async function POST(req: NextRequest) {
   if (session.status !== 'in_progress') return fail('Already completed', 'SESSION_DONE', 409)
   if (new Date(session.expires_at) < new Date()) return fail('Session expired', 'EXPIRED', 410)
 
-  const answeredIds = Object.keys(session.answers_given)
+  // answers_given is jsonb — application convention is Record<questionId, chosenOption>
+  const answersGiven = (session.answers_given as Record<string, string> | null) ?? {}
+  const answeredIds = Object.keys(answersGiven)
   let correctCount = 0
 
   if (answeredIds.length > 0) {
-    const { data: questions } = await (supabase as any)
+    const { data: questions } = await supabase
       .from('quiz_questions')
       .select('id, correct_option')
       .in('id', answeredIds)
 
     for (const q of (questions ?? [])) {
-      if (session.answers_given[q.id] === q.correct_option) correctCount++
+      if (answersGiven[q.id] === q.correct_option) correctCount++
     }
   }
 
@@ -84,7 +86,7 @@ export async function POST(req: NextRequest) {
   const pointsEarned = Math.round(correctCount * BASE_POINTS * mult)
   const isPerfect = correctCount === session.total_questions && session.total_questions > 0
 
-  await (supabase as any)
+  await supabase
     .from('quiz_sessions')
     .update({
       status: 'completed',
@@ -102,7 +104,7 @@ export async function POST(req: NextRequest) {
       .eq('telegram_id', telegramId)
       .single()
     const currentPoints = (userData as unknown as { quiz_points: number } | null)?.quiz_points ?? 0
-    await (supabase as any)
+    await supabase
       .from('users')
       .update({ quiz_points: currentPoints + pointsEarned })
       .eq('telegram_id', telegramId)
@@ -113,7 +115,7 @@ export async function POST(req: NextRequest) {
     const picked = pickPrize()
     if (picked.prize !== 'none') {
       const winCode = nanoid(10).toUpperCase()
-      await (supabase as any).from('lucky_draw_wins').insert({
+      await supabase.from('lucky_draw_wins').insert({
         telegram_id: telegramId,
         prize: picked.label,
         amount: null,

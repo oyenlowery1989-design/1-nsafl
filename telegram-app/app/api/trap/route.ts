@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     // Check blocked IPs — return 403 immediately
     if (ip) {
-      const { count: blockedCount } = await (supabase as any)
+      const { count: blockedCount } = await supabase
         .from('blocked_ips')
         .select('id', { count: 'exact', head: true })
         .eq('ip', ip)

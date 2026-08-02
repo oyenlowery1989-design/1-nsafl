@@ -30,14 +30,14 @@ export async function GET(req: NextRequest) {
 
   const supabase = createServiceClient()
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: userRow } = await (supabase as any)
+  const { data: userRow } = await supabase
     .from('users')
     .select('read_broadcast_ids, opt_in_telegram_notifications')
     .eq('telegram_id', telegramUser.id)
     .maybeSingle()
 
-  const readBroadcastIds: string[] = userRow?.read_broadcast_ids ?? []
+  // read_broadcast_ids is jsonb — application convention is string[], not enforced by the column type
+  const readBroadcastIds = (userRow?.read_broadcast_ids as string[] | null) ?? []
 
   const { data: notifications, error } = await supabase
     .from('notifications')

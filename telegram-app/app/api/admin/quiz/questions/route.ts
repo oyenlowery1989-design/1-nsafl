@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     return fail('Missing required fields', 'BAD_REQUEST', 400)
   }
   const supabase = createServiceClient()
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('quiz_questions')
     .insert({
       question: body.question,

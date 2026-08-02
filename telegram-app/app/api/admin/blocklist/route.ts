@@ -6,7 +6,7 @@ import { verifyAdminToken } from '@/app/api/admin/route'
 export async function GET(req: NextRequest) {
   if (!verifyAdminToken(req)) return fail('Forbidden', 'FORBIDDEN', 403)
   const supabase = createServiceClient()
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('blocked_ips')
     .select('*')
     .order('created_at', { ascending: false })
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   const { ip, reason } = await req.json().catch(() => ({}))
   if (!ip || typeof ip !== 'string') return fail('ip required', 'INVALID', 400)
   const supabase = createServiceClient()
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('blocked_ips')
     .upsert({ ip: ip.trim(), reason: reason ?? null }, { onConflict: 'ip' })
   if (error) return fail('DB error', 'DB_ERROR', 500)
@@ -31,7 +31,7 @@ export async function DELETE(req: NextRequest) {
   const { ip } = await req.json().catch(() => ({}))
   if (!ip) return fail('ip required', 'INVALID', 400)
   const supabase = createServiceClient()
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('blocked_ips')
     .delete()
     .eq('ip', ip)

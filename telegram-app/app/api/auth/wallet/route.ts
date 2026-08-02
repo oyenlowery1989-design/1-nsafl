@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   const supabase = createServiceClient()
 
   // 1. Upsert user (profile fields only — referred_by is set separately below)
-  const { data: userData } = await (supabase as any)
+  const { data: userData } = await supabase
     .from('users')
     .upsert(
       {

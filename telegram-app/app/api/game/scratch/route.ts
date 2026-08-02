@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 
   const winCode = `SCRATCH-${randomBytes(9).toString('base64url').toUpperCase()}`
   const isAssetPrize = !!prizeToAsset(prize.label)
-  const { data: inserted, error } = await (supabase as any)
+  const { data: inserted, error } = await supabase
     .from('lucky_draw_wins')
     .insert({
       telegram_id: user.id,

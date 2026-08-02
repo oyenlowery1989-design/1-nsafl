@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 
   const supabase = createServiceClient()
 
-  const { data: userRow } = await (supabase as any)
+  const { data: userRow } = await supabase
     .from('users')
     .select('favorite_team, favorite_wafl_team')
     .eq('telegram_id', telegramUser.id)
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   const updatePayload: Record<string, string | null> = { favorite_team: teamId }
   if (waflTeamId !== undefined) updatePayload.favorite_wafl_team = waflTeamId ?? null
 
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('users')
     .update(updatePayload)
     .eq('telegram_id', telegramUser.id)
