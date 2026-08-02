@@ -28,11 +28,11 @@ track AFL player homecoming campaigns, and participate in the community movement
 ## 📁 Project Structure
 
 ```
-html1 - nasfl-app/
+html examples/                         ← HTML reference designs (NOT html1 - nasfl-app/)
 ├── CLAUDE.md                          ← YOU ARE HERE (root)
 ├── docs/plans/
 │   └── 2026-03-09-nsafl-homecoming-hub.md
-├── Dashboard connect wallet.html      ← HTML reference designs
+├── Dashboard connect wallet.html
 ├── Connected.html
 ├── Dashboard.html
 ├── Stats.html
@@ -41,7 +41,7 @@ html1 - nasfl-app/
 └── telegram-app/                      ← Next.js app root
     ├── app/
     │   ├── layout.tsx                 ← Root layout (TelegramGuard, Google Fonts via <link>, Telegram SDK)
-    │   ├── page.tsx                   ← Phase state machine (onboarding→gate→connecting→celebration→team-select→dashboard)
+    │   ├── page.tsx                   ← 8-phase state machine (see "page.tsx Phase State Machine" below)
     │   ├── globals.css                ← Tailwind v4 @import, @theme tokens, .glass-card, animations
     │   ├── stats/page.tsx             ← Stats + Top Supporters (with donation causes) + Team Allegiance
     │   ├── profile/page.tsx           ← Profile + team badge + transactions (live from Horizon)
@@ -83,10 +83,10 @@ html1 - nasfl-app/
     │       ├── BalanceCard.tsx
     │       └── AflPulseSection.tsx
     ├── config/
-    │   ├── tiers.ts                   ← 5 tiers: Pre-Tier (0), T1 (100), T2 (501), T3 (1001), T4 (2501+)
+    │   ├── tiers.ts                   ← 11 tiers: pre-tier (0) + tier-1..tier-10 (100 → 100001+)
     │   └── afl.ts                     ← AFL_CLUBS (18) + WAFL_CLUBS (10) + ALL_CLUBS; AflClub has league field
     ├── hooks/
-    │   └── useStore.ts                ← Zustand store (stellarAddress, nsaflBalance, xlmBalance, favoriteTeam, hasSeenOnboarding)
+    │   └── useStore.ts                ← Zustand store (stellarAddress, tokenBalance, xlmBalance, favoriteTeam, hasSeenOnboarding)
     ├── lib/
     │   ├── constants.ts               ← PRIMARY_CUSTOM_ASSET_CODE, PRIMARY_CUSTOM_ASSET_LABEL, NAV_ITEMS
     │   ├── stellar.ts                 ← Horizon API helpers, isValidStellarAddress
@@ -95,7 +95,7 @@ html1 - nasfl-app/
     │   ├── supabase-server.ts         ← Server client (createServerSupabaseClient, createServiceClient)
     │   ├── api-response.ts            ← ok(), fail() helpers
     │   └── logger.ts
-    └── supabase/migrations/           ← 001-009 applied ✅
+    └── supabase/migrations/           ← 011, 013-025 in repo; 001-010/012 applied out-of-band (baseline dump pending owner `supabase login`)
 ```
 
 > **NOTE:** There is no `src/` directory. All app code lives directly under `telegram-app/` (app/, components/, hooks/, lib/, config/).
@@ -128,7 +128,7 @@ Violation of this rule has broken features before (leaderboard 500 error, Top Ho
 
 ## 🎨 Design System — CRITICAL
 
-**ALWAYS read the HTML reference files in `html1 - nasfl-app/` before building any screen.**
+**ALWAYS read the HTML reference files in `html examples/` before building any screen.**
 
 ### Key Design Tokens
 
@@ -212,10 +212,10 @@ Everything else (API routes, components, hooks, page structure) is brand-agnosti
 - `wallets` has NO `telegram_id` column — join path: `users(telegram_id) → wallets(user_id) → wallet_balances(wallet_id)`
 - `users` table has `favorite_team` column (text, nullable) — added in migration 009
 - `donations` table has `donation_type` (general/team/player) and `donation_target` columns
-- Tier IDs use hyphens: `pre-tier`, `tier-1`, `tier-2`, `tier-3`, `tier-4`
-- New tables (`funding_config`, `afl_bets`) — use `(supabase as any)` until types are regenerated
+- Tier IDs use hyphens: `pre-tier`, `tier-1` .. `tier-10` (11 tiers total, see `config/tiers.ts`)
 - Supabase project ID: `vrqlxguhfndrqiipisyi`
-- All migrations 001–009 applied ✅
+- Migration status: `011`, `013`–`025` exist as individual files in `telegram-app/supabase/migrations/`; `001`–`010` and `012` were applied directly to the project and never committed as files — a baseline schema dump (`000_baseline_schema.sql`) is intended to replace them but requires `supabase login` (interactive, not available headless) — ask the owner to run it and regenerate `lib/database.types.ts` via `npx supabase gen types typescript --project-id vrqlxguhfndrqiipisyi`
+- `(supabase as any)` casts remain widespread across `app/api/**` and `lib/gamePool.ts` — a byproduct of the missing types regen above, not a targeted table-by-table gap
 
 ---
 
@@ -271,14 +271,16 @@ All `/api/*` routes:
 
 ## 📄 page.tsx Phase State Machine
 
-`page.tsx` manages 6 phases: `'onboarding' | 'gate' | 'connecting' | 'celebration' | 'team-select' | 'dashboard'`
+`page.tsx` manages 8 phases: `'referral-welcome' | 'onboarding' | 'gate' | 'connecting' | 'no-trustline' | 'celebration' | 'team-select' | 'dashboard'`
 
+- Opens at `'referral-welcome'` if a referrer is present and the user hasn't seen onboarding yet (shown before `'onboarding'`)
 - Opens at `'onboarding'` if `!hasSeenOnboarding` (first-time users only)
-- Opens at `'dashboard'` if `isConnected && favoriteTeam` (Zustand persist)
-- Opens at `'team-select'` if `isConnected && !favoriteTeam` (enforces team pick)
-- On connect: validates address → POST `/api/auth/wallet` → GET `/api/stellar/balance` → `'celebration'`
+- Opens at `'dashboard'` if `isConnected && (favoriteTeam || BRANDING.teamSelection === 'off')` (Zustand persist) — `BRANDING.teamSelection` lets a clone disable the team-pick step entirely
+- Opens at `'team-select'` if `isConnected && !favoriteTeam` and team selection is on
+- On connect: validates address → POST `/api/auth/wallet` → GET `/api/stellar/balance`; if the account lacks the primary asset trustline, goes to `'no-trustline'` instead of `'celebration'`
+- `'no-trustline'` shows trustline setup help, then returns to `'gate'` to retry
 - Auth response includes `favoriteTeam` for returning users (restores from DB)
-- Celebration → "Enter Dashboard" → goes to `'team-select'` if no team, else `'dashboard'`
+- Celebration → "Enter Dashboard" → goes to `'team-select'` if no team and team selection is on, else `'dashboard'`
 - Team select renders `<TeamSelectScreen>` (2-step: league picker → club grid) → POSTs to `/api/user/team` → saves to Zustand → `'dashboard'`
 - Dashboard renders `<DashboardView>` + `<BottomNav>`
 
@@ -325,8 +327,11 @@ npm run lint       # eslint
 - **Donate page:** `/donate` — standalone form; ONLY place with the donation form
 - **Leaderboard:** Redesigned — podium, rank hero card, inline climb nudge, invite+donate 2-col grid
 - **WAFL fixtures:** Added to Clubs page
-- **Games Hub** (`/game`): Lucky Draw (wheel), Slot Machine (3-reel), Scratch Card (3×3 grid) — all live
+- **Games Hub** (`/game`): Lucky Draw (wheel), Slot Machine (3-reel), Scratch Card (3×3 grid) — server-rolled prizes, all live; Quiz is a separate feature (`app/api/quiz/`), not part of the Games Hub
 - **Trustlines page** (`/trustlines`): shows trustline status for all prize assets
+- **Admin panel** (`app/admin/`): 15 pages, header-token auth (`x-admin-token` vs `ADMIN_SECRET_TOKEN`) — overview, users, donations, purchases, wins, quiz, broadcast, referrals, access, activity, trustline, game, settings
+- **Notifications:** in-app feed (`/api/notifications`) separate from Telegram bot DMs
+- **Donation verification:** submitted tx hashes checked against Horizon (source/destination/asset/amount) before marking `verified`
 - **Vercel deployed** ✅ — app.nsafl.com is live
 
 ---
@@ -472,6 +477,7 @@ npm run lint       # eslint
 - **Auto-send prizes:** all 3 games call `sendPrizePayment` + `notifyPrizeSent` on asset wins
 - **Free Spin / no-value prizes:** `prize === 'Free Spin'` → no DB record, no spin consumed (Lucky Draw + Slot only)
 - **API routes:** `game/win/route.ts` (Lucky Draw), `game/slot/route.ts` (Slot), `game/scratch/route.ts` (Scratch)
+- **Server-rolled prizes:** `rollPrize(source)` in `lib/gamePool.ts` picks the prize server-side from `PRIZE_TABLES[GameSource]` — the client never chooses or sends a prize, it only requests a spin and renders whatever the server returns; `GAME_LIMITS` (daily caps per source) also lives there
 - **DEV_BYPASS loader fix:** `handleEnterSlot/Scratch` must guard `setStatusReady(false)` with `if (!DEV_BYPASS)` — otherwise spinner shows forever in dev since fetch returns null without resetting
 - **Slot Machine reel refs:** NEVER use `[useRef(), useRef(), useRef()]` — React hook violation. Use named individual refs stored in a stable `useRef([ref0, ref1, ref2])` container
 - **Slot Machine init flash:** always set `transform: translateY(-768px)` (INIT_Y) inline in JSX, NOT only in `useEffect` — avoids flash on first render
@@ -493,6 +499,32 @@ npm run lint       # eslint
 - `next.config.ts` remotePatterns must include `upload.wikimedia.org` for WAFL logos
 - `TeamSelectScreen` uses 2-step flow: `LeaguePicker` (AFL/WAFL tabs) → `ClubPicker` (club grid)
 - Clubs page Fan Hub has AFL/WAFL tabs showing `{N} teams` count; tab switches call `window.scrollTo({ top: 0 })` to reset scroll
+
+### Admin Panel (`app/admin/`)
+
+- 15 pages: `page.tsx` (overview dashboard) + `access/`, `activity/`, `broadcast/`, `donations/`, `game/`, `overview/`, `purchases/`, `quiz/`, `referrals/`, `settings/`, `trustline/`, `users/`, `usersearch/`, `wins/`
+- Auth is a single shared secret, not per-admin accounts: `verifyAdminToken(req)` in `app/api/admin/route.ts` reads `x-admin-token` header only (never a query param), compares against `ADMIN_SECRET_TOKEN` via `crypto.timingSafeEqual` on hashed values, and rate-limits at 30/min per IP — every `app/api/admin/**` route calls this first
+- `NEXT_PUBLIC_ADMIN_TELEGRAM_USERNAMES` gates which Telegram users see the admin nav entry client-side; the real enforcement is server-side `verifyAdminToken`
+
+### Quiz Game
+
+- Separate from the 3 Games Hub mini-games — routes under `app/api/quiz/` (`session`, `answer`, `complete`, `status`) and admin CRUD under `app/api/admin/quiz/` (`quiz/route.ts`, `quiz/questions/route.ts`, `quiz/questions/[id]/route.ts`)
+- Questions and sessions/points live in migrations `016_quiz_questions.sql`, `017_quiz_sessions.sql`, `018_quiz_points.sql`
+
+### Notifications
+
+- `app/api/notifications/route.ts` (list) + `app/api/notifications/read/route.ts` (mark read) + `app/api/notifications/preferences/` — backed by migration `025_notification_reads.sql`
+- Distinct from the per-game "prize sent" Telegram bot DM (`notifyPrizeSent`) — this is an in-app notification feed, not a bot message
+
+### Donation Verification
+
+- `app/api/donations/route.ts` POST verifies a submitted `stellar_tx_hash` against Horizon directly (`/transactions/{hash}/operations`) before marking a donation `verified: true` — checks the payment operation's source matches the caller's own resolved wallet address, destination matches `SUPPORTER_WALLET`, asset matches the primary asset (code + issuer) or native XLM, and amount is at least the claimed amount
+- The source-address check specifically prevents claiming credit for a stranger's public on-chain payment by submitting its tx hash
+- Unverified/unmatched donations are still recorded but excluded from Top Supporters until verified
+
+### Wallet Data Access
+
+- Client code must NOT query Supabase tables directly for wallet data — use `GET /api/user/wallet-live` (`app/api/user/wallet-live/route.ts`), which resolves the caller's own wallet server-side from `x-telegram-init-data` and returns live balance; this replaced direct browser table reads
 
 ---
 
