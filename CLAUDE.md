@@ -95,7 +95,7 @@ html examples/                         ← HTML reference designs (NOT html1 - n
     │   ├── supabase-server.ts         ← Server client (createServerSupabaseClient, createServiceClient)
     │   ├── api-response.ts            ← ok(), fail() helpers
     │   └── logger.ts
-    └── supabase/migrations/           ← 011, 013-025 in repo; 001-010/012 applied out-of-band (baseline dump pending owner `supabase login`)
+    └── supabase/migrations/           ← 000_baseline_schema.sql + 011, 013-025
 ```
 
 > **NOTE:** There is no `src/` directory. All app code lives directly under `telegram-app/` (app/, components/, hooks/, lib/, config/).
@@ -214,7 +214,7 @@ Everything else (API routes, components, hooks, page structure) is brand-agnosti
 - `donations` table has `donation_type` (general/team/player) and `donation_target` columns
 - Tier IDs use hyphens: `pre-tier`, `tier-1` .. `tier-10` (11 tiers total, see `config/tiers.ts`)
 - Supabase project ID: `vrqlxguhfndrqiipisyi`
-- Migration status: `011`, `013`–`025` exist as individual files in `telegram-app/supabase/migrations/`; `001`–`010` and `012` were applied directly to the project and never committed as files — a baseline schema dump (`000_baseline_schema.sql`) is intended to replace them but requires `supabase login` (interactive, not available headless) — ask the owner to run it and regenerate `lib/database.types.ts` via `npx supabase gen types typescript --project-id vrqlxguhfndrqiipisyi`
+- Migration status: `001`–`010` and `012` were applied directly to the project and never committed as individual files; `000_baseline_schema.sql` (full `public` schema dump via `supabase db dump --schema public`) now covers that gap, followed by `011`, `013`–`025` as individual files — `lib/database.types.ts` is regenerated via `npx supabase gen types typescript --project-id vrqlxguhfndrqiipisyi`
 - `(supabase as any)` casts remain widespread across `app/api/**` and `lib/gamePool.ts` — a byproduct of the missing types regen above, not a targeted table-by-table gap
 
 ---
