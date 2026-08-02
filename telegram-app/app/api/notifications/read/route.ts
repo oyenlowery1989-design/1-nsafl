@@ -49,10 +49,13 @@ export async function POST(req: NextRequest) {
       .eq('telegram_id', telegramUser.id)
       .maybeSingle()
 
-    // read_broadcast_ids is jsonb — application convention is string[], not enforced by the column type
+    // read_broadcast_ids is jsonb — application convention is string[], not enforced by the column type.
+    // Prune to ids that still exist among current broadcasts so this can't grow unbounded —
+    // a read marker for a broadcast that's gone is dead weight, not history worth keeping.
     const existing = (userRow?.read_broadcast_ids as string[] | null) ?? []
+    const liveIds = new Set(broadcasts.map((b) => String(b.id)))
     const merged = Array.from(
-      new Set([...existing, ...broadcasts.map((b) => String(b.id))])
+      new Set([...existing.filter((id) => liveIds.has(id)), ...liveIds])
     )
 
     await supabase
