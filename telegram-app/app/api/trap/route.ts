@@ -16,14 +16,21 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServiceClient()
 
-    // Deduplicate: skip if same IP already recorded in the last 60 minutes
+    // Check blocked IPs — return 403 immediately
     if (ip) {
-      const since = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+      const { count: blockedCount } = await (supabase as any)
+        .from('blocked_ips')
+        .select('id', { count: 'exact', head: true })
+        .eq('ip', ip)
+      if ((blockedCount ?? 0) > 0) return new Response(null, { status: 403 })
+    }
+
+    // Deduplicate: skip if this IP has ever been recorded before
+    if (ip) {
       const { count } = await supabase
         .from('access_attempts')
         .select('id', { count: 'exact', head: true })
         .eq('ip', ip)
-        .gte('created_at', since)
       if ((count ?? 0) > 0) return new Response(null, { status: 200 })
     }
 

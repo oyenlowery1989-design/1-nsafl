@@ -1,382 +1,465 @@
-'use client'
-import { useEffect, useRef, useCallback, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useTelegramBack } from '@/hooks/useTelegramBack'
-import { haptic } from '@/lib/telegram-ui'
-import { getTelegramInitData, openTelegramLink, buildBotStartLink } from '@/lib/telegram'
-import { useWalletStore } from '@/hooks/useStore'
-import { getTierForBalance } from '@/config/tiers'
-import { PRIMARY_CUSTOM_ASSET_CODE, PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
-import { getTotalPoints, getPointsFromTier } from '@/lib/points'
-import WalletGuard from '@/components/WalletGuard'
-import BottomNav from '@/components/BottomNav'
-import ModePicker, { type QuizMode } from '@/components/quiz/ModePicker'
-import QuizSession from '@/components/quiz/QuizSession'
-import ResultScreen from '@/components/quiz/ResultScreen'
+"use client";
+import { useEffect, useRef, useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useTelegramBack } from "@/hooks/useTelegramBack";
+import { haptic } from "@/lib/telegram-ui";
+import { getTelegramInitData } from "@/lib/telegram";
+import { useWalletStore } from "@/hooks/useStore";
+import { getTierForBalance } from "@/config/tiers";
+import {
+  PRIMARY_CUSTOM_ASSET_CODE,
+  PRIMARY_CUSTOM_ASSET_LABEL,
+} from "@/lib/constants";
+import WalletGuard from "@/components/WalletGuard";
+import TrustlineChecker from "@/components/TrustlineChecker";
+import BottomNav from "@/components/BottomNav";
+import ModePicker, { type QuizMode } from "@/components/quiz/ModePicker";
+import QuizSession from "@/components/quiz/QuizSession";
+import ResultScreen from "@/components/quiz/ResultScreen";
+import SlotMachine from "@/components/SlotMachine";
+import ScratchCard from "@/components/ScratchCard";
 
-// ── Physics ───────────────────────────────────────────────────────────────────
-const GRAVITY = 0.22
-const BOUNCE = 0.52
-const FRICTION = 0.88
-const SPIN_DECAY = 0.96
-const TRAIL_LENGTH = 8
-const KICK_RADIUS = 160
-const PB_KEY = 'nsafl_game_pb'
+const DEV_BYPASS = process.env.NEXT_PUBLIC_DEV_BYPASS === "true";
 
-interface Ball {
-  x: number; y: number
-  vx: number; vy: number
-  spin: number; angle: number
-  size: number; opacity: number
-  trail: { x: number; y: number }[]
-  dead: boolean
-}
-
-interface Particle {
-  x: number; y: number
-  vx: number; vy: number
-  life: number // 0–1 countdown
-  size: number
-}
-
-function makeBall(x: number, y: number, kicked = false): Ball {
-  const size = 58 + Math.random() * 20
-  const speed = kicked ? 14 + Math.random() * 6 : 5 + Math.random() * 6
-  const dir = kicked
-    ? -Math.PI / 2 + (Math.random() - 0.5) * 1.0
-    : Math.random() * Math.PI * 2
-  return {
-    x, y,
-    vx: Math.cos(dir) * speed,
-    vy: Math.sin(dir) * speed,
-    spin: 0,
-    angle: Math.random() * 360,
-    size, opacity: 0.9 + Math.random() * 0.1,
-    trail: [],
-    dead: false,
-  }
-}
-
-function randomBall(w: number, h: number): Ball {
-  return makeBall(
-    w * 0.25 + Math.random() * w * 0.5,
-    h * 0.15 + Math.random() * h * 0.4,
-    false
-  )
-}
-
-// ── Community stats shape ─────────────────────────────────────────────────────
-interface GameStats {
-  totalSessions: number
-  totalKicks: number
-  totalBalls: number
-  highScore: number
-  uniquePlayers: number
-  leaderboard: { rank: number; name: string; kicks: number }[]
-}
-
-type GameView = 'hub' | 'playing' | 'lucky' | 'quiz-pick' | 'quiz' | 'quiz-result'
-const LUCKY_BALLS_REQUIRED = 3
-const DEV_BYPASS = process.env.NEXT_PUBLIC_DEV_BYPASS === 'true'
+type GameView =
+  | "hub"
+  | "lucky"
+  | "slot"
+  | "scratch"
+  | "quiz-pick"
+  | "quiz"
+  | "quiz-result";
 
 // ── Lucky Draw ────────────────────────────────────────────────────────────────
 interface Prize {
-  label: string
-  emoji: string
-  color: string
-  weight: number
-  isWNSAFL?: boolean
-  isWXLM?: boolean
-  isWXRP?: boolean
-  isWUSDC?: boolean
-  amount?: number
+  label: string;
+  emoji: string;
+  color: string;
+  weight: number;
+  isWNSAFL?: boolean;
+  isWXLM?: boolean;
+  isWXRP?: boolean;
+  isWUSDC?: boolean;
+  amount?: number;
 }
 
 function isAssetPrize(p: Prize): boolean {
-  return !!(p.isWNSAFL || p.isWXLM || p.isWXRP || p.isWUSDC)
+  return !!(p.isWNSAFL || p.isWXLM || p.isWXRP || p.isWUSDC);
 }
 
 function getAssetSymbol(p: Prize): string {
-  if (p.isWXLM) return 'wXLM'
-  if (p.isWNSAFL) return 'wNSAFL'
-  if (p.isWXRP) return 'wXRP'
-  return 'wUSDC'
+  if (p.isWXLM) return "wXLM";
+  if (p.isWNSAFL) return "wNSAFL";
+  if (p.isWXRP) return "wXRP";
+  return "wUSDC";
 }
 
-// Weighted prize table — asset prizes ~17% total, non-asset fills the rest
-const PRIZES: Prize[] = [
-  { label: '10 wXLM',   emoji: '💎', color: '#0a3d62', weight: 10,  isWXLM: true,   amount: 10   },
-  { label: '5 wXLM',    emoji: '✨', color: '#1e6091', weight: 10,  isWXLM: true,   amount: 5    },
-  { label: '2 wXLM',    emoji: '🌟', color: '#1a4a6a', weight: 10,  isWXLM: true,   amount: 2    },
-  { label: '500 wNSAFL',emoji: '🏆', color: '#b7791f', weight: 10,  isWNSAFL: true, amount: 500  },
-  { label: '250 wNSAFL',emoji: '🥇', color: '#D4AF37', weight: 20,  isWNSAFL: true, amount: 250  },
-  { label: '100 wNSAFL',emoji: '🥈', color: '#c8a030', weight: 30,  isWNSAFL: true, amount: 100  },
-  { label: '5 wXRP',    emoji: '🔷', color: '#1a4060', weight: 15,  isWXRP: true,   amount: 5    },
-  { label: '10 wUSDC',  emoji: '💵', color: '#0a4a2a', weight: 15,  isWUSDC: true,  amount: 10   },
-  { label: '+1 Ball',   emoji: '🎯', color: '#1a5c2e', weight: 145 },
-  { label: 'Free Spin', emoji: '🔄', color: '#1a4a8a', weight: 145 },
-  { label: 'Top Badge', emoji: '⭐', color: '#4a1070', weight: 145 },
-  { label: 'Try Again', emoji: '😔', color: '#2d3748', weight: 145 },
-  { label: 'Better Luck',emoji:'💨', color: '#1a202c', weight: 145 },
-]
+// Client-side wheel rendering ONLY (labels/colors/emoji) — the server (lib/gamePool.ts
+// PRIZE_TABLES.lucky_draw) rolls the prize and returns its index. This array's order MUST
+// match PRIZE_TABLES.lucky_draw exactly so `prizeIndex` from the server points at the right segment.
+export const PRIZES: Prize[] = [
+  {
+    label: "100 wXLM",
+    emoji: "💎",
+    color: "#0a3d62",
+    weight: 15,
+    isWXLM: true,
+    amount: 100,
+  },
+  {
+    label: "50 wXLM",
+    emoji: "✨",
+    color: "#1e6091",
+    weight: 20,
+    isWXLM: true,
+    amount: 50,
+  },
+  {
+    label: "20 wXLM",
+    emoji: "🌟",
+    color: "#1a4a6a",
+    weight: 30,
+    isWXLM: true,
+    amount: 20,
+  },
+  {
+    label: "5000 wNSAFL",
+    emoji: "🏆",
+    color: "#b7791f",
+    weight: 10,
+    isWNSAFL: true,
+    amount: 5000,
+  },
+  {
+    label: "2500 wNSAFL",
+    emoji: "🥇",
+    color: "#D4AF37",
+    weight: 25,
+    isWNSAFL: true,
+    amount: 2500,
+  },
+  {
+    label: "1000 wNSAFL",
+    emoji: "🥈",
+    color: "#c8a030",
+    weight: 50,
+    isWNSAFL: true,
+    amount: 1000,
+  },
+  {
+    label: "50 wXRP",
+    emoji: "🔷",
+    color: "#1a4060",
+    weight: 50,
+    isWXRP: true,
+    amount: 50,
+  },
+  {
+    label: "100 wUSDC",
+    emoji: "💵",
+    color: "#0a4a2a",
+    weight: 50,
+    isWUSDC: true,
+    amount: 100,
+  },
+  { label: "+2 Spins", emoji: "🎱", color: "#145c3a", weight: 50 },
+  { label: "Free Spin", emoji: "🔄", color: "#1a4a8a", weight: 250 },
+  { label: "Better Luck", emoji: "💨", color: "#1a202c", weight: 450 },
+];
 
-// weighted random pick
-function pickPrize(): number {
-  const total = PRIZES.reduce((s, p) => s + p.weight, 0)
-  let r = Math.random() * total
-  for (let i = 0; i < PRIZES.length; i++) {
-    r -= PRIZES[i].weight
-    if (r <= 0) return i
-  }
-  return PRIZES.length - 1
+interface SpinResult {
+  prize: string;
+  amount: number | null;
+  prizeIndex: number;
+  winCode: string | null;
+  freeSpin?: boolean;
+  autoSent: boolean;
+  txHash?: string;
+  paymentError?: string;
+  lobstrDeeplink?: string;
 }
 
-function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon, initialCanSpin, initialSpinsRemaining, initialDailyLimit }: { onBack: () => void; stellarAddress: string | null; totalBalls: number; onBallWon: () => void; initialCanSpin: boolean; initialSpinsRemaining: number; initialDailyLimit: number }) {
-  const wrapRef = useRef<HTMLDivElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const rafRef = useRef<number>(0)
-  const angleRef = useRef(0)
-  const targetAngleRef = useRef(0)
-  const targetPrizeIdxRef = useRef(0)
-  const winSentRef = useRef(false) // prevents double-save if effect re-fires
-  const segCount = PRIZES.length
-  const segAngle = (Math.PI * 2) / segCount
+function LuckyDraw({
+  onBack,
+  stellarAddress,
+  onSpinComplete,
+  initialCanSpin,
+  initialSpinsRemaining,
+  initialDailyLimit,
+  initialBonusSpins,
+  tierLabel,
+}: {
+  onBack: () => void;
+  stellarAddress: string | null;
+  onSpinComplete: (
+    onFresh: (can: boolean, remaining: number, bonus: number) => void,
+  ) => Promise<void>;
+  initialCanSpin: boolean;
+  initialSpinsRemaining: number;
+  initialDailyLimit: number;
+  initialBonusSpins: number;
+  tierLabel: string;
+}) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
+  const angleRef = useRef(0);
+  const targetAngleRef = useRef(0);
+  const targetPrizeIdxRef = useRef(0);
+  const winSentRef = useRef(false);
+  const serverResultRef = useRef<SpinResult | null>(null);
+  const segCount = PRIZES.length;
+  const segAngle = (Math.PI * 2) / segCount;
 
-  const [spinning, setSpinning] = useState(false)
-  const [result, setResult] = useState<Prize | null>(null)
-  const [freeSpin, setFreeSpin] = useState(false)
-  const [showConfetti, setShowConfetti] = useState(false)
-  const [winCode, setWinCode] = useState<string | null>(null)
-  const [recentWins, setRecentWins] = useState<{ telegram_id: number; prize: string; created_at: string }[]>([])
+  const [spinning, setSpinning] = useState(false);
+  const [result, setResult] = useState<Prize | null>(null);
+  const [freeSpin, setFreeSpin] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [winCode, setWinCode] = useState<string | null>(null);
+  const [spinError, setSpinError] = useState<string | null>(null);
+  const [recentWins, setRecentWins] = useState<
+    { display: string; prize: string; created_at: string }[]
+  >([]);
 
   useEffect(() => {
-    fetch('/api/game/wins')
-      .then(r => r.json())
-      .then(j => { if (j.success) setRecentWins(j.data) })
-      .catch(() => null)
-  }, [])
+    fetch("/api/game/wins")
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.success) setRecentWins(j.data);
+      })
+      .catch(() => null);
+  }, []);
 
-  // ── Spins-per-day (initialised from parent, which already fetched) ──────────
-  const [canSpin, setCanSpin] = useState(initialCanSpin)
-  const [spinsRemaining, setSpinsRemaining] = useState(initialSpinsRemaining)
-  const [dailySpinLimit] = useState(initialDailyLimit)
-  const spinStatusLoaded = true
+  // Spin state — server is authoritative; props reflect latest server fetch
+  const [canSpin, setCanSpin] = useState(initialCanSpin);
+  const [spinsRemaining, setSpinsRemaining] = useState(initialSpinsRemaining);
+  const [dailySpinLimit] = useState(initialDailyLimit);
+  const [bonusSpinsLeft, setBonusSpinsLeft] = useState(initialBonusSpins);
+  const [processing, setProcessing] = useState(false); // true while POSTing + refetching
 
-  // ── Draw ───────────────────────────────────────────────────────────────────
-  const drawWheel = useCallback((angle: number) => {
-    const canvas = canvasRef.current
-    if (!canvas || canvas.width === 0) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    const W = canvas.width, H = canvas.height
-    const cx = W / 2, cy = H / 2
-    const r = Math.min(W, H) * 0.42
+  const usingBonus = spinsRemaining === 0 && bonusSpinsLeft > 0;
 
-    ctx.clearRect(0, 0, W, H)
+  // ── Canvas wheel draw ─────────────────────────────────────────────────────
+  const drawWheel = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const size = Math.min(wrapRef.current?.clientWidth ?? 340, 340);
+    canvas.width = size;
+    canvas.height = size;
+    const cx = size / 2,
+      cy = size / 2,
+      r = size / 2 - 8;
 
-    // outer shadow ring
-    ctx.beginPath()
-    ctx.arc(cx, cy, r + 6, 0, Math.PI * 2)
-    ctx.fillStyle = 'rgba(212,175,55,0.15)'
-    ctx.fill()
+    ctx.clearRect(0, 0, size, size);
 
-    for (let i = 0; i < segCount; i++) {
-      const start = angle + i * segAngle - Math.PI / 2
-      const end = start + segAngle
-      const prize = PRIZES[i]
-      const midAngle = start + segAngle / 2
+    // rim
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 6, 0, Math.PI * 2);
+    const rimGrad = ctx.createLinearGradient(0, 0, size, size);
+    rimGrad.addColorStop(0, "#f0d060");
+    rimGrad.addColorStop(0.5, "#D4AF37");
+    rimGrad.addColorStop(1, "#8a6520");
+    ctx.fillStyle = rimGrad;
+    ctx.fill();
 
-      // segment fill with subtle radial gradient
-      const grad = ctx.createRadialGradient(cx, cy, r * 0.2, cx, cy, r)
-      grad.addColorStop(0, prize.color + 'dd')
-      grad.addColorStop(1, prize.color + '99')
+    PRIZES.forEach((prize, i) => {
+      const start = angleRef.current + i * segAngle;
+      const end = start + segAngle;
 
-      ctx.beginPath()
-      ctx.moveTo(cx, cy)
-      ctx.arc(cx, cy, r, start, end)
-      ctx.closePath()
-      ctx.fillStyle = grad
-      ctx.fill()
-      ctx.strokeStyle = 'rgba(0,0,0,0.6)'
-      ctx.lineWidth = 1.5
-      ctx.stroke()
+      const grad = ctx.createRadialGradient(cx, cy, r * 0.3, cx, cy, r);
+      const hex = prize.color;
+      grad.addColorStop(0, hex + "cc");
+      grad.addColorStop(1, hex + "ff");
 
-      // text along segment midpoint
-      ctx.save()
-      ctx.translate(cx, cy)
-      ctx.rotate(midAngle)
-      // emoji
-      ctx.font = `${r * 0.13}px serif`
-      ctx.textAlign = 'center'
-      ctx.fillText(prize.emoji, r * 0.72, r * 0.06)
-      // label
-      ctx.fillStyle = 'rgba(255,255,255,0.95)'
-      ctx.font = `bold ${r * 0.085}px Inter,sans-serif`
-      ctx.shadowColor = 'rgba(0,0,0,0.8)'
-      ctx.shadowBlur = 4
-      ctx.fillText(prize.label, r * 0.72, -r * 0.07)
-      ctx.shadowBlur = 0
-      ctx.restore()
-    }
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, r, start, end);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
 
-    // gold outer ring
-    ctx.beginPath()
-    ctx.arc(cx, cy, r, 0, Math.PI * 2)
-    ctx.strokeStyle = '#D4AF37'
-    ctx.lineWidth = 6
-    ctx.stroke()
+      // emoji + label text
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(start + segAngle / 2);
+      ctx.textAlign = "right";
 
-    // inner divider ring
-    ctx.beginPath()
-    ctx.arc(cx, cy, r * 0.18, 0, Math.PI * 2)
-    ctx.fillStyle = '#0A0E1A'
-    ctx.fill()
-    ctx.strokeStyle = '#D4AF37'
-    ctx.lineWidth = 3
-    ctx.stroke()
+      // emoji (outer)
+      ctx.font = `${Math.max(12, size * 0.038)}px serif`;
+      ctx.fillText(prize.emoji, r - 8, -6);
 
-    // hub dot
-    ctx.beginPath()
-    ctx.arc(cx, cy, r * 0.07, 0, Math.PI * 2)
-    ctx.fillStyle = '#D4AF37'
-    ctx.fill()
+      // prize label (inner, smaller)
+      const fontSize = Math.max(8, size * 0.028);
+      ctx.font = `bold ${fontSize}px Inter, sans-serif`;
+      ctx.fillStyle = "rgba(255,255,255,0.92)";
+      ctx.shadowColor = "rgba(0,0,0,0.8)";
+      ctx.shadowBlur = 3;
+      ctx.fillText(prize.label, r - 8, 8);
+      ctx.shadowBlur = 0;
 
-    // pointer triangle at top (outside ring)
-    const pSize = Math.max(14, r * 0.08)
-    ctx.beginPath()
-    ctx.moveTo(cx, cy - r + 2)
-    ctx.lineTo(cx - pSize, cy - r - pSize * 1.8)
-    ctx.lineTo(cx + pSize, cy - r - pSize * 1.8)
-    ctx.closePath()
-    ctx.fillStyle = '#D4AF37'
-    ctx.shadowColor = 'rgba(212,175,55,0.8)'
-    ctx.shadowBlur = 10
-    ctx.fill()
-    ctx.shadowBlur = 0
-    ctx.strokeStyle = '#0A0E1A'
-    ctx.lineWidth = 2
-    ctx.stroke()
-  }, [segAngle, segCount])
+      ctx.restore();
+    });
 
-  // size canvas once the wrapper has dimensions
+    // centre hub
+    ctx.beginPath();
+    ctx.arc(cx, cy, 22, 0, Math.PI * 2);
+    const hubGrad = ctx.createRadialGradient(cx - 4, cy - 4, 2, cx, cy, 22);
+    hubGrad.addColorStop(0, "#f0d060");
+    hubGrad.addColorStop(1, "#8a6520");
+    ctx.fillStyle = hubGrad;
+    ctx.fill();
+    ctx.strokeStyle = "#0A0E1A";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // pointer triangle at top
+    const px = cx,
+      py = cy - r - 8;
+    ctx.beginPath();
+    ctx.moveTo(px, py + 18);
+    ctx.lineTo(px - 9, py);
+    ctx.lineTo(px + 9, py);
+    ctx.closePath();
+    ctx.fillStyle = "#D4AF37";
+    ctx.fill();
+  }, [segAngle]);
+
   useEffect(() => {
-    const wrap = wrapRef.current
-    if (!wrap) return
-    const ro = new ResizeObserver(() => {
-      const canvas = canvasRef.current
-      if (!canvas) return
-      const sz = Math.min(wrap.clientWidth, wrap.clientHeight, 420)
-      canvas.width = sz
-      canvas.height = sz
-      drawWheel(angleRef.current)
-    })
-    ro.observe(wrap)
-    return () => ro.disconnect()
-  }, [drawWheel])
+    drawWheel();
+  }, [drawWheel]);
 
-  // smooth spin via ease-out cubic interpolation
-  const spinStartAngleRef = useRef(0)
-  const spinStartTimeRef = useRef(0)
-  const SPIN_DURATION_MS = 3800
-
-  // RAF loop
+  // spin animation
   useEffect(() => {
-    let done = false
-    function tick() {
-      if (done) return
-      if (spinning) {
-        const elapsed = Date.now() - spinStartTimeRef.current
-        const t = Math.min(elapsed / SPIN_DURATION_MS, 1)
-        // ease-out cubic: starts fast, decelerates smoothly to stop
-        const eased = 1 - Math.pow(1 - t, 3)
-        angleRef.current = spinStartAngleRef.current + eased * (targetAngleRef.current - spinStartAngleRef.current)
-        if (t >= 1) {
-          angleRef.current = targetAngleRef.current
-          setSpinning(false)
-          setResult(PRIZES[targetPrizeIdxRef.current])
-        }
+    if (!spinning) return;
+    const startAngle = angleRef.current;
+    const startTime = Date.now();
+    const duration = 3800;
+
+    function step() {
+      const elapsed = Date.now() - startTime;
+      const t = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      angleRef.current =
+        startAngle + eased * (targetAngleRef.current - startAngle);
+      drawWheel();
+      if (t < 1) {
+        rafRef.current = requestAnimationFrame(step);
+      } else {
+        angleRef.current = targetAngleRef.current;
+        drawWheel();
+        setSpinning(false);
+        setResult(PRIZES[targetPrizeIdxRef.current]);
       }
-      drawWheel(angleRef.current)
-      rafRef.current = requestAnimationFrame(tick)
     }
-    rafRef.current = requestAnimationFrame(tick)
-    return () => { done = true; cancelAnimationFrame(rafRef.current) }
-  }, [spinning, drawWheel])
+    rafRef.current = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [spinning, drawWheel]);
 
-  // spin trigger
-  const handleSpin = useCallback(() => {
-    if (!canSpin || spinning) return
-    const idx = pickPrize()
-    targetPrizeIdxRef.current = idx
-    // Pointer is at top. Segment i is centered at: angle + i*segAngle - π/2 + segAngle/2
-    // For segment idx center to hit top (-π/2), we need:
-    //   targetAngle ≡ -(idx + 0.5) * segAngle  (mod 2π)
-    const PI2 = Math.PI * 2
-    const desiredMod = ((-(idx + 0.5) * segAngle) % PI2 + PI2) % PI2
-    const currentMod = ((angleRef.current % PI2) + PI2) % PI2
-    const delta = ((desiredMod - currentMod) + PI2) % PI2
-    const fullRotations = (6 + Math.floor(Math.random() * 4)) * PI2
-    spinStartAngleRef.current = angleRef.current
-    targetAngleRef.current = angleRef.current + fullRotations + delta
-    spinStartTimeRef.current = Date.now()
-    setResult(null)
-    winSentRef.current = false
-    setSpinning(true)
-    haptic.medium()
-    if (!freeSpin) {
-      const next = spinsRemaining - 1
-      setSpinsRemaining(next)
-      setCanSpin(next > 0)
+  const handleSpin = useCallback(async () => {
+    if (spinning || processing) return;
+    if (!canSpin && !freeSpin) return;
+
+    setSpinError(null);
+    setProcessing(true);
+    let data: SpinResult | null = null;
+    try {
+      const res = await fetch("/api/game/win", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-telegram-init-data": getTelegramInitData(),
+        },
+        body: JSON.stringify({}),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        setProcessing(false);
+        if (json.code === "DAILY_LIMIT" || json.code === "RATE_LIMITED") {
+          setCanSpin(false);
+          setSpinsRemaining(0);
+        } else {
+          setSpinError(json.error ?? "Something went wrong — try again.");
+        }
+        return;
+      }
+      data = json.data;
+    } catch {
+      setProcessing(false);
+      setSpinError("Network error — try again.");
+      return;
     }
-    setFreeSpin(false)
-  }, [canSpin, spinning, freeSpin, segAngle, spinsRemaining])
+    setProcessing(false);
+    if (!data) return;
+
+    winSentRef.current = false;
+    setResult(null);
+    setWinCode(null);
+    setAutoSent(false);
+    setAutoSentTxHash(null);
+    setFreeSpin(false);
+    serverResultRef.current = data;
+
+    const idx = data.prizeIndex;
+    targetPrizeIdxRef.current = idx;
+    const fullRotations = (5 + Math.floor(Math.random() * 4)) * Math.PI * 2;
+    // Place winning segment centre under the pointer (top = -π/2 in canvas coords)
+    const targetOffset = -(idx * segAngle + segAngle / 2) - Math.PI / 2;
+    targetAngleRef.current =
+      angleRef.current +
+      fullRotations +
+      targetOffset -
+      (angleRef.current % (Math.PI * 2));
+    setSpinning(true);
+    haptic.medium();
+  }, [canSpin, spinning, processing, freeSpin, segAngle]);
 
   // result effects
   useEffect(() => {
-    if (!result) return
-    // Guard against double-fire (stellarAddress update can re-trigger)
-    if (winSentRef.current) return
-    winSentRef.current = true
-    // Only save asset wins to DB — skip Free Spin, +1 Ball, and try-again prizes
-    if (isAssetPrize(result)) {
-      const tag = `${result.amount}${getAssetSymbol(result)}`
-      const code = `SPIN-${tag}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`
-      setWinCode(code)
-      fetch('/api/game/win', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': getTelegramInitData() },
-        body: JSON.stringify({ prize: result.label, amount: result.amount ?? null, code, wallet: stellarAddress }),
-        keepalive: true,
-      }).catch(() => null)
+    if (!result) return;
+    if (winSentRef.current) return;
+    winSentRef.current = true;
+    setClaimed(false); // reset claim button for new win
+
+    if (result.label === "Free Spin") {
+      // Free Spin — doesn't consume a spin, no POST, just auto-spin
+      haptic.success();
+      // Reset ref BEFORE clearing result so next spin's result effect runs correctly
+      setTimeout(() => {
+        winSentRef.current = false;
+        setFreeSpin(true);
+        setResult(null);
+      }, 2200);
+      return;
     }
-    if (result.label === 'Free Spin') {
-      haptic.success()
-      setTimeout(() => { setFreeSpin(true); setResult(null) }, 2200)
-    } else if (isAssetPrize(result)) {
-      haptic.success()
-    } else if (result.label === '+1 Ball') {
-      haptic.success()
-      onBallWon()
+
+    // All other prizes: the server already rolled + recorded this win in the POST that kicked
+    // off the spin (handleSpin). Read that response back out of the ref — no second request.
+    const data = serverResultRef.current;
+    const isAsset = isAssetPrize(result);
+    if (isAsset && data?.winCode) setWinCode(data.winCode);
+
+    if (isAsset || result.label === "+2 Spins") {
+      haptic.success();
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 2500);
     } else {
-      haptic.warning()
+      haptic.warning();
     }
-    // confetti for any win
-    if (isAssetPrize(result) || result.label === '+1 Ball') {
-      setShowConfetti(true)
-      setTimeout(() => setShowConfetti(false), 2500)
+
+    if (data?.autoSent) {
+      setAutoSent(true);
+      setAutoSentTxHash(data.txHash ?? null);
     }
-  }, [result, stellarAddress, onBallWon])
 
-  const isWin = result && (isAssetPrize(result) || result.label === '+1 Ball')
+    // Refresh server state now that the win is fully recorded; update local display
+    void onSpinComplete((can, remaining, bonus) => {
+      setCanSpin(can);
+      setSpinsRemaining(remaining);
+      setBonusSpinsLeft(bonus);
+    });
+  }, [result, onSpinComplete]);
 
-  const handleClaimViaBot = useCallback(() => {
-    if (!winCode) return
-    openTelegramLink(buildBotStartLink(`claim_${winCode}`))
-  }, [winCode])
+  const isWin =
+    result &&
+    result.label !== "Free Spin" &&
+    (isAssetPrize(result) || result.label === "+2 Spins");
+
+  const [claimed, setClaimed] = useState(false);
+  const [claimSending, setClaimSending] = useState(false);
+  const [autoSent, setAutoSent] = useState(false);
+  const [autoSentTxHash, setAutoSentTxHash] = useState<string | null>(null);
+  const handleClaimViaBot = useCallback(async () => {
+    if (!winCode || claimed || claimSending) return;
+    setClaimSending(true);
+    try {
+      await fetch("/api/game/notify-trustlines", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-telegram-init-data": getTelegramInitData(),
+        },
+        body: JSON.stringify({ prize: result?.label, winCode }),
+      });
+    } catch {
+      /* ignore — fallback to deep link */
+    }
+    setClaimed(true);
+    setClaimSending(false);
+  }, [winCode, claimed, claimSending, result]);
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-y-auto"
-      style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.08) 0%, #0A0E1A 60%)' }}>
+    <div
+      className="fixed inset-0 flex flex-col overflow-y-auto"
+      style={{
+        background:
+          "radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.08) 0%, #0A0E1A 60%)",
+      }}
+    >
       <style>{`
         @keyframes result-pop {
           from { transform: scale(0.8); opacity: 0; }
@@ -394,20 +477,34 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon, initialCanSp
 
       {/* header */}
       <div className="flex items-center justify-between px-4 pt-12 pb-2 flex-shrink-0">
-        <button onClick={onBack}
+        <button
+          onClick={onBack}
           className="flex items-center space-x-1.5 px-3 py-2 rounded-xl border border-white/20 active:scale-95 transition"
-          style={{ backdropFilter: 'blur(12px)', background: 'rgba(255,255,255,0.07)' }}>
-          <span className="material-symbols-outlined text-white text-base">arrow_back</span>
+          style={{
+            backdropFilter: "blur(12px)",
+            background: "rgba(255,255,255,0.07)",
+          }}
+        >
+          <span className="material-symbols-outlined text-white text-base">
+            arrow_back
+          </span>
           <span className="text-white text-xs font-semibold">Hub</span>
         </button>
         <div className="text-center">
-          <p className="text-[#D4AF37] font-bold text-xl tracking-wide" style={{ fontFamily: 'Playfair Display, serif' }}>
+          <p
+            className="text-[#D4AF37] font-bold text-xl tracking-wide"
+            style={{ fontFamily: "Playfair Display, serif" }}
+          >
             Lucky Draw
           </p>
           <p className="text-white/40 text-[10px] mt-0.5">
-            {!spinStatusLoaded ? '⏳ Checking…' : freeSpin ? '🔄 Free spin ready!' : canSpin
-              ? `${spinsRemaining} of ${dailySpinLimit} spin${dailySpinLimit !== 1 ? 's' : ''} remaining today`
-              : '⏳ No spins left today — come back tomorrow'}
+            {freeSpin
+              ? "🔄 Free spin ready!"
+              : usingBonus
+                ? `🎁 ${bonusSpinsLeft} bonus spin${bonusSpinsLeft !== 1 ? "s" : ""} available`
+                : canSpin
+                  ? `${spinsRemaining} spin${spinsRemaining !== 1 ? "s" : ""} remaining today`
+                  : "⏳ No spins left — resets at midnight UTC"}
           </p>
         </div>
         <div className="w-16" />
@@ -416,91 +513,198 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon, initialCanSp
       {/* recent winners ticker */}
       {recentWins.length > 0 && (
         <div className="px-4 mb-1 flex-shrink-0">
-          <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full border border-[#D4AF37]/20"
-            style={{ background: 'rgba(212,175,55,0.06)' }}>
-            <span className="text-[9px] text-[#D4AF37] font-bold whitespace-nowrap">🏆 LATEST WIN</span>
+          <div
+            className="flex items-center space-x-2 px-3 py-1.5 rounded-full border border-[#D4AF37]/20"
+            style={{ background: "rgba(212,175,55,0.06)" }}
+          >
+            <span className="text-[9px] text-[#D4AF37] font-bold whitespace-nowrap">
+              🏆 LATEST WIN
+            </span>
             <p className="text-[9px] text-gray-400 truncate flex-1">
-              {recentWins[0].prize} · {new Date(recentWins[0].created_at).toLocaleDateString()}
+              {recentWins[0].prize} ·{" "}
+              {new Date(recentWins[0].created_at).toLocaleDateString()}
             </p>
           </div>
         </div>
       )}
 
       {/* wheel */}
-      <div ref={wrapRef} className="flex items-center justify-center px-1 py-2 relative">
-        {/* glow ring behind wheel */}
-        <div className="absolute rounded-full pointer-events-none"
+      <div
+        ref={wrapRef}
+        className="flex items-center justify-center px-1 py-2 relative"
+      >
+        <div
+          className="absolute rounded-full pointer-events-none"
           style={{
-            width: 320, height: 320,
-            background: 'radial-gradient(circle, rgba(212,175,55,0.12) 0%, transparent 70%)',
-            filter: 'blur(24px)',
-          }} />
-        <canvas ref={canvasRef} style={{ touchAction: 'none', display: 'block', position: 'relative', zIndex: 1 }} />
+            width: 320,
+            height: 320,
+            background:
+              "radial-gradient(circle, rgba(212,175,55,0.12) 0%, transparent 70%)",
+            filter: "blur(24px)",
+          }}
+        />
+        <canvas
+          ref={canvasRef}
+          style={{
+            touchAction: "none",
+            display: "block",
+            position: "relative",
+            zIndex: 1,
+          }}
+        />
       </div>
 
       {/* confetti */}
       {showConfetti && (
-        <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 100 }}>
+        <div
+          className="fixed inset-0 pointer-events-none overflow-hidden"
+          style={{ zIndex: 100 }}
+        >
           {[...Array(10)].map((_, i) => {
-            const colors = ['#D4AF37','#f0d060','#4ade80','#60a5fa','#f472b6','#a78bfa','#fb923c','#34d399']
-            const color = colors[i % colors.length]
-            const left = 5 + (i * 9.5)
-            const size = 8 + (i % 3) * 4
-            const delay = (i * 0.18).toFixed(2)
-            const duration = (1.8 + (i % 4) * 0.25).toFixed(2)
+            const colors = [
+              "#D4AF37",
+              "#f0d060",
+              "#4ade80",
+              "#60a5fa",
+              "#f472b6",
+              "#a78bfa",
+              "#fb923c",
+              "#34d399",
+            ];
+            const color = colors[i % colors.length];
+            const left = 5 + i * 9.5;
+            const size = 8 + (i % 3) * 4;
+            const delay = (i * 0.18).toFixed(2);
+            const duration = (1.8 + (i % 4) * 0.25).toFixed(2);
             return (
-              <div key={i} style={{
-                position: 'absolute',
-                left: `${left}%`,
-                top: 0,
-                width: size,
-                height: size,
-                borderRadius: i % 2 === 0 ? '50%' : '2px',
-                background: color,
-                animation: `confetti-fall ${duration}s ease-in ${delay}s both`,
-              }} />
-            )
+              <div
+                key={i}
+                style={{
+                  position: "absolute",
+                  left: `${left}%`,
+                  top: 0,
+                  width: size,
+                  height: size,
+                  borderRadius: i % 2 === 0 ? "50%" : "2px",
+                  background: color,
+                  animation: `confetti-fall ${duration}s ease-in ${delay}s both`,
+                }}
+              />
+            );
           })}
         </div>
       )}
 
       {/* result banner */}
-      {result && (
-        <div className="px-4 mb-2 flex-shrink-0" style={{ animation: 'result-pop 0.3s cubic-bezier(0.34,1.56,0.64,1)' }}>
-          <div className={`rounded-3xl px-5 py-4 border text-center ${isWin ? 'border-[#D4AF37]/60' : 'border-white/10'}`}
+      {result && result.label !== "Try Again" && (
+        <div
+          className="px-4 mb-2 flex-shrink-0"
+          style={{
+            animation: "result-pop 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+          }}
+        >
+          <div
+            className={`rounded-3xl px-5 py-4 border text-center ${isWin ? "border-[#D4AF37]/60" : "border-white/10"}`}
             style={{
-              background: isWin ? 'rgba(212,175,55,0.12)' : 'rgba(255,255,255,0.03)',
-              boxShadow: isWin ? '0 0 32px rgba(212,175,55,0.2)' : 'none',
-            }}>
+              background: isWin
+                ? "rgba(212,175,55,0.12)"
+                : "rgba(255,255,255,0.03)",
+              boxShadow: isWin ? "0 0 32px rgba(212,175,55,0.2)" : "none",
+            }}
+          >
             <p className="text-4xl mb-1">{result.emoji}</p>
-            <p className={`text-lg font-bold ${isWin ? 'text-[#D4AF37]' : 'text-gray-400'}`}>{result.label}</p>
-            {result.label === 'Free Spin' && (
-              <p className="text-xs text-[#D4AF37]/70 mt-1">Spinning again in a moment...</p>
+            <p
+              className={`text-lg font-bold ${isWin ? "text-[#D4AF37]" : "text-gray-400"}`}
+            >
+              {result.label}
+            </p>
+            {result.label === "Free Spin" && (
+              <p className="text-xs text-[#D4AF37]/70 mt-1">
+                Bonus spin — doesn&apos;t count against your daily limit!
+              </p>
+            )}
+            {result.label === "+2 Spins" && (
+              <p className="text-xs text-green-400/80 mt-1">
+                Added to your spin balance 🎱
+              </p>
             )}
             {isAssetPrize(result) && (
-              <div className="mt-3 space-y-2">
+              <div className="mt-3 space-y-3 text-left">
                 {winCode && (
-                  <>
-                    <p className="text-[11px] text-gray-400">
-                      You need a trustline for <span className="text-[#D4AF37] font-bold">{getAssetSymbol(result)}</span> — tap below to claim via bot
+                  <div
+                    className="px-3 py-2 rounded-xl border border-[#D4AF37]/40 text-[11px] text-[#D4AF37] font-mono font-bold tracking-widest text-center"
+                    style={{ background: "rgba(212,175,55,0.08)" }}
+                  >
+                    {winCode}
+                  </div>
+                )}
+
+                {/* Auto-sent: show tx confirmation */}
+                {autoSent ? (
+                  <div
+                    className="rounded-xl border border-green-500/30 px-4 py-3 text-center space-y-1"
+                    style={{ background: "rgba(74,222,128,0.06)" }}
+                  >
+                    <p className="text-sm font-bold text-green-400">
+                      ✅ Prize sent to your wallet!
                     </p>
-                    <div className="px-3 py-2 rounded-xl border border-[#D4AF37]/40 text-[11px] text-[#D4AF37] font-mono font-bold tracking-widest"
-                      style={{ background: 'rgba(212,175,55,0.08)' }}>{winCode}</div>
+                    <p className="text-[10px] text-gray-500">
+                      Check your Stellar wallet — the {getAssetSymbol(result)}{" "}
+                      is on its way.
+                    </p>
+                    {autoSentTxHash && (
+                      <p className="text-[9px] text-gray-600 font-mono break-all">
+                        {autoSentTxHash}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  /* Auto-send failed (e.g. no trustline) — show trustline checker + bot fallback */
+                  <>
+                    {stellarAddress && (
+                      <TrustlineChecker
+                        stellarAddress={stellarAddress}
+                        requiredCodes={["wXLM", "wNSAFL", "wXRP", "wUSDC"]}
+                      />
+                    )}
                     <button
                       onClick={handleClaimViaBot}
-                      className="w-full py-2.5 rounded-xl text-sm font-bold text-black active:scale-95 transition"
-                      style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #f0d060 100%)' }}>
-                      🤖 Claim via Bot
+                      disabled={claimed || claimSending}
+                      className="w-full py-2.5 rounded-xl text-sm font-bold text-black active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-1.5"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, #D4AF37 0%, #f0d060 100%)",
+                      }}
+                    >
+                      {claimSending ? (
+                        <>
+                          <span className="material-symbols-outlined text-sm leading-none animate-spin">
+                            progress_activity
+                          </span>
+                          <span>Sending…</span>
+                        </>
+                      ) : claimed ? (
+                        <span>✅ Instructions sent — check Telegram</span>
+                      ) : (
+                        <span>🤖 Send Claim Instructions via Bot</span>
+                      )}
                     </button>
                   </>
                 )}
-                {stellarAddress && (
-                  <p className="text-[9px] text-gray-600 font-mono break-all">
-                    {stellarAddress.slice(0, 8)}...{stellarAddress.slice(-8)}
-                  </p>
-                )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* spin error */}
+      {spinError && (
+        <div className="px-4 mb-2 flex-shrink-0">
+          <div
+            className="rounded-2xl border border-red-500/30 px-4 py-2.5 text-center text-xs text-red-400"
+            style={{ background: "rgba(248,113,113,0.08)" }}
+          >
+            {spinError}
           </div>
         </div>
       )}
@@ -508,640 +712,270 @@ function LuckyDraw({ onBack, stellarAddress, totalBalls, onBallWon, initialCanSp
       {/* spin button */}
       <div className="px-4 pb-8 flex-shrink-0 space-y-2">
         {canSpin || freeSpin ? (
-          <button onClick={handleSpin} disabled={spinning || !spinStatusLoaded}
+          <button
+            onClick={handleSpin}
+            disabled={spinning || processing}
             className="w-full py-4 rounded-2xl text-base font-bold text-black active:scale-95 transition disabled:opacity-50"
             style={{
               background: spinning
-                ? '#a08020'
-                : 'linear-gradient(135deg, #D4AF37 0%, #f0d060 50%, #D4AF37 100%)',
-              boxShadow: spinning ? 'none' : '0 4px 24px rgba(212,175,55,0.4)',
-            }}>
-            <span style={spinning ? { animation: 'spin-pulse 1s ease-in-out infinite', display: 'inline-block' } : {}}>
-              {spinning ? '⏳ Spinning...' : freeSpin ? '🔄 Free Spin!' : '🎰 Spin the Wheel'}
+                ? "#a08020"
+                : "linear-gradient(135deg, #D4AF37 0%, #f0d060 50%, #D4AF37 100%)",
+              boxShadow: spinning ? "none" : "0 4px 24px rgba(212,175,55,0.4)",
+            }}
+          >
+            <span
+              style={
+                spinning
+                  ? {
+                      animation: "spin-pulse 1s ease-in-out infinite",
+                      display: "inline-block",
+                    }
+                  : {}
+              }
+            >
+              {spinning
+                ? "⏳ Spinning..."
+                : processing
+                  ? "🎲 Rolling..."
+                  : freeSpin
+                    ? "🔄 Free Spin!"
+                    : "🎰 Spin the Wheel"}
             </span>
           </button>
         ) : (
           <>
-            <div className="w-full py-3 rounded-2xl border border-white/10 text-center text-xs text-gray-500"
-              style={{ background: 'rgba(255,255,255,0.03)' }}>
-              ⏳ Spins reset in 24h · earn more balls = more spins
+            <div
+              className="w-full py-3 rounded-2xl border border-white/10 text-center text-xs text-gray-500"
+              style={{ background: "rgba(255,255,255,0.03)" }}
+            >
+              {dailySpinLimit > 0
+                ? `⏳ Daily spins used up — resets midnight UTC`
+                : `🎯 Get Tier 1 (100 ${PRIMARY_CUSTOM_ASSET_CODE}) for 3 daily spins`}
             </div>
-            <button onClick={onBack}
+            <button
+              onClick={onBack}
               className="w-full py-3 rounded-2xl text-sm font-semibold text-gray-300 border border-white/10 active:scale-95 transition"
-              style={{ background: 'rgba(255,255,255,0.04)' }}>
+              style={{ background: "rgba(255,255,255,0.04)" }}
+            >
               Back to Hub
             </button>
           </>
         )}
         <p className="text-center text-[10px] text-gray-700">
-          {totalBalls} spin{totalBalls !== 1 ? 's' : ''} per day · requires {LUCKY_BALLS_REQUIRED} balls to unlock
+          {tierLabel} ·{" "}
+          {dailySpinLimit > 0
+            ? `${dailySpinLimit} daily spins`
+            : "3 welcome spins (once)"}
         </p>
       </div>
     </div>
-  )
-}
-
-// ── Canvas Game ───────────────────────────────────────────────────────────────
-function CanvasGame({ numBalls, onBack }: { numBalls: number; onBack: () => void }) {
-  const router = useRouter()
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const ballsRef = useRef<Ball[]>([])
-  const particlesRef = useRef<Particle[]>([])
-  const rafRef = useRef<number>(0)
-  const kicksRef = useRef(0)
-  const sessionStartRef = useRef<number>(Date.now())
-  const savedRef = useRef(false)
-  const ballsLeftRef = useRef(numBalls)
-  const gameOverRef = useRef(false)
-
-  const [kicks, setKicks] = useState(0)
-  const [ballsLeft, setBallsLeft] = useState(numBalls)
-  const [gameOver, setGameOver] = useState(false)
-  const [personalBest, setPersonalBest] = useState(() => {
-    if (typeof window === 'undefined') return 0
-    return parseInt(localStorage.getItem(PB_KEY) ?? '0', 10)
-  })
-  const [communityStats, setCommunityStats] = useState<GameStats | null>(null)
-  const [showLeaderboard, setShowLeaderboard] = useState(false)
-
-  useEffect(() => {
-    fetch('/api/game')
-      .then(r => r.json())
-      .then(j => { if (j.success) setCommunityStats(j.data) })
-      .catch(() => null)
-  }, [])
-
-  const saveSession = useCallback(() => {
-    if (savedRef.current) return
-    savedRef.current = true
-    const k = kicksRef.current
-    if (k === 0) return
-    const duration = Math.round((Date.now() - sessionStartRef.current) / 1000)
-    fetch('/api/game', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-telegram-init-data': getTelegramInitData(),
-      },
-      body: JSON.stringify({ kicks: k, ballsSpawned: 0, durationSeconds: duration }),
-      keepalive: true,
-    }).catch(() => null)
-  }, [])
-
-  useTelegramBack(useCallback(() => {
-    saveSession()
-    router.back()
-  }, [saveSession, router]))
-
-  useEffect(() => {
-    const handler = () => saveSession()
-    window.addEventListener('pagehide', handler)
-    return () => window.removeEventListener('pagehide', handler)
-  }, [saveSession])
-
-  // Spawn dust particles on floor hit
-  const spawnDust = useCallback((x: number) => {
-    for (let i = 0; i < 6; i++) {
-      particlesRef.current.push({
-        x, y: 0, // y set at call site via canvas height
-        vx: (Math.random() - 0.5) * 4,
-        vy: -(Math.random() * 3 + 1),
-        life: 1,
-        size: 2 + Math.random() * 3,
-      })
-    }
-  }, [])
-
-  const initBalls = useCallback((w: number, h: number) => {
-    ballsRef.current = Array.from({ length: Math.max(1, numBalls) }, () => randomBall(w, h))
-  }, [numBalls])
-
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    function resize() {
-      if (!canvas) return
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-      initBalls(canvas.width, canvas.height)
-    }
-    resize()
-    window.addEventListener('resize', resize)
-
-    function drawBall(b: Ball) {
-      if (!ctx) return
-      const rx = b.size * 0.52
-      const ry = b.size * 0.30
-
-      // trail
-      for (let i = 0; i < b.trail.length; i++) {
-        const t = b.trail[i]
-        const alpha = ((i + 1) / b.trail.length) * 0.12 * b.opacity
-        const tr = rx * (i / b.trail.length) * 0.6
-        ctx.beginPath()
-        ctx.ellipse(t.x, t.y, Math.max(tr, 1), Math.max(tr * 0.55, 1), 0, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(139,69,19,${alpha})`
-        ctx.fill()
-      }
-
-      ctx.save()
-      ctx.globalAlpha = b.opacity
-      ctx.translate(b.x, b.y)
-      // angle tracks velocity direction for realistic tumbling
-      ctx.rotate((b.angle * Math.PI) / 180)
-
-      // leather body
-      const grad = ctx.createRadialGradient(-rx * 0.28, -ry * 0.35, ry * 0.08, 0, 0, rx)
-      grad.addColorStop(0, '#d4823a')
-      grad.addColorStop(0.45, '#8b4513')
-      grad.addColorStop(1, '#4a1c08')
-      ctx.beginPath()
-      ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2)
-      ctx.fillStyle = grad
-      ctx.fill()
-
-      // outline
-      ctx.strokeStyle = 'rgba(0,0,0,0.55)'
-      ctx.lineWidth = 1.5
-      ctx.stroke()
-
-      // highlight sheen
-      const shine = ctx.createLinearGradient(-rx * 0.3, -ry, rx * 0.3, 0)
-      shine.addColorStop(0, 'rgba(255,255,255,0.18)')
-      shine.addColorStop(1, 'rgba(255,255,255,0)')
-      ctx.beginPath()
-      ctx.ellipse(0, -ry * 0.2, rx * 0.55, ry * 0.38, 0, 0, Math.PI * 2)
-      ctx.fillStyle = shine
-      ctx.fill()
-
-      // centre seam
-      ctx.beginPath()
-      ctx.moveTo(-rx * 0.72, 0)
-      ctx.lineTo(rx * 0.72, 0)
-      ctx.strokeStyle = 'rgba(255,255,255,0.8)'
-      ctx.lineWidth = 1.2
-      ctx.stroke()
-
-      // lace stitches
-      ctx.strokeStyle = 'rgba(255,255,255,0.88)'
-      ctx.lineWidth = 1.6
-      const sh = ry * 0.42
-      for (const sx of [-rx * 0.21, -rx * 0.07, rx * 0.07, rx * 0.21]) {
-        ctx.beginPath()
-        ctx.moveTo(sx, -sh)
-        ctx.lineTo(sx, sh)
-        ctx.stroke()
-      }
-
-      ctx.restore()
-    }
-
-    function step() {
-      try {
-        if (!canvas || !ctx) return
-        const W = canvas.width, H = canvas.height
-
-        ctx.fillStyle = 'rgba(10,14,26,0.38)'
-        ctx.fillRect(0, 0, W, H)
-
-        // particles
-        particlesRef.current = particlesRef.current.filter(p => p.life > 0)
-        for (const p of particlesRef.current) {
-          p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life -= 0.07
-          ctx.beginPath()
-          ctx.arc(p.x, p.y, Math.max(p.size * p.life, 0.1), 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(180,120,60,${p.life * 0.5})`
-          ctx.fill()
-        }
-
-        if (!gameOverRef.current) {
-          for (const b of ballsRef.current) {
-            if (b.dead) continue
-
-            b.trail.push({ x: b.x, y: b.y })
-            if (b.trail.length > TRAIL_LENGTH) b.trail.shift()
-            drawBall(b)
-
-            // physics
-            b.vy += GRAVITY
-            b.x += b.vx; b.y += b.vy
-            b.angle = (Math.atan2(b.vy, b.vx) * 180 / Math.PI)
-            b.spin *= SPIN_DECAY
-
-            // floor — ball is lost
-            if (b.y + b.size * 0.3 >= H) {
-              b.dead = true
-              // dust burst
-              for (let i = 0; i < 8; i++) {
-                particlesRef.current.push({
-                  x: b.x + (Math.random() - 0.5) * 40,
-                  y: H - 4,
-                  vx: (Math.random() - 0.5) * 6,
-                  vy: -(Math.random() * 4 + 1),
-                  life: 1,
-                  size: 3 + Math.random() * 4,
-                })
-              }
-              const remaining = ballsLeftRef.current - 1
-              ballsLeftRef.current = remaining
-              setBallsLeft(remaining)
-              haptic.error()
-              if (remaining <= 0) {
-                gameOverRef.current = true
-                setGameOver(true)
-                const k = kicksRef.current
-                const prev = parseInt(localStorage.getItem(PB_KEY) ?? '0', 10)
-                if (k > prev) {
-                  localStorage.setItem(PB_KEY, String(k))
-                  setPersonalBest(k)
-                }
-                saveSession()
-              }
-            }
-
-            // walls
-            if (b.x - b.size * 0.52 <= 0) { b.x = b.size * 0.52; b.vx = Math.abs(b.vx) * BOUNCE }
-            if (b.x + b.size * 0.52 >= W) { b.x = W - b.size * 0.52; b.vx = -Math.abs(b.vx) * BOUNCE }
-            if (b.y - b.size * 0.3 <= 0) { b.y = b.size * 0.3; b.vy = Math.abs(b.vy) * BOUNCE }
-          }
-        }
-      } catch {
-        // swallow any draw error so the loop never dies
-      }
-
-      rafRef.current = requestAnimationFrame(step)
-    }
-
-    rafRef.current = requestAnimationFrame(step)
-    return () => {
-      cancelAnimationFrame(rafRef.current)
-      window.removeEventListener('resize', resize)
-    }
-  }, [initBalls, saveSession])
-
-  const handleTap = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    e.preventDefault()
-    if (gameOverRef.current) return
-    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect()
-    const tx = e.clientX - rect.left
-    const ty = e.clientY - rect.top
-
-    let nearest: Ball | null = null
-    let nearestDist = Infinity
-    for (const b of ballsRef.current) {
-      if (b.dead) continue
-      const d = Math.hypot(b.x - tx, b.y - ty)
-      if (d < nearestDist) { nearestDist = d; nearest = b }
-    }
-
-    if (nearest && nearestDist <= KICK_RADIUS) {
-      const dx = nearest.x - tx, dy = nearest.y - ty
-      const len = Math.hypot(dx, dy) || 1
-      const power = 15 + Math.random() * 5
-      nearest.vx = (dx / len) * power
-      nearest.vy = (dy / len) * power - 4
-      nearest.spin = (Math.random() - 0.5) * 18
-      haptic.light()
-      kicksRef.current += 1
-      setKicks(k => k + 1)
-    }
-  }, [])
-
-  const restartGame = useCallback(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    ballsLeftRef.current = numBalls
-    gameOverRef.current = false
-    kicksRef.current = 0
-    savedRef.current = false
-    sessionStartRef.current = Date.now()
-    particlesRef.current = []
-    ballsRef.current = Array.from({ length: numBalls }, () =>
-      randomBall(canvas.width, canvas.height)
-    )
-    setBallsLeft(numBalls)
-    setKicks(0)
-    setGameOver(false)
-  }, [numBalls])
-
-  const fmt = (n: number) => n >= 1_000_000
-    ? `${(n / 1_000_000).toFixed(1)}M`
-    : n >= 1_000 ? `${(n / 1_000).toFixed(1)}K` : String(n)
-
-  const isNewPB = gameOver && kicks > 0 && kicks >= personalBest
-
-  return (
-    <div className="fixed inset-0 bg-[#0A0E1A] overflow-hidden">
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full"
-        onPointerDown={handleTap}
-        style={{ touchAction: 'none' }}
-      />
-
-      {/* hint */}
-      {kicks === 0 && !gameOver && (
-        <div className="relative z-10 flex flex-col items-center justify-center h-full pointer-events-none select-none">
-          <p className="text-white/20 text-[11px] animate-pulse">Tap a ball to kick it — don't let it hit the ground!</p>
-        </div>
-      )}
-
-      {/* ── Back button ── */}
-      <button
-        onClick={() => { saveSession(); onBack() }}
-        className="absolute top-12 left-4 z-20 flex items-center space-x-1.5 px-3 py-2 rounded-xl border border-white/20 active:scale-95 transition"
-        style={{ backdropFilter: 'blur(12px)', background: 'rgba(255,255,255,0.08)' }}
-      >
-        <span className="material-symbols-outlined text-white text-base">arrow_back</span>
-        <span className="text-white text-xs font-semibold">Hub</span>
-      </button>
-
-      {/* ── Balls remaining ── */}
-      <div className="absolute top-12 left-1/2 -translate-x-1/2 z-20 flex items-center space-x-1 px-3 py-1.5 rounded-full border border-white/10"
-        style={{ background: 'rgba(10,14,26,0.7)', backdropFilter: 'blur(8px)' }}>
-        {Array.from({ length: numBalls }).map((_, i) => (
-          <span key={i} className={`text-sm transition-opacity duration-300 ${i < ballsLeft ? 'opacity-100' : 'opacity-15'}`}>🏈</span>
-        ))}
-      </div>
-
-      {/* ── Kick counter ── */}
-      {kicks > 0 && (
-        <div className="absolute top-12 right-4 z-20 px-3 py-1.5 rounded-full border border-[#D4AF37]/30 text-[11px] font-bold text-[#D4AF37]"
-          style={{ background: 'rgba(212,175,55,0.1)', backdropFilter: 'blur(8px)' }}>
-          ⚡ {kicks}
-          {personalBest > 0 && <span className="text-[9px] text-[#D4AF37]/50 ml-1">/ {personalBest} PB</span>}
-        </div>
-      )}
-
-      {/* ── Leaderboard toggle ── */}
-      <button
-        onClick={() => setShowLeaderboard(v => !v)}
-        className="absolute top-24 right-4 z-20 w-9 h-9 rounded-xl flex items-center justify-center border border-white/10 transition active:scale-95"
-        style={{ backdropFilter: 'blur(12px)', background: 'rgba(255,255,255,0.05)' }}
-      >
-        <span className="material-symbols-outlined text-[#D4AF37] text-lg">emoji_events</span>
-      </button>
-
-      {/* ── Leaderboard panel ── */}
-      {showLeaderboard && communityStats && (
-        <div className="absolute top-36 right-4 z-30 w-56 rounded-2xl border border-white/10 overflow-hidden"
-          style={{ background: 'rgba(10,14,26,0.92)', backdropFilter: 'blur(16px)' }}>
-          <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <span className="material-symbols-outlined text-[#D4AF37] text-base">emoji_events</span>
-              <span className="text-xs font-bold text-white">Top Kickers</span>
-            </div>
-            <span className="text-[9px] text-gray-500">{fmt(communityStats.totalSessions)} sessions</span>
-          </div>
-          <div className="divide-y divide-white/5">
-            {communityStats.leaderboard.length === 0 ? (
-              <p className="text-center text-gray-500 text-xs py-4">No sessions yet — be first!</p>
-            ) : (
-              communityStats.leaderboard.slice(0, 5).map((p) => (
-                <div key={p.rank} className="flex items-center justify-between px-4 py-2">
-                  <div className="flex items-center space-x-2 min-w-0">
-                    <span className={`text-xs font-bold w-4 flex-shrink-0 ${p.rank === 1 ? 'text-[#D4AF37]' : 'text-gray-500'}`}>
-                      {p.rank}
-                    </span>
-                    <span className="text-xs text-gray-300 truncate">{p.name}</span>
-                  </div>
-                  <span className={`text-xs font-bold flex-shrink-0 ${p.rank === 1 ? 'text-[#D4AF37]' : 'text-white'}`}>
-                    {fmt(p.kicks)} ⚡
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Game Over overlay ── */}
-      {gameOver && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center"
-          style={{ background: 'rgba(10,14,26,0.88)', backdropFilter: 'blur(8px)' }}>
-          <div className="text-center px-8 space-y-5">
-            <div className="text-5xl">{isNewPB ? '🏆' : '🏈'}</div>
-            <div>
-              <p className="text-white font-bold text-2xl" style={{ fontFamily: 'Playfair Display, serif' }}>
-                {isNewPB ? 'New Best!' : 'Game Over'}
-              </p>
-              <p className="text-gray-400 text-sm mt-1">You kicked the ball {kicks} time{kicks !== 1 ? 's' : ''}</p>
-            </div>
-            {isNewPB && (
-              <div className="px-4 py-2 rounded-xl border border-[#D4AF37]/40 text-[#D4AF37] text-xs font-bold"
-                style={{ background: 'rgba(212,175,55,0.1)' }}>
-                🎉 Personal Best: {kicks} kicks
-              </div>
-            )}
-            {!isNewPB && personalBest > 0 && (
-              <p className="text-gray-500 text-xs">Personal best: {personalBest} kicks</p>
-            )}
-            <div className="flex flex-col space-y-2 pt-2">
-              <button
-                onClick={restartGame}
-                className="w-full py-3 rounded-xl text-sm font-bold text-black bg-[#D4AF37] active:scale-95 transition"
-              >
-                Play Again
-              </button>
-              <button
-                onClick={() => { onBack() }}
-                className="w-full py-2.5 rounded-xl text-sm font-semibold text-gray-300 border border-white/10 active:scale-95 transition"
-                style={{ background: 'rgba(255,255,255,0.05)' }}
-              >
-                Back to Hub
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
+  );
 }
 
 // ── Hub View ──────────────────────────────────────────────────────────────────
-function HubView({ onPlay, onLucky, onQuiz, totalPoints, tierPoints, tierLabel, referralBalls, bonusBalls, quizPoints, luckyCanSpin, luckySpinsRemaining, luckyDailyLimit }: {
-  onPlay: () => void
-  onLucky: () => void
-  onQuiz: () => void
-  totalPoints: number
-  tierPoints: number
-  tierLabel: string
-  referralBalls: number
-  bonusBalls: number
-  quizPoints: number
-  luckyCanSpin: boolean
-  luckySpinsRemaining: number
-  luckyDailyLimit: number
+function HubView({
+  onLucky,
+  onSlot,
+  onScratch,
+  onQuiz,
+  quizPoints,
+  luckyCanSpin,
+  luckySpinsRemaining,
+  luckyDailyLimit,
+  luckyBonusSpins,
+  slotCanSpin,
+  slotSpinsRemaining,
+  scratchCanPlay,
+  scratchCardsRemaining,
+  tierLabel,
+  isTier0,
+}: {
+  onLucky: () => void;
+  onSlot: () => void;
+  onScratch: () => void;
+  onQuiz: () => void;
+  quizPoints: number;
+  luckyCanSpin: boolean;
+  luckySpinsRemaining: number;
+  luckyDailyLimit: number;
+  luckyBonusSpins: number;
+  slotCanSpin: boolean;
+  slotSpinsRemaining: number;
+  scratchCanPlay: boolean;
+  scratchCardsRemaining: number;
+  tierLabel: string;
+  isTier0: boolean;
 }) {
-  const router = useRouter()
-  const personalBest = typeof window !== 'undefined'
-    ? parseInt(localStorage.getItem(PB_KEY) ?? '0', 10)
-    : 0
+  const router = useRouter();
+  const luckyUnlocked = DEV_BYPASS || luckyCanSpin || luckyBonusSpins > 0;
+  const luckyLockedBySpins = !luckyCanSpin && luckyBonusSpins === 0;
 
-  const luckyUnlocked = (DEV_BYPASS || totalPoints >= LUCKY_BALLS_REQUIRED) && luckyCanSpin
-  const luckyLockedByBalls = !DEV_BYPASS && totalPoints < LUCKY_BALLS_REQUIRED
-  const luckyLockedBySpins = !luckyLockedByBalls && !luckyCanSpin
-
-  const miniGames = [
-    {
-      id: 'ball',
-      icon: 'sports_football',
-      name: `${PRIMARY_CUSTOM_ASSET_CODE} Ball`,
-      description: 'Keep the ball in the air',
-      unlocked: true,
-      onPlay,
-    },
-    {
-      id: 'scorer',
-      icon: 'military_tech',
-      name: 'Top Scorer',
-      description: 'Daily leaderboard challenge',
-      unlocked: false,
-      comingSoon: true,
-    },
-  ]
+  // Countdown to midnight UTC
+  const [resetCountdown, setResetCountdown] = useState("");
+  useEffect(() => {
+    function tick() {
+      const now = new Date();
+      const midnight = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1),
+      );
+      const diff = midnight.getTime() - now.getTime();
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setResetCountdown(
+        `${h}h ${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`,
+      );
+    }
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#0A0E1A] pb-28">
-      <div className="sticky top-0 z-40 px-4 pt-3 pb-2 border-b border-white/5"
-        style={{ background: 'rgba(10,14,26,0.95)', backdropFilter: 'blur(20px)' }}>
-        <h1 className="text-xl font-bold text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
+      <div
+        className="sticky top-0 z-40 px-4 pt-3 pb-2 border-b border-white/5"
+        style={{
+          background: "rgba(10,14,26,0.95)",
+          backdropFilter: "blur(20px)",
+        }}
+      >
+        <h1
+          className="text-xl font-bold text-white"
+          style={{ fontFamily: "Playfair Display, serif" }}
+        >
           Game Hub
         </h1>
-        <p className="text-xs text-gray-500 mt-0.5">More {PRIMARY_CUSTOM_ASSET_CODE} = more balls in the game</p>
+        <p className="text-xs text-gray-500 mt-0.5">
+          Upgrade your tier for more daily spins
+        </p>
       </div>
 
       <div className="px-4 pt-4 space-y-4">
-        {/* Balls card */}
-        <div className="rounded-2xl p-4 border border-[#D4AF37]/30"
-          style={{ background: 'rgba(212,175,55,0.06)', backdropFilter: 'blur(12px)' }}>
+        {/* Spins card */}
+        <div
+          className="rounded-2xl p-4 border border-[#D4AF37]/30"
+          style={{
+            background: "rgba(212,175,55,0.06)",
+            backdropFilter: "blur(12px)",
+          }}
+        >
           <div className="flex items-start justify-between mb-3">
             <div>
-              <p className="text-xs text-[#D4AF37]/70 uppercase tracking-widest font-semibold mb-1">Your Balls</p>
+              <p className="text-xs text-[#D4AF37]/70 uppercase tracking-widest font-semibold mb-1">
+                Your Spins
+              </p>
               <div className="flex items-baseline space-x-2">
-                <span className="text-5xl font-bold text-[#D4AF37]" style={{ fontFamily: 'Playfair Display, serif' }}>
-                  {totalPoints}
+                <span
+                  className="text-5xl font-bold text-[#D4AF37]"
+                  style={{ fontFamily: "Playfair Display, serif" }}
+                >
+                  {isTier0 ? luckyBonusSpins : luckyDailyLimit}
                 </span>
-                <span className="text-xl">🏈</span>
+                <span className="text-xl">🎰</span>
               </div>
               <p className="text-[10px] text-gray-500 mt-1">
-                {totalPoints === 1 ? 'You start each round with 1 ball' : `You start each round with ${totalPoints} balls`}
+                {isTier0
+                  ? "Welcome spins (one-time gift)"
+                  : `${luckyDailyLimit} spins per day`}
+              </p>
+              {!isTier0 && resetCountdown && (
+                <p className="text-[10px] text-gray-600 mt-0.5">
+                  Resets in{" "}
+                  <span className="font-mono text-gray-400">
+                    {resetCountdown}
+                  </span>
+                </p>
+              )}
+            </div>
+            <div className="text-right">
+              <p className="text-[9px] text-gray-500 uppercase tracking-wider">
+                Tier
+              </p>
+              <p className="text-sm font-bold text-white">{tierLabel}</p>
+            </div>
+          </div>
+
+          {isTier0 ? (
+            <div className="rounded-xl bg-[#D4AF37]/8 border border-[#D4AF37]/20 p-3 mb-3">
+              <p className="text-xs font-semibold text-[#D4AF37] mb-0.5">
+                🚀 Upgrade to Tier 1
+              </p>
+              <p className="text-[10px] text-gray-400">
+                Hold 100 {PRIMARY_CUSTOM_ASSET_CODE} → unlock 3 spins every day
               </p>
             </div>
-            {personalBest > 0 && (
-              <div className="text-right">
-                <p className="text-[9px] text-gray-500 uppercase tracking-wider">Best</p>
-                <p className="text-lg font-bold text-[#D4AF37]">{personalBest} ⚡</p>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-1.5 mb-3">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-gray-400">Base (all players)</span>
-              <span className="text-white font-semibold">1 ball</span>
+          ) : (
+            <div className="rounded-xl bg-white/3 border border-white/8 p-3 mb-3">
+              <p className="text-xs font-semibold text-white mb-0.5">
+                ⬆️ Double your spins
+              </p>
+              <p className="text-[10px] text-gray-400">
+                Higher tiers unlock more daily spins
+              </p>
             </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-gray-400">Tier ({tierLabel})</span>
-              <span className="text-white font-semibold">+{tierPoints} ball{tierPoints !== 1 ? 's' : ''}</span>
-            </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-gray-400">Referrals</span>
-              {referralBalls > 0
-                ? <span className="text-white font-semibold">+{referralBalls} ball{referralBalls !== 1 ? 's' : ''}</span>
-                : <span className="text-gray-600">+0 (invite friends!)</span>}
-            </div>
-            {bonusBalls > 0 && (
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-400">Lucky Draw wins</span>
-                <span className="text-white font-semibold">+{bonusBalls} ball{bonusBalls !== 1 ? 's' : ''}</span>
-              </div>
-            )}
-            {quizPoints > 0 && (
-              <div className="flex items-center justify-between text-xs py-1 border-t border-white/5">
-                <span className="text-gray-400 flex items-center space-x-1">
-                  <span className="material-symbols-outlined text-purple-400 text-sm">quiz</span>
-                  <span>Quiz points earned</span>
-                </span>
-                <span className="font-bold text-purple-300">+{quizPoints}</span>
-              </div>
-            )}
-          </div>
+          )}
 
           <button
-            onClick={() => { haptic.light(); router.push('/buy') }}
+            onClick={() => {
+              haptic.light();
+              router.push("/buy");
+            }}
             className="w-full py-2.5 rounded-xl text-xs font-bold text-black bg-[#D4AF37] active:scale-95 transition"
           >
-            Buy {PRIMARY_CUSTOM_ASSET_LABEL} for more balls
+            Buy {PRIMARY_CUSTOM_ASSET_LABEL} → More Spins
           </button>
         </div>
 
-        {/* How to earn */}
-        <div className="rounded-2xl p-4 border border-white/10"
-          style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(12px)' }}>
-          <p className="text-xs font-bold text-white mb-1">How to earn more balls</p>
-          <p className="text-[10px] text-gray-600 mb-3">Need {LUCKY_BALLS_REQUIRED}+ balls to unlock Lucky Draw 🎰</p>
-          <div className="space-y-3">
-            {[
-              {
-                icon: 'workspace_premium',
-                label: 'Tier Level',
-                desc: `Tier 1 = +1 ball, Tier 2 = +2, etc. You get +${tierPoints} from ${tierLabel}.`,
-              },
-              {
-                icon: 'group_add',
-                label: 'Referrals',
-                desc: referralBalls > 0
-                  ? `You have ${referralBalls} referral ball${referralBalls !== 1 ? 's' : ''} · invite more friends!`
-                  : '+1 ball per person you bring · share your referral link',
-                muted: referralBalls === 0,
-              },
-              {
-                icon: 'task_alt',
-                label: 'Tasks',
-                desc: 'Complete challenges for bonus balls (coming soon)',
-                muted: true,
-              },
-            ].map(({ icon, label, desc, muted }) => (
-              <div key={label} className="flex items-start space-x-3">
-                <span className={`material-symbols-outlined text-lg mt-0.5 ${muted ? 'text-gray-600' : 'text-[#D4AF37]'}`}
-                  style={{ fontVariationSettings: "'FILL' 1" }}>
-                  {icon}
-                </span>
-                <div>
-                  <p className={`text-xs font-semibold ${muted ? 'text-gray-500' : 'text-white'}`}>{label}</p>
-                  <p className="text-[10px] text-gray-600 leading-relaxed">{desc}</p>
-                </div>
-              </div>
-            ))}
+        {/* ── WhipLash347 sponsor tile ── */}
+        <div
+          className="rounded-2xl overflow-hidden relative flex items-center gap-3 px-4 py-3"
+          style={{ background: 'linear-gradient(90deg, rgba(232,25,44,0.10) 0%, rgba(0,212,255,0.05) 100%)', border: '1px solid rgba(232,25,44,0.30)' }}
+        >
+          <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, #E8192C, #00D4FF, transparent)' }} />
+          <img src="/whiplash347.png" alt="WhipLash347" width={36} height={36} className="rounded-full object-cover shrink-0" style={{ boxShadow: '0 0 10px rgba(232,25,44,0.60)' }} />
+          <div className="flex-1 min-w-0">
+            <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#E8192C' }}>⚡ Games Sponsored by</p>
+            <p className="text-sm font-bold text-white leading-tight">WhipLash347</p>
           </div>
+          <span className="text-[9px] text-gray-500 shrink-0">Official Partner</span>
         </div>
 
-        {/* ── Lucky Draw card (full-width, prominent) ── */}
-        <div className={`rounded-2xl border overflow-hidden ${
-          luckyUnlocked ? 'border-[#D4AF37]/40' : 'border-white/10'
-        }`} style={{
-          background: luckyUnlocked ? 'rgba(212,175,55,0.07)' : 'rgba(255,255,255,0.03)',
-          backdropFilter: 'blur(12px)',
-        }}>
-          {/* Header */}
+        {/* ── Lucky Draw card ── */}
+        <div
+          className={`rounded-2xl border overflow-hidden ${
+            luckyUnlocked ? "border-[#D4AF37]/40" : "border-white/10"
+          }`}
+          style={{
+            background: luckyUnlocked
+              ? "rgba(212,175,55,0.07)"
+              : "rgba(255,255,255,0.03)",
+            backdropFilter: "blur(12px)",
+          }}
+        >
           <div className="px-4 pt-4 pb-3">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center space-x-2">
-                <span className={`material-symbols-outlined text-2xl ${luckyUnlocked ? 'text-[#D4AF37]' : 'text-gray-500'}`}
-                  style={{ fontVariationSettings: "'FILL' 1" }}>casino</span>
-                <p className={`text-base font-bold ${luckyUnlocked ? 'text-white' : 'text-gray-400'}`}>Lucky Draw</p>
+                <span
+                  className={`material-symbols-outlined text-2xl ${luckyUnlocked ? "text-[#D4AF37]" : "text-gray-500"}`}
+                  style={{ fontVariationSettings: "'FILL' 1" }}
+                >
+                  casino
+                </span>
+                <p
+                  className={`text-base font-bold ${luckyUnlocked ? "text-white" : "text-gray-400"}`}
+                >
+                  Lucky Draw
+                </p>
               </div>
               {luckyUnlocked ? (
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30">
-                  {luckySpinsRemaining} spin{luckySpinsRemaining !== 1 ? 's' : ''} left today
+                  {luckySpinsRemaining} spin
+                  {luckySpinsRemaining !== 1 ? "s" : ""} left
                 </span>
               ) : luckyLockedBySpins ? (
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/5 text-gray-500 border border-white/10">
-                  Resets tomorrow
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/5 text-gray-500 border border-white/10 font-mono">
+                  {isTier0 ? "used up" : resetCountdown}
                 </span>
               ) : (
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/5 text-gray-500 border border-white/10">
@@ -1149,88 +983,261 @@ function HubView({ onPlay, onLucky, onQuiz, totalPoints, tierPoints, tierLabel, 
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-gray-500 ml-8">Spin to win XLM, NSAFL tokens &amp; more</p>
+            <p className="text-[11px] text-gray-500 ml-8">
+              Win wXLM, wNSAFL, wXRP, wUSDC — or bonus spins 🎰
+            </p>
           </div>
 
-          {/* Progress bar — balls toward requirement */}
-          <div className="px-4 pb-3">
-            <div className="flex items-center justify-between text-[10px] mb-1.5">
-              <span className="text-gray-500">Balls to unlock</span>
-              <span className={`font-bold ${totalPoints >= LUCKY_BALLS_REQUIRED ? 'text-[#D4AF37]' : 'text-gray-300'}`}>
-                {Math.min(totalPoints, LUCKY_BALLS_REQUIRED)} / {LUCKY_BALLS_REQUIRED} 🏈
-              </span>
-            </div>
-            <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${Math.min(100, (totalPoints / LUCKY_BALLS_REQUIRED) * 100)}%`,
-                  background: totalPoints >= LUCKY_BALLS_REQUIRED
-                    ? 'linear-gradient(90deg, #D4AF37, #f0d060)'
-                    : 'linear-gradient(90deg, #6b7280, #9ca3af)',
-                }}
-              />
-            </div>
-          </div>
-
-          {/* State-specific content */}
           {luckyUnlocked && (
             <div className="px-4 pb-4">
               <button
-                onClick={() => { haptic.medium(); onLucky() }}
+                onClick={() => {
+                  haptic.medium();
+                  onLucky();
+                }}
                 className="w-full py-3 rounded-xl text-sm font-bold text-black active:scale-95 transition"
-                style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #f0d060 50%, #D4AF37 100%)' }}
+                style={{
+                  background:
+                    "linear-gradient(135deg, #D4AF37 0%, #f0d060 50%, #D4AF37 100%)",
+                }}
               >
                 🎰 Spin the Wheel
               </button>
             </div>
           )}
 
-          {luckyLockedByBalls && (
-            <div className="px-4 pb-4 space-y-3">
-              <div className="rounded-xl bg-white/4 border border-white/8 p-3">
-                <p className="text-xs font-semibold text-gray-300 mb-2">
-                  You need {LUCKY_BALLS_REQUIRED - totalPoints} more ball{LUCKY_BALLS_REQUIRED - totalPoints !== 1 ? 's' : ''} to unlock. Here&apos;s how:
-                </p>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="material-symbols-outlined text-[#D4AF37] text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>group_add</span>
-                      <span className="text-[11px] text-gray-300">Refer 1 friend</span>
-                    </div>
-                    <button
-                      onClick={() => { haptic.light(); router.push('/profile') }}
-                      className="text-[10px] font-bold text-[#D4AF37] border border-[#D4AF37]/30 px-2 py-0.5 rounded-full hover:bg-[#D4AF37]/10 transition"
-                    >
-                      Share link →
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="material-symbols-outlined text-[#D4AF37] text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
-                      <span className="text-[11px] text-gray-300">Hold 501+ {PRIMARY_CUSTOM_ASSET_CODE} (Tier 2)</span>
-                    </div>
-                    <button
-                      onClick={() => { haptic.light(); router.push('/buy') }}
-                      className="text-[10px] font-bold text-[#D4AF37] border border-[#D4AF37]/30 px-2 py-0.5 rounded-full hover:bg-[#D4AF37]/10 transition"
-                    >
-                      Buy →
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {luckyLockedBySpins && (
             <div className="px-4 pb-4">
-              <div className="rounded-xl bg-white/4 border border-white/8 p-3 text-center">
-                <p className="text-xs text-gray-400">You&apos;ve used all your spins today.</p>
-                <p className="text-[11px] text-gray-500 mt-0.5">Spins reset at midnight UTC — come back tomorrow!</p>
+              <div className="rounded-xl bg-white/4 border border-white/8 p-3">
+                {isTier0 ? (
+                  <>
+                    <p className="text-xs text-gray-300 font-semibold mb-1">
+                      Welcome spins used up 🎯
+                    </p>
+                    <p className="text-[11px] text-gray-500 mb-2">
+                      Get Tier 1 to unlock 3 spins every day
+                    </p>
+                    <button
+                      onClick={() => {
+                        haptic.light();
+                        router.push("/buy");
+                      }}
+                      className="w-full py-2 rounded-lg text-[11px] font-bold text-black bg-[#D4AF37] active:scale-95 transition"
+                    >
+                      Buy {PRIMARY_CUSTOM_ASSET_LABEL} →
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs text-gray-400">
+                      All spins used for today.
+                    </p>
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      Resets in{" "}
+                      <span className="font-mono text-gray-300">
+                        {resetCountdown}
+                      </span>
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           )}
         </div>
+
+        {/* ── Slot Machine card ── */}
+        {(() => {
+          const slotUnlocked = DEV_BYPASS || slotCanSpin;
+          const slotLocked = !slotCanSpin;
+          return (
+            <div
+              className={`rounded-2xl border overflow-hidden ${
+                slotUnlocked ? "border-purple-500/40" : "border-white/10"
+              }`}
+              style={{
+                background: slotUnlocked
+                  ? "rgba(168,85,247,0.06)"
+                  : "rgba(255,255,255,0.03)",
+                backdropFilter: "blur(12px)",
+              }}
+            >
+              <div className="px-4 pt-4 pb-3">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center space-x-2">
+                    <span
+                      className={`material-symbols-outlined text-2xl ${slotUnlocked ? "text-purple-400" : "text-gray-500"}`}
+                      style={{ fontVariationSettings: "'FILL' 1" }}
+                    >
+                      smart_toy
+                    </span>
+                    <p
+                      className={`text-base font-bold ${slotUnlocked ? "text-white" : "text-gray-400"}`}
+                    >
+                      Slot Machine
+                    </p>
+                  </div>
+                  {slotUnlocked ? (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                      {slotSpinsRemaining} spin
+                      {slotSpinsRemaining !== 1 ? "s" : ""} left
+                    </span>
+                  ) : slotLocked ? (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/5 text-gray-500 border border-white/10">
+                      {isTier0 ? "used up" : resetCountdown}
+                    </span>
+                  ) : null}
+                </div>
+                <p className="text-[11px] text-gray-500 ml-8">
+                  Match 3 reels — win wXLM, wNSAFL, wXRP, wUSDC 🎰
+                </p>
+              </div>
+
+              {slotUnlocked && (
+                <div className="px-4 pb-4">
+                  <button
+                    onClick={() => {
+                      haptic.medium();
+                      onSlot();
+                    }}
+                    className="w-full py-3 rounded-xl text-sm font-bold text-white active:scale-95 transition"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #7c3aed 100%)",
+                    }}
+                  >
+                    🎰 Pull the Lever
+                  </button>
+                </div>
+              )}
+
+              {slotLocked && (
+                <div className="px-4 pb-4">
+                  <div className="rounded-xl bg-white/4 border border-white/8 p-3">
+                    {isTier0 ? (
+                      <>
+                        <p className="text-xs text-gray-300 font-semibold mb-1">
+                          Welcome spins used up 🎯
+                        </p>
+                        <p className="text-[11px] text-gray-500">
+                          Get Tier 1 for 3 daily slot spins
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-xs text-gray-400">
+                          All spins used for today.
+                        </p>
+                        <p className="text-[11px] text-gray-500 mt-0.5">
+                          Resets in{" "}
+                          <span className="font-mono text-gray-300">
+                            {resetCountdown}
+                          </span>
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* ── Scratch Card card ── */}
+        {(() => {
+          const scratchUnlocked = DEV_BYPASS || scratchCanPlay;
+          const scratchLocked = !scratchCanPlay;
+          return (
+            <div
+              className={`rounded-2xl border overflow-hidden ${
+                scratchUnlocked ? "border-emerald-500/40" : "border-white/10"
+              }`}
+              style={{
+                background: scratchUnlocked
+                  ? "rgba(16,185,129,0.06)"
+                  : "rgba(255,255,255,0.03)",
+                backdropFilter: "blur(12px)",
+              }}
+            >
+              <div className="px-4 pt-4 pb-3">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center space-x-2">
+                    <span
+                      className={`material-symbols-outlined text-2xl ${scratchUnlocked ? "text-emerald-400" : "text-gray-500"}`}
+                      style={{ fontVariationSettings: "'FILL' 1" }}
+                    >
+                      playing_cards
+                    </span>
+                    <p
+                      className={`text-base font-bold ${scratchUnlocked ? "text-white" : "text-gray-400"}`}
+                    >
+                      Scratch Card
+                    </p>
+                  </div>
+                  {scratchUnlocked ? (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      {scratchCardsRemaining} card
+                      {scratchCardsRemaining !== 1 ? "s" : ""} left
+                    </span>
+                  ) : scratchLocked ? (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/5 text-gray-500 border border-white/10">
+                      {isTier0 ? "used up" : resetCountdown}
+                    </span>
+                  ) : null}
+                </div>
+                <p className="text-[11px] text-gray-500 ml-8">
+                  Scratch 3×3 grid — match 3 to win prizes 🃏
+                </p>
+              </div>
+
+              {scratchUnlocked && (
+                <div className="px-4 pb-4">
+                  <button
+                    onClick={() => {
+                      haptic.medium();
+                      onScratch();
+                    }}
+                    className="w-full py-3 rounded-xl text-sm font-bold text-white active:scale-95 transition"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #059669 0%, #10b981 50%, #059669 100%)",
+                    }}
+                  >
+                    🃏 Scratch a Card
+                  </button>
+                </div>
+              )}
+
+              {scratchLocked && (
+                <div className="px-4 pb-4">
+                  <div className="rounded-xl bg-white/4 border border-white/8 p-3">
+                    {isTier0 ? (
+                      <>
+                        <p className="text-xs text-gray-300 font-semibold mb-1">
+                          Welcome card used up 🃏
+                        </p>
+                        <p className="text-[11px] text-gray-500">
+                          Get Tier 1 for 1 daily scratch card
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-xs text-gray-400">
+                          Card used for today.
+                        </p>
+                        <p className="text-[11px] text-gray-500 mt-0.5">
+                          Resets in{" "}
+                          <span className="font-mono text-gray-300">
+                            {resetCountdown}
+                          </span>
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Quiz card */}
         <div
@@ -1240,297 +1247,471 @@ function HubView({ onPlay, onLucky, onQuiz, totalPoints, tierPoints, tierLabel, 
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-full bg-purple-500/15 border border-purple-500/30 flex items-center justify-center">
-                <span className="material-symbols-outlined text-purple-400 text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>quiz</span>
+                <span
+                  className="material-symbols-outlined text-purple-400 text-xl"
+                  style={{ fontVariationSettings: "'FILL' 1" }}
+                >
+                  quiz
+                </span>
               </div>
               <div>
                 <p className="text-base font-bold text-white">AFL/WAFL Quiz</p>
-                <p className="text-xs text-gray-400">Test your footy knowledge</p>
+                <p className="text-xs text-gray-400">
+                  Test your footy knowledge
+                </p>
               </div>
             </div>
-            <span className="material-symbols-outlined text-gray-500">chevron_right</span>
+            <span className="material-symbols-outlined text-gray-500">
+              chevron_right
+            </span>
           </div>
           <div className="grid grid-cols-3 gap-2">
             {[
-              { label: 'Quick', q: '5 Q', color: 'text-blue-300' },
-              { label: 'Standard', q: '10 Q', color: 'text-[#D4AF37]' },
-              { label: 'Champion', q: '20 Q', color: 'text-purple-400' },
+              { label: "Quick", q: "5 Q", color: "text-blue-300" },
+              { label: "Standard", q: "10 Q", color: "text-[#D4AF37]" },
+              { label: "Champion", q: "20 Q", color: "text-purple-400" },
             ].map(({ label, q, color }) => (
-              <div key={label} className="bg-white/3 rounded-lg py-1.5 text-center border border-white/8">
+              <div
+                key={label}
+                className="bg-white/3 rounded-lg py-1.5 text-center border border-white/8"
+              >
                 <p className={`text-xs font-bold ${color}`}>{label}</p>
                 <p className="text-[9px] text-gray-500">{q}</p>
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Mini games grid */}
-        <div>
-          <p className="text-xs font-bold text-white mb-2.5">Games</p>
-          <div className="grid grid-cols-2 gap-3">
-            {miniGames.map((game) => (
-              <div
-                key={game.id}
-                className={`rounded-2xl p-3.5 border flex flex-col space-y-2 ${
-                  game.unlocked ? 'border-[#D4AF37]/25' : 'border-white/8 opacity-60'
-                }`}
-                style={{
-                  background: game.unlocked ? 'rgba(212,175,55,0.05)' : 'rgba(255,255,255,0.02)',
-                  backdropFilter: 'blur(12px)',
-                }}
-              >
-                <div className="flex items-start justify-between">
-                  <span className={`material-symbols-outlined text-2xl ${game.unlocked ? 'text-[#D4AF37]' : 'text-gray-600'}`}
-                    style={{ fontVariationSettings: "'FILL' 1" }}>
-                    {game.icon}
-                  </span>
-                  {!game.unlocked && (
-                    <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full border border-white/10 text-gray-500 uppercase tracking-wider">
-                      {'comingSoon' in game ? 'Soon' : '🔒'}
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <p className={`text-xs font-bold leading-tight ${game.unlocked ? 'text-white' : 'text-gray-500'}`}>
-                    {game.name}
-                  </p>
-                  <p className="text-[9px] text-gray-600 leading-snug mt-0.5">{game.description}</p>
-                </div>
-                {game.unlocked && game.onPlay && (
-                  <button
-                    onClick={() => { haptic.medium(); game.onPlay!() }}
-                    className="w-full py-2 rounded-xl text-[11px] font-bold text-black bg-[#D4AF37] active:scale-95 transition"
-                  >
-                    Play
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
+          {quizPoints > 0 && (
+            <p className="text-[10px] text-purple-400 mt-2 text-center">
+              +{quizPoints} quiz points earned
+            </p>
+          )}
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
-const BONUS_BALLS_KEY = 'nsafl_bonus_balls'
-
 export default function GamePage() {
-  const router = useRouter()
-  const [view, setView] = useState<GameView>('hub')
+  const router = useRouter();
+  const [view, setView] = useState<GameView>("hub");
 
-  const tokenBalance = useWalletStore((s) => s.tokenBalance)
-  const stellarAddress = useWalletStore((s) => s.stellarAddress)
-  const setBalances = useWalletStore((s) => s.setBalances)
+  const tokenBalance = useWalletStore((s) => s.tokenBalance);
+  const stellarAddress = useWalletStore((s) => s.stellarAddress);
+  const setBalances = useWalletStore((s) => s.setBalances);
 
-  // Re-verify balance on every mount and on bfcache restore (back button)
+  // Re-verify balance on mount and bfcache restore
   useEffect(() => {
     if (stellarAddress) {
       fetch(`/api/stellar/balance?address=${stellarAddress}`)
-        .then(r => r.json())
-        .then(j => { if (j.success) setBalances(j.data.token, j.data.xlm) })
-        .catch(() => null)
+        .then((r) => r.json())
+        .then((j) => {
+          if (j.success) setBalances(j.data.token, j.data.xlm);
+        })
+        .catch(() => null);
     }
     const onPageShow = (e: PageTransitionEvent) => {
       if (e.persisted && stellarAddress) {
         fetch(`/api/stellar/balance?address=${stellarAddress}`)
-          .then(r => r.json())
-          .then(j => { if (j.success) setBalances(j.data.token, j.data.xlm) })
-          .catch(() => null)
+          .then((r) => r.json())
+          .then((j) => {
+            if (j.success) setBalances(j.data.token, j.data.xlm);
+          })
+          .catch(() => null);
       }
-    }
-    window.addEventListener('pageshow', onPageShow)
-    return () => window.removeEventListener('pageshow', onPageShow)
-  }, [stellarAddress, setBalances])
-  const balance = parseFloat(tokenBalance) || 0
-  const tierPoints = getPointsFromTier(balance)
-  const currentTier = getTierForBalance(balance)
-  const tierLabel = currentTier.label
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, [stellarAddress, setBalances]);
 
-  // Referral balls — fetched from API
-  const [referralBalls, setReferralBalls] = useState(0)
-  // Bonus balls — server-side source of truth (admin grants + Lucky Draw wins)
-  const [bonusBalls, setBonusBalls] = useState(0)
+  const balance = parseFloat(tokenBalance) || 0;
+  const currentTier = getTierForBalance(balance);
+  const tierLabel = currentTier.label;
+  const isTier0 = currentTier.id === "pre-tier";
 
-  useEffect(() => {
-    fetch('/api/user/referrals', {
-      headers: { 'x-telegram-init-data': getTelegramInitData() },
+  // ── Lucky Draw spin status ─────────────────────────────────────────────────
+  const [luckyKey, setLuckyKey] = useState(0);
+  const [luckyStatusReady, setLuckyStatusReady] = useState(DEV_BYPASS); // true once first fetch done
+  const [luckyCanSpin, setLuckyCanSpin] = useState(DEV_BYPASS);
+  const [luckySpinsRemaining, setLuckySpinsRemaining] = useState(
+    DEV_BYPASS ? 99 : 0,
+  );
+  const [luckyDailyLimit, setLuckyDailyLimit] = useState(DEV_BYPASS ? 99 : 0);
+  const [luckyBonusSpins, setLuckyBonusSpins] = useState(0);
+
+  // Returns fresh spin values so callers can act on them immediately (avoids stale closure)
+  const fetchSpinStatus = useCallback((): Promise<{
+    canSpin: boolean;
+    spinsRemaining: number;
+    bonusSpins: number;
+  } | null> => {
+    if (DEV_BYPASS) return Promise.resolve(null);
+    return fetch("/api/game/win", {
+      headers: { "x-telegram-init-data": getTelegramInitData() },
     })
-      .then(r => r.json())
-      .then(j => { if (j.success) setReferralBalls(j.data?.referralCount ?? 0) })
-      .catch(() => null)
-  }, [])
-
-  useEffect(() => {
-    fetch('/api/user/bonus-balls', {
-      headers: { 'x-telegram-init-data': getTelegramInitData() },
-    })
-      .then(r => r.json())
-      .then(j => { if (j.success) setBonusBalls(j.data?.bonusBalls ?? 0) })
-      .catch(() => null)
-  }, [])
-
-  const [quizMode, setQuizMode] = useState<QuizMode | null>(null)
-  const [quizSessionId, setQuizSessionId] = useState<string>('')
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [quizQuestions, setQuizQuestions] = useState<any[]>([])
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [quizResult, setQuizResult] = useState<any>(null)
-  const [playsLeft, setPlaysLeft] = useState<Record<string, number>>({ quick: 3, standard: 3, champion: 3 })
-  const [quizPoints, setQuizPoints] = useState(0)
-
-  // ── Lucky Draw spin status (fetched here so HubView can disable the button) ─
-  const [luckyCanSpin, setLuckyCanSpin] = useState(DEV_BYPASS)
-  const [luckySpinsRemaining, setLuckySpinsRemaining] = useState(DEV_BYPASS ? 99 : 0)
-  const [luckyDailyLimit, setLuckyDailyLimit] = useState(DEV_BYPASS ? 99 : 0)
-
-  useEffect(() => {
-    if (DEV_BYPASS) return
-    fetch('/api/game/win', { headers: { 'x-telegram-init-data': getTelegramInitData() } })
-      .then(r => r.json())
-      .then(j => {
-        const d = j.data ?? j
-        setLuckyCanSpin(d.canSpin ?? false)
-        setLuckySpinsRemaining(d.spinsRemaining ?? 0)
-        setLuckyDailyLimit(d.dailyLimit ?? 1)
+      .then((r) => r.json())
+      .then((j) => {
+        const d = j.data ?? j;
+        const canSpin = d.canSpin ?? false;
+        const spinsRemaining = d.spinsRemaining ?? 0;
+        const bonusSpins = d.bonusSpins ?? 0;
+        setLuckyCanSpin(canSpin);
+        setLuckySpinsRemaining(spinsRemaining);
+        setLuckyDailyLimit(d.dailyLimit ?? 0);
+        setLuckyBonusSpins(bonusSpins);
+        setLuckyStatusReady(true);
+        return { canSpin, spinsRemaining, bonusSpins };
       })
-      .catch(() => setLuckyCanSpin(false))
-  }, [])
+      .catch(() => {
+        setLuckyCanSpin(false);
+        setLuckyStatusReady(true);
+        return null;
+      });
+  }, []);
+
+  // Fetch on mount
+  useEffect(() => {
+    fetchSpinStatus();
+  }, [fetchSpinStatus]);
+
+  // Enter Lucky Draw: fetch fresh data FIRST, then switch view — never mount with stale state
+  const handleEnterLucky = useCallback(async () => {
+    setLuckyStatusReady(false);
+    await fetchSpinStatus();
+    setLuckyKey((k) => k + 1);
+    setView("lucky");
+  }, [fetchSpinStatus]);
+
+  // ── Slot Machine spin status ───────────────────────────────────────────────
+  const [slotKey, setSlotKey] = useState(0);
+  const [slotStatusReady, setSlotStatusReady] = useState(DEV_BYPASS);
+  const [slotCanSpin, setSlotCanSpin] = useState(DEV_BYPASS);
+  const [slotSpinsRemaining, setSlotSpinsRemaining] = useState(
+    DEV_BYPASS ? 99 : 0,
+  );
+  const [slotDailyLimit, setSlotDailyLimit] = useState(DEV_BYPASS ? 99 : 0);
+  const [slotBonusSpins, setSlotBonusSpins] = useState(0);
+
+  const fetchSlotStatus = useCallback((): Promise<{
+    canSpin: boolean;
+    spinsRemaining: number;
+    bonusSpins: number;
+  } | null> => {
+    if (DEV_BYPASS) return Promise.resolve(null);
+    return fetch("/api/game/slot", {
+      headers: { "x-telegram-init-data": getTelegramInitData() },
+    })
+      .then((r) => r.json())
+      .then((j) => {
+        const d = j.data ?? j;
+        const canSpin = d.canSpin ?? false;
+        const spinsRemaining = d.spinsRemaining ?? 0;
+        const bonusSpins = d.bonusSpins ?? 0;
+        setSlotCanSpin(canSpin);
+        setSlotSpinsRemaining(spinsRemaining);
+        setSlotDailyLimit(d.dailyLimit ?? 0);
+        setSlotBonusSpins(bonusSpins);
+        setSlotStatusReady(true);
+        return { canSpin, spinsRemaining, bonusSpins };
+      })
+      .catch(() => {
+        setSlotCanSpin(false);
+        setSlotStatusReady(true);
+        return null;
+      });
+  }, []);
 
   useEffect(() => {
-    fetch('/api/quiz/status', { headers: { 'x-telegram-init-data': getTelegramInitData() } })
-      .then(r => r.json())
-      .then(j => {
-        const d = j.data ?? j
-        if (d.playsLeft) setPlaysLeft(d.playsLeft)
-        if (d.quizPoints !== undefined) setQuizPoints(d.quizPoints)
-      }).catch(() => {})
-  }, [])
+    fetchSlotStatus();
+  }, [fetchSlotStatus]);
 
-  const addBonusBall = useCallback(() => {
-    setBonusBalls(prev => prev + 1)
-    fetch('/api/user/bonus-balls', {
-      method: 'POST',
-      headers: { 'x-telegram-init-data': getTelegramInitData() },
-    }).catch(() => {
-      setBonusBalls(prev => prev - 1) // rollback on failure
+  const handleEnterSlot = useCallback(async () => {
+    if (!DEV_BYPASS) {
+      setSlotStatusReady(false);
+      await fetchSlotStatus();
+    }
+    setSlotKey((k) => k + 1);
+    setView("slot");
+  }, [fetchSlotStatus]);
+
+  const handleSlotSpinComplete = useCallback(
+    async (
+      onFresh: (can: boolean, remaining: number, bonus: number) => void,
+    ) => {
+      const fresh = await fetchSlotStatus();
+      if (fresh) onFresh(fresh.canSpin, fresh.spinsRemaining, fresh.bonusSpins);
+    },
+    [fetchSlotStatus],
+  );
+
+  // ── Scratch Card state ─────────────────────────────────────────────────────
+  const [scratchKey, setScratchKey] = useState(0);
+  const [scratchStatusReady, setScratchStatusReady] = useState(DEV_BYPASS);
+  const [scratchCanPlay, setScratchCanPlay] = useState(DEV_BYPASS);
+  const [scratchCardsRemaining, setScratchCardsRemaining] = useState(
+    DEV_BYPASS ? 99 : 0,
+  );
+  const [scratchDailyLimit, setScratchDailyLimit] = useState(
+    DEV_BYPASS ? 99 : 0,
+  );
+  const [scratchBonusCards, setScratchBonusCards] = useState(0);
+
+  const fetchScratchStatus = useCallback((): Promise<{
+    canScratch: boolean;
+    cardsRemaining: number;
+    bonusCards: number;
+  } | null> => {
+    if (DEV_BYPASS) return Promise.resolve(null);
+    return fetch("/api/game/scratch", {
+      headers: { "x-telegram-init-data": getTelegramInitData() },
     })
-  }, [])
+      .then((r) => r.json())
+      .then((j) => {
+        const d = j.data ?? j;
+        const canScratch = d.canScratch ?? false;
+        const cardsRemaining = d.cardsRemaining ?? 0;
+        const bonusCards = d.bonusCards ?? 0;
+        setScratchCanPlay(canScratch);
+        setScratchCardsRemaining(cardsRemaining);
+        setScratchDailyLimit(d.dailyLimit ?? 0);
+        setScratchBonusCards(bonusCards);
+        setScratchStatusReady(true);
+        return { canScratch, cardsRemaining, bonusCards };
+      })
+      .catch(() => {
+        setScratchCanPlay(false);
+        setScratchStatusReady(true);
+        return null;
+      });
+  }, []);
 
-  const totalPoints = 1 + getTotalPoints(balance) + referralBalls + bonusBalls
+  useEffect(() => {
+    fetchScratchStatus();
+  }, [fetchScratchStatus]);
+
+  const handleEnterScratch = useCallback(async () => {
+    if (!DEV_BYPASS) {
+      setScratchStatusReady(false);
+      await fetchScratchStatus();
+    }
+    setScratchKey((k) => k + 1);
+    setView("scratch");
+  }, [fetchScratchStatus]);
+
+  const handleScratchComplete = useCallback(
+    async (
+      onFresh: (can: boolean, remaining: number, bonus: number) => void,
+    ) => {
+      const fresh = await fetchScratchStatus();
+      if (fresh)
+        onFresh(fresh.canScratch, fresh.cardsRemaining, fresh.bonusCards);
+    },
+    [fetchScratchStatus],
+  );
+
+  const handleBackFromScratch = useCallback(() => {
+    fetchScratchStatus();
+    setScratchStatusReady(false);
+    setView("hub");
+  }, [fetchScratchStatus]);
+
+  // ── Quiz state ─────────────────────────────────────────────────────────────
+  const [quizMode, setQuizMode] = useState<QuizMode | null>(null);
+  const [quizSessionId, setQuizSessionId] = useState<string>("");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [quizResult, setQuizResult] = useState<any>(null);
+  const [playsLeft, setPlaysLeft] = useState<Record<string, number>>({
+    quick: 3,
+    standard: 3,
+    champion: 3,
+  });
+  const [quizPoints, setQuizPoints] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/quiz/status", {
+      headers: { "x-telegram-init-data": getTelegramInitData() },
+    })
+      .then((r) => r.json())
+      .then((j) => {
+        const d = j.data ?? j;
+        if (d.playsLeft) setPlaysLeft(d.playsLeft);
+        if (d.quizPoints !== undefined) setQuizPoints(d.quizPoints);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSpinComplete = useCallback(
+    async (
+      onFresh: (can: boolean, remaining: number, bonus: number) => void,
+    ) => {
+      const fresh = await fetchSpinStatus();
+      if (fresh) onFresh(fresh.canSpin, fresh.spinsRemaining, fresh.bonusSpins);
+    },
+    [fetchSpinStatus],
+  );
 
   const startQuiz = async (mode: QuizMode) => {
-    haptic.light()
+    haptic.light();
     try {
       const res = await fetch(`/api/quiz/session?mode=${mode.id}`, {
-        headers: { 'x-telegram-init-data': getTelegramInitData() },
-      })
-      const json = await res.json()
-      const data = json.data ?? json
+        headers: { "x-telegram-init-data": getTelegramInitData() },
+      });
+      const json = await res.json();
+      const data = json.data ?? json;
       if (!res.ok) {
-        alert(data.error ?? 'Could not start quiz')
-        return
+        alert(data.error ?? "Could not start quiz");
+        return;
       }
-      setQuizMode(mode)
-      setQuizSessionId(data.sessionId)
-      setQuizQuestions(data.questions)
-      setPlaysLeft(prev => ({ ...prev, [mode.id]: data.playsRemainingToday }))
-      setView('quiz')
+      setQuizMode(mode);
+      setQuizSessionId(data.sessionId);
+      setQuizQuestions(data.questions);
+      setPlaysLeft((prev) => ({
+        ...prev,
+        [mode.id]: data.playsRemainingToday,
+      }));
+      setView("quiz");
     } catch {
-      alert('Network error — please try again')
+      alert("Network error — please try again");
     }
-  }
+  };
 
-  useTelegramBack(useCallback(() => {
-    if (view === 'quiz') setView('quiz-pick')
-    else if (view === 'quiz-pick' || view === 'quiz-result') setView('hub')
-    else if (view !== 'hub') setView('hub')
-  }, [view]))
+  useTelegramBack(
+    useCallback(() => {
+      if (view === "quiz") setView("quiz-pick");
+      else if (view === "quiz-pick" || view === "quiz-result") setView("hub");
+      else if (view === "slot") {
+        fetchSlotStatus();
+        setSlotStatusReady(false);
+        setView("hub");
+      } else if (view === "scratch") {
+        fetchScratchStatus();
+        setScratchStatusReady(false);
+        setView("hub");
+      } else if (view !== "hub") setView("hub");
+      else router.back();
+    }, [view, router, fetchSlotStatus, fetchScratchStatus]),
+  );
 
-  if (currentTier.id === 'pre-tier') {
-    return (
-      <WalletGuard>
-        <div className="min-h-screen bg-[#0A0E1A] flex flex-col items-center justify-center px-8 text-center">
-          <div className="relative mb-8">
-            <div className="absolute inset-0 bg-[#D4AF37]/20 rounded-full blur-2xl scale-150" />
-            <div className="relative w-24 h-24 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[52px] text-[#D4AF37]" style={{ fontVariationSettings: "'FILL' 1" }}>lock</span>
-            </div>
-          </div>
-          <h1 className="text-2xl font-bold text-white font-['Playfair_Display'] mb-3">Game Zone Locked</h1>
-          <p className="text-sm text-gray-400 max-w-[260px] leading-relaxed mb-8">
-            You need at least 100 {PRIMARY_CUSTOM_ASSET_LABEL} (Tier 1) to access the Game Zone.
-          </p>
-          <button
-            onClick={() => router.push('/buy')}
-            className="w-full max-w-xs bg-[#D4AF37] text-[#0A0E1A] font-bold py-4 rounded-xl text-base flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(212,175,55,0.4)]"
-          >
-            <span className="material-symbols-outlined text-[20px]">shopping_cart</span>
-            Buy {PRIMARY_CUSTOM_ASSET_LABEL}
-          </button>
-        </div>
-        <BottomNav />
-      </WalletGuard>
-    )
-  }
+  const handleBackFromSlot = useCallback(() => {
+    fetchSlotStatus();
+    setSlotStatusReady(false);
+    setView("hub");
+  }, [fetchSlotStatus]);
 
   return (
     <WalletGuard>
-      {view === 'playing' ? (
-        <CanvasGame
-          numBalls={totalPoints}
-          onBack={() => setView('hub')}
-        />
-      ) : view === 'lucky' ? (
-        <LuckyDraw
-          onBack={() => setView('hub')}
-          stellarAddress={stellarAddress}
-          totalBalls={totalPoints}
-          onBallWon={addBonusBall}
-          initialCanSpin={luckyCanSpin}
-          initialSpinsRemaining={luckySpinsRemaining}
-          initialDailyLimit={luckyDailyLimit}
-        />
-      ) : view === 'quiz-pick' ? (
+      {view === "scratch" ? (
+        !scratchStatusReady ? (
+          <div className="fixed inset-0 bg-[#0A0E1A] flex items-center justify-center">
+            <span className="material-symbols-outlined text-[#D4AF37] text-4xl animate-spin">
+              progress_activity
+            </span>
+          </div>
+        ) : (
+          <ScratchCard
+            key={scratchKey}
+            onBack={handleBackFromScratch}
+            stellarAddress={stellarAddress}
+            onCardComplete={handleScratchComplete}
+            initialCanScratch={scratchCanPlay}
+            initialCardsRemaining={scratchCardsRemaining}
+            initialDailyLimit={scratchDailyLimit}
+            initialBonusCards={scratchBonusCards}
+            tierLabel={tierLabel}
+          />
+        )
+      ) : view === "slot" ? (
+        !slotStatusReady ? (
+          <div className="fixed inset-0 bg-[#0A0E1A] flex items-center justify-center">
+            <span className="material-symbols-outlined text-[#D4AF37] text-4xl animate-spin">
+              progress_activity
+            </span>
+          </div>
+        ) : (
+          <SlotMachine
+            key={slotKey}
+            onBack={handleBackFromSlot}
+            stellarAddress={stellarAddress}
+            onSpinComplete={handleSlotSpinComplete}
+            initialCanSpin={slotCanSpin}
+            initialSpinsRemaining={slotSpinsRemaining}
+            initialDailyLimit={slotDailyLimit}
+            initialBonusSpins={slotBonusSpins}
+            tierLabel={tierLabel}
+          />
+        )
+      ) : view === "lucky" ? (
+        !luckyStatusReady ? (
+          <div className="fixed inset-0 bg-[#0A0E1A] flex items-center justify-center">
+            <span className="material-symbols-outlined text-[#D4AF37] text-4xl animate-spin">
+              progress_activity
+            </span>
+          </div>
+        ) : (
+          <LuckyDraw
+            key={luckyKey}
+            onBack={() => {
+              fetchSpinStatus();
+              setLuckyStatusReady(false);
+              setView("hub");
+            }}
+            stellarAddress={stellarAddress}
+            onSpinComplete={handleSpinComplete}
+            initialCanSpin={luckyCanSpin}
+            initialSpinsRemaining={luckySpinsRemaining}
+            initialDailyLimit={luckyDailyLimit}
+            initialBonusSpins={luckyBonusSpins}
+            tierLabel={tierLabel}
+          />
+        )
+      ) : view === "quiz-pick" ? (
         <ModePicker
           playsLeft={playsLeft}
           onSelect={startQuiz}
-          onBack={() => setView('hub')}
+          onBack={() => setView("hub")}
         />
-      ) : view === 'quiz' && quizMode && quizSessionId ? (
+      ) : view === "quiz" && quizMode && quizSessionId ? (
         <QuizSession
           mode={quizMode}
           sessionId={quizSessionId}
           questions={quizQuestions}
-          onComplete={(result) => { setQuizResult(result); setView('quiz-result') }}
-          onBack={() => setView('hub')}
+          onComplete={(result) => {
+            setQuizResult(result);
+            setView("quiz-result");
+          }}
+          onBack={() => setView("hub")}
         />
-      ) : view === 'quiz-result' && quizResult ? (
+      ) : view === "quiz-result" && quizResult ? (
         <ResultScreen
           result={quizResult}
-          modeName={quizMode?.label ?? 'Quiz'}
-          onPlayAgain={() => setView('quiz-pick')}
-          onBack={() => setView('hub')}
+          modeName={quizMode?.label ?? "Quiz"}
+          onPlayAgain={() => setView("quiz-pick")}
+          onBack={() => setView("hub")}
         />
       ) : (
         <>
           <HubView
-            onPlay={() => setView('playing')}
-            onLucky={() => setView('lucky')}
-            onQuiz={() => setView('quiz-pick')}
-            totalPoints={totalPoints}
-            tierPoints={tierPoints}
-            referralBalls={referralBalls}
-            bonusBalls={bonusBalls}
+            onLucky={handleEnterLucky}
+            onSlot={handleEnterSlot}
+            onScratch={handleEnterScratch}
+            onQuiz={() => setView("quiz-pick")}
             tierLabel={tierLabel}
+            isTier0={isTier0}
             quizPoints={quizPoints}
             luckyCanSpin={luckyCanSpin}
             luckySpinsRemaining={luckySpinsRemaining}
             luckyDailyLimit={luckyDailyLimit}
+            luckyBonusSpins={luckyBonusSpins}
+            slotCanSpin={slotCanSpin}
+            slotSpinsRemaining={slotSpinsRemaining}
+            scratchCanPlay={scratchCanPlay}
+            scratchCardsRemaining={scratchCardsRemaining}
           />
           <BottomNav />
         </>
       )}
     </WalletGuard>
-  )
+  );
 }

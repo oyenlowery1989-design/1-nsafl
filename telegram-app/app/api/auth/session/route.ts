@@ -58,17 +58,26 @@ export async function POST(req: NextRequest) {
     .select('id, is_blocked, referred_by, created_at')
     .single()
 
-  // 2b. Save referral only on brand-new users (row created within last 10s).
-  // Existing users without a referral must be assigned manually — auto-capture
-  // only applies at the moment the account is first created.
-  const isNewUser = upserted?.created_at
-    ? Date.now() - new Date(upserted.created_at).getTime() < 10_000
-    : false
-  if (upserted && referredBy && isNewUser && upserted.referred_by === null) {
-    await supabase
+  // 2b. Save referral — only if valid, not self-referral, not already set.
+  if (
+    upserted &&
+    referredBy &&
+    referredBy !== telegramUser.id &&
+    upserted.referred_by === null
+  ) {
+    // Verify the referrer actually exists before saving
+    const { data: referrerExists } = await supabase
       .from('users')
-      .update({ referred_by: referredBy })
-      .eq('telegram_id', telegramUser.id)
+      .select('telegram_id')
+      .eq('telegram_id', referredBy)
+      .maybeSingle()
+
+    if (referrerExists) {
+      await supabase
+        .from('users')
+        .update({ referred_by: referredBy })
+        .eq('telegram_id', telegramUser.id)
+    }
   }
 
   // 3. Check soft-block on user row

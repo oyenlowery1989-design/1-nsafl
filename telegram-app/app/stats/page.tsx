@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
 import { ALL_CLUBS, AFL_CLUBS, WAFL_CLUBS } from "@/config/afl"
 import { getTelegramInitData } from '@/lib/telegram'
+import { TIERS, formatReward } from '@/config/tiers'
 import ErrorCard from '@/components/ErrorCard'
 import type { LeaderboardEntry } from '@/app/api/leaderboard/route'
 import { useWalletStore } from '@/hooks/useStore'
@@ -33,7 +34,6 @@ interface StatsData {
   totalFunding: string
   totalFundingRaw: number
   weeklyChange: string
-  chartData: number[]
   target: string
   topSupporters: { rank: number; name: string; hub: string; amount: string }[]
   walletCount: number
@@ -51,8 +51,8 @@ interface StatsData {
   tierDistribution: {
     preTier: number
     tier1_4: number
-    tier5_8: number
-    tier9_12: number
+    tier5_9: number
+    top: number
   }
   teamDistribution?: Record<string, number>
   xlmGoal: number
@@ -65,8 +65,6 @@ interface GameStatsData {
   uniquePlayers: number
   leaderboard: { rank: number; name: string; kicks: number }[]
 }
-
-const WEEK_LABELS = ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4', 'Now']
 
 function MiniStat({ icon, label, value, color = 'text-white' }: { icon: string; label: string; value: string | number; color?: string }) {
   return (
@@ -249,37 +247,6 @@ export default function StatsPage() {
                   {/* Divider */}
                   <div className="h-px bg-white/8 mx-4" />
 
-                  {/* Bar chart */}
-                  <div className="px-4 pt-3 pb-3">
-                    <p className="text-[9px] text-gray-600 mb-2 uppercase tracking-wide">Weekly Activity</p>
-                    <div className="flex items-end justify-between h-14 space-x-1.5">
-                      {data.chartData.map((v, i) => {
-                        const isLast = i === data.chartData.length - 1
-                        const isPrev = i === data.chartData.length - 2
-                        return (
-                          <div key={i} className="flex-1 flex flex-col items-center">
-                            <div
-                              className="w-full rounded-t-sm transition-all"
-                              style={{
-                                height: `${v}%`,
-                                minHeight: 3,
-                                background: isLast
-                                  ? 'linear-gradient(180deg, #F5D76E, #D4AF37)'
-                                  : isPrev
-                                  ? 'rgba(212,175,55,0.35)'
-                                  : 'rgba(255,255,255,0.08)',
-                                boxShadow: isLast ? '0 0 8px rgba(212,175,55,0.5)' : undefined,
-                              }}
-                            />
-                            <span className={`text-[8px] mt-1 ${isLast ? 'text-[#D4AF37] font-bold' : 'text-gray-600'}`}>
-                              {WEEK_LABELS[i]}
-                            </span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-
                   {/* Footer */}
                   <div className="px-4 pb-3 flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
@@ -315,10 +282,10 @@ export default function StatsPage() {
                   <h3 className="text-sm font-bold text-white">Holder Distribution</h3>
                 </div>
                 <div className="glass-card p-4 rounded-xl space-y-3">
-                  <DistributionBar label="Pre-Tier (< 100)" count={data.tierDistribution.preTier} total={data.walletCount} color="bg-gray-500" />
-                  <DistributionBar label="Tier 1–4 (100 – 5k)" count={data.tierDistribution.tier1_4} total={data.walletCount} color="bg-orange-500" />
-                  <DistributionBar label="Tier 5–8 (5k – 100k)" count={data.tierDistribution.tier5_8} total={data.walletCount} color="bg-purple-500" />
-                  <DistributionBar label="Tier 9–12 (100k+)" count={data.tierDistribution.tier9_12} total={data.walletCount} color="bg-emerald-500" />
+                  <DistributionBar label={`Pre-Tier (< ${TIERS[1].minBalance})`} count={data.tierDistribution.preTier} total={data.walletCount} color="bg-gray-500" />
+                  <DistributionBar label={`Tier 1–4 (${formatReward(TIERS[1].minBalance)} – ${formatReward(TIERS[5].minBalance)})`} count={data.tierDistribution.tier1_4} total={data.walletCount} color="bg-orange-500" />
+                  <DistributionBar label={`Tier 5–9 (${formatReward(TIERS[5].minBalance)} – ${formatReward(TIERS[TIERS.length - 1].minBalance)})`} count={data.tierDistribution.tier5_9} total={data.walletCount} color="bg-purple-500" />
+                  <DistributionBar label={`Tier 10 (${formatReward(TIERS[TIERS.length - 1].minBalance)}+)`} count={data.tierDistribution.top} total={data.walletCount} color="bg-emerald-500" />
                 </div>
               </section>
             )}
@@ -352,6 +319,7 @@ export default function StatsPage() {
 
               const aflEntries = allEntries.filter((e) => e.club!.league === 'AFL')
               const waflEntries = allEntries.filter((e) => e.club!.league === 'WAFL')
+              const partnerEntries = allEntries.filter((e) => e.club!.league === 'PARTNER')
               const totalFans = allEntries.reduce((sum, e) => sum + e.count, 0)
 
               const AllegianceRows = ({ entries, limit = 6 }: { entries: typeof aflEntries; limit?: number }) => {
@@ -403,6 +371,28 @@ export default function StatsPage() {
                         {aflEntries.length > 0 && <div className="h-px bg-white/8 mb-3" />}
                         <p className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-widest mb-2">WAFL</p>
                         <AllegianceRows entries={waflEntries} />
+                      </div>
+                    )}
+                    {partnerEntries.length > 0 && (
+                      <div>
+                        <div className="h-px mb-3" style={{ background: 'rgba(232,25,44,0.2)' }} />
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <img src="/whiplash347.png" alt="" width={12} height={12} className="rounded-full object-cover" style={{ boxShadow: '0 0 4px rgba(232,25,44,0.7)' }} />
+                          <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#E8192C' }}>⚡ Partner Team</p>
+                        </div>
+                        {partnerEntries.map(({ teamId, count, club }) => {
+                          const pct = totalFans > 0 ? Math.round((count / totalFans) * 100) : 0
+                          return (
+                            <div key={teamId} className="flex items-center space-x-2">
+                              <img src={club!.logo} alt={club!.shortName} width={22} height={22} className="rounded-full object-cover flex-shrink-0" style={{ boxShadow: '0 0 6px rgba(232,25,44,0.5)' }} />
+                              <span className="text-[11px] text-gray-300 w-24 truncate">{club!.name}</span>
+                              <div className="flex-1 rounded-full h-1.5" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                                <div className="h-1.5 rounded-full transition-all duration-700" style={{ width: `${Math.max(pct, 3)}%`, background: 'linear-gradient(90deg, #E8192C, #00D4FF)' }} />
+                              </div>
+                              <span className="text-[10px] font-bold w-6 text-right" style={{ color: '#E8192C' }}>{count}</span>
+                            </div>
+                          )
+                        })}
                       </div>
                     )}
                   </div>

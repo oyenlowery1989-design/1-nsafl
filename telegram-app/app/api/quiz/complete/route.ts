@@ -2,10 +2,12 @@ import { NextRequest } from 'next/server'
 import { ok, fail } from '@/lib/api-response'
 import { createServiceClient } from '@/lib/supabase-server'
 import { validateTelegramInitData, parseTelegramUser } from '@/lib/telegram'
+import { incrementBonusPool } from '@/lib/gamePool'
 import { nanoid } from 'nanoid'
+import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ''
-const DEV_BYPASS = process.env.NEXT_PUBLIC_DEV_BYPASS === 'true'
+const DEV_BYPASS = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_DEV_BYPASS === 'true'
 
 const MODE_MULT: Record<string, number> = { quick: 1, standard: 1.5, champion: 2 }
 const BASE_POINTS = 10
@@ -13,9 +15,9 @@ const BASE_POINTS = 10
 const PERFECT_PRIZES = [
   { label: '1000 XLM', prize: 'xlm_1000', weight: 10 },
   { label: '100 XLM', prize: 'xlm_100', weight: 20 },
-  { label: '100 NSAFL', prize: 'nsafl_100', weight: 30 },
-  { label: '50 NSAFL', prize: 'nsafl_50', weight: 40 },
-  { label: '25 NSAFL', prize: 'nsafl_25', weight: 50 },
+  { label: `100 ${PRIMARY_CUSTOM_ASSET_CODE}`, prize: 'nsafl_100', weight: 30 },
+  { label: `50 ${PRIMARY_CUSTOM_ASSET_CODE}`, prize: 'nsafl_50', weight: 40 },
+  { label: `25 ${PRIMARY_CUSTOM_ASSET_CODE}`, prize: 'nsafl_25', weight: 50 },
   { label: '+1 Ball', prize: 'ball', weight: 170 },
   { label: 'Better luck next time!', prize: 'none', weight: 680 },
 ]
@@ -116,6 +118,10 @@ export async function POST(req: NextRequest) {
         prize_source: 'quiz',
       })
       prize = { label: picked.label, winCode }
+
+      if (picked.label === '+1 Ball') {
+        await incrementBonusPool(supabase, telegramId, 'bonus_balls', 1, picked.label)
+      }
     }
   }
 

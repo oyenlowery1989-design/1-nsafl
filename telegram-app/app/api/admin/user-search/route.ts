@@ -1,0 +1,68 @@
+/**
+ * GET /api/admin/user-search?q={telegramId|username}
+ * Looks up a user by Telegram ID (numeric) or username (string).
+ * Returns user info, wallets, balances, win count, referral count.
+ */
+import { NextRequest } from 'next/server'
+import { createServiceClient } from '@/lib/supabase-server'
+import { ok, fail } from '@/lib/api-response'
+import { verifyAdminToken } from '@/app/api/admin/route'
+
+export async function GET(req: NextRequest) {
+  if (!verifyAdminToken(req)) return fail('Forbidden', 'FORBIDDEN', 403)
+
+  const q = req.nextUrl.searchParams.get('q')?.trim() ?? ''
+  if (!q) return fail('q is required', 'BAD_REQUEST', 400)
+
+  const supabase = createServiceClient()
+
+  // Build query — numeric = search by telegram_id, otherwise by username
+  const isNumeric = /^\d+$/.test(q)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let userQuery = (supabase as any)
+    .from('users')
+    .select('telegram_id, telegram_username, telegram_first_name, telegram_photo_url, favorite_team, is_blocked, referred_by, created_at, opt_in_telegram_notifications, bonus_spins')
+
+  userQuery = isNumeric
+    ? userQuery.eq('telegram_id', Number(q))
+    : userQuery.ilike('telegram_username', `%${q}%`)
+
+  const { data: users, error } = await userQuery.limit(10)
+  if (error) return fail('DB error', 'DB_ERROR', 500)
+  if (!users || users.length === 0) return fail('No user found', 'NOT_FOUND', 404)
+
+  // Enrich each user with wallet, balance, win count, referral count
+  const enriched = await Promise.all(users.map(async (u: { telegram_id: number; telegram_username: string | null; telegram_first_name: string | null; telegram_photo_url: string | null; favorite_team: string | null; is_blocked: boolean; referred_by: number | null; created_at: string; opt_in_telegram_notifications: boolean; bonus_spins: number | null }) => {
+    // Wallets + balances
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: wallets } = await (supabase as any)
+      .from('wallets')
+      .select('id, stellar_address, is_primary, label, wallet_balances(nsafl_balance, xlm_balance, last_synced_at)')
+      .eq('user_id', (await (supabase as any).from('users').select('id').eq('telegram_id', u.telegram_id).single()).data?.id)
+      .limit(5)
+
+    // Win count
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { count: winCount } = await (supabase as any)
+      .from('lucky_draw_wins')
+      .select('id', { count: 'exact', head: true })
+      .eq('telegram_id', u.telegram_id)
+      .neq('prize', 'Better Luck')
+
+    // Referral count
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { count: refCount } = await (supabase as any)
+      .from('users')
+      .select('telegram_id', { count: 'exact', head: true })
+      .eq('referred_by', u.telegram_id)
+
+    return {
+      ...u,
+      wallets: wallets ?? [],
+      winCount: winCount ?? 0,
+      referralCount: refCount ?? 0,
+    }
+  }))
+
+  return ok({ users: enriched, total: enriched.length })
+}

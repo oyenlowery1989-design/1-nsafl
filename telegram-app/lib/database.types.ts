@@ -74,164 +74,6 @@ export type Database = {
         }
         Relationships: []
       }
-      blocked_telegram_ids: {
-        Row: {
-          blocked_at: string | null
-          id: string
-          reason: string | null
-          telegram_id: number
-        }
-        Insert: {
-          blocked_at?: string | null
-          id?: string
-          reason?: string | null
-          telegram_id: number
-        }
-        Update: {
-          blocked_at?: string | null
-          id?: string
-          reason?: string | null
-          telegram_id?: number
-        }
-        Relationships: []
-      }
-      donations: {
-        Row: {
-          amount: number
-          asset_code: string
-          created_at: string | null
-          donation_target: string | null
-          donation_type: string
-          id: string
-          stellar_tx_hash: string
-          verified: boolean | null
-          wallet_id: string
-        }
-        Insert: {
-          amount: number
-          asset_code: string
-          created_at?: string | null
-          donation_target?: string | null
-          donation_type: string
-          id?: string
-          stellar_tx_hash: string
-          verified?: boolean | null
-          wallet_id: string
-        }
-        Update: {
-          amount?: number
-          asset_code?: string
-          created_at?: string | null
-          donation_target?: string | null
-          donation_type?: string
-          id?: string
-          stellar_tx_hash?: string
-          verified?: boolean | null
-          wallet_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "donations_wallet_id_fkey"
-            columns: ["wallet_id"]
-            isOneToOne: false
-            referencedRelation: "wallets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      game_sessions: {
-        Row: {
-          balls_spawned: number | null
-          created_at: string | null
-          duration_seconds: number | null
-          id: string
-          kicks: number | null
-          telegram_id: number | null
-          wallet_id: string | null
-        }
-        Insert: {
-          balls_spawned?: number | null
-          created_at?: string | null
-          duration_seconds?: number | null
-          id?: string
-          kicks?: number | null
-          telegram_id?: number | null
-          wallet_id?: string | null
-        }
-        Update: {
-          balls_spawned?: number | null
-          created_at?: string | null
-          duration_seconds?: number | null
-          id?: string
-          kicks?: number | null
-          telegram_id?: number | null
-          wallet_id?: string | null
-        }
-        Relationships: []
-      }
-      purchases: {
-        Row: {
-          created_at: string | null
-          token_amount: number | null
-          id: string
-          purchase_type: string | null
-          stellar_tx_hash: string
-          verified: boolean | null
-          wallet_id: string | null
-          xlm_amount: number
-        }
-        Insert: {
-          created_at?: string | null
-          token_amount?: number | null
-          id?: string
-          purchase_type?: string | null
-          stellar_tx_hash: string
-          verified?: boolean | null
-          wallet_id?: string | null
-          xlm_amount: number
-        }
-        Update: {
-          created_at?: string | null
-          token_amount?: number | null
-          id?: string
-          purchase_type?: string | null
-          stellar_tx_hash?: string
-          verified?: boolean | null
-          wallet_id?: string | null
-          xlm_amount?: number
-        }
-        Relationships: []
-      }
-      team_change_requests: {
-        Row: {
-          admin_note: string | null
-          created_at: string | null
-          id: string
-          requested_team: string
-          resolved_at: string | null
-          status: string
-          telegram_id: number
-        }
-        Insert: {
-          admin_note?: string | null
-          created_at?: string | null
-          id?: string
-          requested_team: string
-          resolved_at?: string | null
-          status?: string
-          telegram_id: number
-        }
-        Update: {
-          admin_note?: string | null
-          created_at?: string | null
-          id?: string
-          requested_team?: string
-          resolved_at?: string | null
-          status?: string
-          telegram_id?: number
-        }
-        Relationships: []
-      }
       afl_bets: {
         Row: {
           created_at: string | null
@@ -262,6 +104,92 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_ips: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: number
+          ip: string
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: number
+          ip: string
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: number
+          ip?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      blocked_telegram_ids: {
+        Row: {
+          blocked_at: string
+          reason: string | null
+          telegram_id: number
+        }
+        Insert: {
+          blocked_at?: string
+          reason?: string | null
+          telegram_id: number
+        }
+        Update: {
+          blocked_at?: string
+          reason?: string | null
+          telegram_id?: number
+        }
+        Relationships: []
+      }
+      donations: {
+        Row: {
+          amount: number
+          asset_code: string
+          created_at: string | null
+          donation_target: string | null
+          donation_type: string
+          id: string
+          stellar_tx_hash: string | null
+          verified: boolean | null
+          wallet_id: string | null
+        }
+        Insert: {
+          amount: number
+          asset_code?: string
+          created_at?: string | null
+          donation_target?: string | null
+          donation_type: string
+          id?: string
+          stellar_tx_hash?: string | null
+          verified?: boolean | null
+          wallet_id?: string | null
+        }
+        Update: {
+          amount?: number
+          asset_code?: string
+          created_at?: string | null
+          donation_target?: string | null
+          donation_type?: string
+          id?: string
+          stellar_tx_hash?: string | null
+          verified?: boolean | null
+          wallet_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donations_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       funding_config: {
         Row: {
           created_at: string | null
@@ -280,6 +208,119 @@ export type Database = {
           id?: string
           milestones?: Json
           target_xlm?: number
+        }
+        Relationships: []
+      }
+      game_sessions: {
+        Row: {
+          balls_spawned: number
+          created_at: string | null
+          duration_seconds: number
+          id: string
+          kicks: number
+          telegram_id: number | null
+          wallet_id: string | null
+        }
+        Insert: {
+          balls_spawned?: number
+          created_at?: string | null
+          duration_seconds?: number
+          id?: string
+          kicks?: number
+          telegram_id?: number | null
+          wallet_id?: string | null
+        }
+        Update: {
+          balls_spawned?: number
+          created_at?: string | null
+          duration_seconds?: number
+          id?: string
+          kicks?: number
+          telegram_id?: number | null
+          wallet_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_sessions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_spin_counters: {
+        Row: {
+          count: number
+          day: string
+          source: string
+          telegram_id: number
+        }
+        Insert: {
+          count?: number
+          day: string
+          source: string
+          telegram_id: number
+        }
+        Update: {
+          count?: number
+          day?: string
+          source?: string
+          telegram_id?: number
+        }
+        Relationships: []
+      }
+      lucky_draw_wins: {
+        Row: {
+          amount: number | null
+          claimed: boolean
+          claimed_at: string | null
+          created_at: string
+          id: number
+          paid_by: string | null
+          payout_at: string | null
+          payout_notes: string | null
+          payout_status: string
+          payout_tx_hash: string | null
+          prize: string
+          prize_source: string
+          telegram_id: number
+          wallet_address: string | null
+          win_code: string
+        }
+        Insert: {
+          amount?: number | null
+          claimed?: boolean
+          claimed_at?: string | null
+          created_at?: string
+          id?: number
+          paid_by?: string | null
+          payout_at?: string | null
+          payout_notes?: string | null
+          payout_status?: string
+          payout_tx_hash?: string | null
+          prize: string
+          prize_source?: string
+          telegram_id: number
+          wallet_address?: string | null
+          win_code: string
+        }
+        Update: {
+          amount?: number | null
+          claimed?: boolean
+          claimed_at?: string | null
+          created_at?: string
+          id?: number
+          paid_by?: string | null
+          payout_at?: string | null
+          payout_notes?: string | null
+          payout_status?: string
+          payout_tx_hash?: string | null
+          prize?: string
+          prize_source?: string
+          telegram_id?: number
+          wallet_address?: string | null
+          win_code?: string
         }
         Relationships: []
       }
@@ -337,6 +378,148 @@ export type Database = {
         }
         Relationships: []
       }
+      purchases: {
+        Row: {
+          created_at: string | null
+          id: string
+          purchase_type: string
+          stellar_tx_hash: string | null
+          token_amount: number
+          verified: boolean | null
+          wallet_id: string | null
+          xlm_amount: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          purchase_type: string
+          stellar_tx_hash?: string | null
+          token_amount: number
+          verified?: boolean | null
+          wallet_id?: string | null
+          xlm_amount: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          purchase_type?: string
+          stellar_tx_hash?: string | null
+          token_amount?: number
+          verified?: boolean | null
+          wallet_id?: string | null
+          xlm_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchases_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_questions: {
+        Row: {
+          active: boolean
+          category: string
+          correct_option: string
+          created_at: string
+          difficulty: string
+          explanation: string | null
+          id: string
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          question: string
+        }
+        Insert: {
+          active?: boolean
+          category?: string
+          correct_option: string
+          created_at?: string
+          difficulty?: string
+          explanation?: string | null
+          id?: string
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          question: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          correct_option?: string
+          created_at?: string
+          difficulty?: string
+          explanation?: string | null
+          id?: string
+          option_a?: string
+          option_b?: string
+          option_c?: string
+          option_d?: string
+          question?: string
+        }
+        Relationships: []
+      }
+      quiz_sessions: {
+        Row: {
+          answers_given: Json
+          correct_count: number
+          created_at: string
+          expires_at: string
+          id: string
+          is_perfect: boolean
+          mode: string
+          points_earned: number
+          question_ids: string[]
+          score: number
+          status: string
+          telegram_id: number
+          total_questions: number
+        }
+        Insert: {
+          answers_given?: Json
+          correct_count?: number
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_perfect?: boolean
+          mode: string
+          points_earned?: number
+          question_ids?: string[]
+          score?: number
+          status?: string
+          telegram_id: number
+          total_questions: number
+        }
+        Update: {
+          answers_given?: Json
+          correct_count?: number
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_perfect?: boolean
+          mode?: string
+          points_earned?: number
+          question_ids?: string[]
+          score?: number
+          status?: string
+          telegram_id?: number
+          total_questions?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_sessions_telegram_id_fkey"
+            columns: ["telegram_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["telegram_id"]
+          },
+        ]
+      }
       regional_support: {
         Row: {
           color: string
@@ -360,6 +543,44 @@ export type Database = {
           region_name?: string
         }
         Relationships: []
+      }
+      team_change_requests: {
+        Row: {
+          admin_note: string | null
+          created_at: string
+          id: string
+          requested_team: string
+          resolved_at: string | null
+          status: string
+          telegram_id: number
+        }
+        Insert: {
+          admin_note?: string | null
+          created_at?: string
+          id?: string
+          requested_team: string
+          resolved_at?: string | null
+          status?: string
+          telegram_id: number
+        }
+        Update: {
+          admin_note?: string | null
+          created_at?: string
+          id?: string
+          requested_team?: string
+          resolved_at?: string | null
+          status?: string
+          telegram_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_change_requests_telegram_id_fkey"
+            columns: ["telegram_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["telegram_id"]
+          },
+        ]
       }
       tiers: {
         Row: {
@@ -421,14 +642,58 @@ export type Database = {
         }
         Relationships: []
       }
-      users: {
+      trustline_submissions: {
         Row: {
           created_at: string | null
-          display_preference: string | null
+          error_message: string | null
+          horizon_result: Json | null
+          id: number
+          ip: string | null
+          public_key: string | null
+          success: boolean | null
+          tx_hash: string | null
+          type: string
+          xdr: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          horizon_result?: Json | null
+          id?: number
+          ip?: string | null
+          public_key?: string | null
+          success?: boolean | null
+          tx_hash?: string | null
+          type?: string
+          xdr?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          horizon_result?: Json | null
+          id?: number
+          ip?: string | null
+          public_key?: string | null
+          success?: boolean | null
+          tx_hash?: string | null
+          type?: string
+          xdr?: string | null
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          bonus_balls: number
+          bonus_spins: number
+          created_at: string | null
+          display_preference: string
           favorite_team: string | null
+          favorite_wafl_team: string | null
           id: string
-          is_blocked: boolean | null
+          is_blocked: boolean
           opt_in_telegram_notifications: boolean
+          quiz_points: number
+          read_broadcast_ids: Json
           referred_by: number | null
           telegram_first_name: string | null
           telegram_id: number
@@ -438,12 +703,17 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          bonus_balls?: number
+          bonus_spins?: number
           created_at?: string | null
-          display_preference?: string | null
+          display_preference?: string
           favorite_team?: string | null
+          favorite_wafl_team?: string | null
           id?: string
-          is_blocked?: boolean | null
+          is_blocked?: boolean
           opt_in_telegram_notifications?: boolean
+          quiz_points?: number
+          read_broadcast_ids?: Json
           referred_by?: number | null
           telegram_first_name?: string | null
           telegram_id: number
@@ -453,12 +723,17 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          bonus_balls?: number
+          bonus_spins?: number
           created_at?: string | null
-          display_preference?: string | null
+          display_preference?: string
           favorite_team?: string | null
+          favorite_wafl_team?: string | null
           id?: string
-          is_blocked?: boolean | null
+          is_blocked?: boolean
           opt_in_telegram_notifications?: boolean
+          quiz_points?: number
+          read_broadcast_ids?: Json
           referred_by?: number | null
           telegram_first_name?: string | null
           telegram_id?: number
@@ -501,7 +776,7 @@ export type Database = {
           {
             foreignKeyName: "wallet_balances_wallet_id_fkey"
             columns: ["wallet_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "wallets"
             referencedColumns: ["id"]
           },
@@ -572,7 +847,10 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      consume_daily_spin: {
+        Args: { p_limit: number; p_source: string; p_telegram_id: number }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
@@ -584,6 +862,7 @@ export type Database = {
 }
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<

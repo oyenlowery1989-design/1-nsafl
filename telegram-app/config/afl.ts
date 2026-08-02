@@ -4,8 +4,51 @@ export interface AflClub {
   shortName: string
   color: string
   logo: string        // URL — empty string = show initials fallback
-  league: 'AFL' | 'WAFL'
+  league: 'AFL' | 'WAFL' | 'PARTNER'
 }
+
+export type PlayerPosition = 'MID' | 'FWD' | 'DEF' | 'RUCK'
+
+export interface PartnerPlayer {
+  name: string
+  club: string   // AFL club they play for
+  clubId: string // matches AflClub.id
+  position: PlayerPosition
+  captain?: boolean
+}
+
+export const WHIPLASH347_CLUB: AflClub = {
+  id: 'whiplash347',
+  name: 'WhipLash347',
+  shortName: 'Whip347',
+  color: '#E8192C',
+  logo: '/whiplash347.png',
+  league: 'PARTNER',
+}
+
+export const WHIPLASH347_SQUAD: PartnerPlayer[] = [
+  // WCE picks
+  { name: 'Nasiah Wanganeen-Milera', club: 'West Coast Eagles',  clubId: 'west-coast', position: 'MID' },
+  { name: 'Chad Warner',             club: 'West Coast Eagles',  clubId: 'west-coast', position: 'MID' },
+  { name: 'Finn Callaghan',          club: 'West Coast Eagles',  clubId: 'west-coast', position: 'MID' },
+  { name: 'Patrick Cripps',          club: 'West Coast Eagles',  clubId: 'west-coast', position: 'MID', captain: true },
+  { name: 'Daniel Curtin',           club: 'West Coast Eagles',  clubId: 'west-coast', position: 'DEF' },
+  { name: 'Nick Martin',             club: 'West Coast Eagles',  clubId: 'west-coast', position: 'MID' },
+  { name: 'Tristan Xerri',           club: 'West Coast Eagles',  clubId: 'west-coast', position: 'RUCK' },
+  { name: 'Trent Rivers',            club: 'West Coast Eagles',  clubId: 'west-coast', position: 'MID' },
+  { name: 'Sam Taylor',              club: 'West Coast Eagles',  clubId: 'west-coast', position: 'DEF' },
+  { name: 'Kysiah Pickett',          club: 'West Coast Eagles',  clubId: 'west-coast', position: 'FWD' },
+  { name: 'Darcy Jones',             club: 'West Coast Eagles',  clubId: 'west-coast', position: 'FWD' },
+  { name: 'Bobby Hill',              club: 'West Coast Eagles',  clubId: 'west-coast', position: 'FWD' },
+  { name: 'Shannon Neale',           club: 'West Coast Eagles',  clubId: 'west-coast', position: 'FWD' },
+  // Fremantle picks
+  { name: 'Aaron Naughton',          club: 'Fremantle',          clubId: 'fremantle', position: 'FWD' },
+  { name: 'Will Powell',             club: 'Fremantle',          clubId: 'fremantle', position: 'MID' },
+  { name: 'Koltyn Tholstrup',        club: 'Fremantle',          clubId: 'fremantle', position: 'DEF' },
+  { name: 'Ed Allan',                club: 'Fremantle',          clubId: 'fremantle', position: 'DEF' },
+  { name: 'Lachie Neale',            club: 'Fremantle',          clubId: 'fremantle', position: 'MID' },
+  { name: 'Jedd Busslinger',         club: 'Fremantle',          clubId: 'fremantle', position: 'MID' },
+]
 
 export interface AflFixture {
   id: string
@@ -63,7 +106,7 @@ export const WAFL_CLUBS: AflClub[] = [
   { id: 'wafl-west-coast',      name: 'West Coast',        shortName: 'WCT', color: '#003087', league: 'WAFL', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/b/b5/West_Coast_Eagles_logo_2017.svg/120px-West_Coast_Eagles_logo_2017.svg.png' },
 ]
 
-export const ALL_CLUBS: AflClub[] = [...AFL_CLUBS, ...WAFL_CLUBS]
+export const ALL_CLUBS: AflClub[] = [...AFL_CLUBS, ...WAFL_CLUBS, WHIPLASH347_CLUB]
 
 const AFL_URL = 'https://www.afl.com.au/fixture'
 
@@ -102,9 +145,9 @@ export const MATCH_REPORTS: AflMatchReport[] = [
     },
     away: {
       quarters: { q1: '3.1', q2: '5.3', q3: '8.6', final: '10.11 (71)' },
-      goals: 'Rioli 3, Bolton 2, Prestia, Caddy, Ross, Riewoldt, Higgins',
-      best: 'Rioli, Prestia, Baker, Vlastuin',
-      injuries: 'Nil',
+      goals: 'Rioli 3, Bolton 2, Caddy, Ross, Riewoldt, Higgins, Sonsie',
+      best: 'Rioli, Baker, Vlastuin, Bolton',
+      injuries: 'Prestia (hamstring — pre-game omission)',
     },
   },
   {
@@ -169,6 +212,134 @@ export const MATCH_REPORTS: AflMatchReport[] = [
       goals: 'Bontempelli 3, Darcy 2, Richards 2, Naughton 2, English 2, Williams, West, Davidson, Budarick, Bramble',
       best: 'Richards, Bontempelli, Lobb, Liberatore, Budarick, Williams',
       injuries: 'Jones (concussion)',
+    },
+  },
+  {
+    fixtureId: 'r2-2',
+    crowd: '~42,000 at the MCG',
+    home: {
+      quarters: { q1: '2.3', q2: '4.5', q3: '7.8', final: '11.17 (83)' },
+      goals: 'Draper 3, Heppell 2, Langford 2, Parish, McGrath, Shiel, Redman',
+      best: 'Parish, McGrath, Heppell, Redman, Draper',
+      injuries: 'Ridley (calf — pre-game), Martin (knee — season-ending)',
+    },
+    away: {
+      quarters: { q1: '5.4', q2: '11.7', q3: '16.10', final: '20.25 (145)' },
+      goals: 'Chol 5, Gunston 4, Mitchell 3, Sicily 2, Moore 2, Newcombe, Day, Hardwick, Ward',
+      best: 'Mitchell, Sicily, Newcombe, Chol, Moore, Ward',
+      injuries: 'Hustwaite (syndesmosis ankle — 2+ wks)',
+    },
+  },
+  {
+    fixtureId: 'r2-3',
+    crowd: '~35,000 at Marvel Stadium',
+    home: {
+      quarters: { q1: '6.2', q2: '11.5', q3: '16.8', final: '19.20 (134)' },
+      goals: 'Bontempelli 4, Naughton 3, English 3, Darcy 2, Richards 2, Williams, Lobb, West, Liberatore, Bramble',
+      best: 'Bontempelli, Richards, Liberatore, English, Naughton, Williams',
+      injuries: 'Lewis (head lac — passed HIA, returned)',
+    },
+    away: {
+      quarters: { q1: '1.3', q2: '3.5', q3: '6.7', final: '7.11 (53)' },
+      goals: 'Himmelberg 2, Coniglio, Sproule, Daniels, Riccardi, Wehr',
+      best: 'Coniglio, Callaghan, Himmelberg, Daniels',
+      injuries: 'Himmelberg (chin lac — passed HIA), Laverde (back knock — passed HIA); Green (knee — season, pre-game), Kelly (hip — TBC, pre-game), Taylor (hamstring — 6–8 wks, pre-game)',
+    },
+  },
+  {
+    fixtureId: 'r2-4',
+    crowd: '~25,000 at GMHBA Stadium',
+    home: {
+      quarters: { q1: '4.3', q2: '8.5', q3: '13.8', final: '15.20 (110)' },
+      goals: 'Hawkins 4, Cameron 3, Holmes 2, Henry 2, Stengle, Parfitt, Clark, Kolodjashnij',
+      best: 'Hawkins, Stewart, Henry, Cameron, Holmes, Kolodjashnij',
+      injuries: 'Nil',
+    },
+    away: {
+      quarters: { q1: '3.4', q2: '7.7', q3: '11.9', final: '13.22 (100)' },
+      goals: 'Serong 3, Fyfe 2, Schultz 2, Brayshaw, Cox, Treacy, Walker, Banfield, Ryan',
+      best: 'Serong, Fyfe, Brayshaw, Cox, Walker, Ryan',
+      injuries: 'Pearce (calf — pre-game), Cox B. (calf — pre-game)',
+    },
+  },
+  {
+    fixtureId: 'r2-5',
+    crowd: '~38,000 at the SCG',
+    home: {
+      quarters: { q1: '4.3', q2: '9.6', q3: '13.8', final: '14.20 (104)' },
+      goals: 'Heeney 3, McInerney 2, Papley 2, Warner 2, Gulden, Roberts, Rosas, Rowbottom, McDonald',
+      best: 'Gulden, Heeney, Warner, McInerney, Papley, Roberts',
+      injuries: 'Gulden (shoulder Q4 — scans pending, Round 2 at risk), Heeney (hamstring tightness Q4 — precautionary, likely available)',
+    },
+    away: {
+      quarters: { q1: '2.2', q2: '4.4', q3: '7.7', final: '8.12 (60)' },
+      goals: 'Cameron 3, Lohmann 2, Daniher, Zorko, Bailey',
+      best: 'Cameron, Andrews, Neale, Lohmann, Zorko',
+      injuries: 'McCluggage (calf — 1–2 wks, pre-game), Andrews (suspended — pre-game), Bailey (suspended — pre-game)',
+    },
+  },
+  {
+    fixtureId: 'r2-6',
+    crowd: '~55,000 at the MCG',
+    home: {
+      quarters: { q1: '3.2', q2: '5.5', q3: '8.7', final: '11.13 (79)' },
+      goals: 'De Goey 3, McCreery 2, Cameron, Mihocek, Elliott, Schultz, Pendlebury, McStay',
+      best: 'N.Daicos, J.Daicos, Pendlebury, De Goey, Crisp',
+      injuries: 'Moore D. (calf — failed fitness test, pre-game), Howe (calf — 1 wk, pre-game), McInnes (knee — 3–5 wks, pre-game)',
+    },
+    away: {
+      quarters: { q1: '4.3', q2: '7.5', q3: '10.8', final: '12.21 (93)' },
+      goals: 'Rachele 3, Fogarty 2, Himmelberg 2, Walker, Thilthorpe, McAdam, Wanganeen-Milera, Sharman',
+      best: 'Rachele, Fogarty, Walker, McAdam, Wanganeen-Milera, Thilthorpe',
+      injuries: 'Rankine (suspended — pre-game)',
+    },
+  },
+  {
+    fixtureId: 'r2-7',
+    crowd: '~28,000 at Marvel Stadium',
+    home: {
+      quarters: { q1: '5.3', q2: '9.5', q3: '14.8', final: '16.17 (113)' },
+      goals: 'Larkey 4, Zurhaar 3, Davies-Uniacke 2, Cunnington 2, Hall, Simpkin, Greenwood, Xerri, Pittard',
+      best: 'Davies-Uniacke, Larkey, Cunnington, Hall, Xerri, Simpkin',
+      injuries: 'Nil',
+    },
+    away: {
+      quarters: { q1: '2.3', q2: '4.5', q3: '8.8', final: '9.13 (67)' },
+      goals: 'Dixon 3, Rozee 2, Wines, Motlop, Marshall, Butters',
+      best: 'Wines, Rozee, Dixon, Butters, Houston',
+      injuries: 'Marshall T. (ankle — left field, timeline TBC)',
+    },
+  },
+  {
+    fixtureId: 'r2-8',
+    crowd: '~48,000 at the MCG',
+    home: {
+      quarters: { q1: '4.4', q2: '9.6', q3: '14.8', final: '17.18 (120)' },
+      goals: 'Petracca 4, Brown 3, Fritsch 2, Langdon 2, Viney, Nibbler, Spargo, Oliver, Jackson',
+      best: 'Petracca, Oliver, Nibbler, Viney, Langdon, Jackson',
+      injuries: 'Nil',
+    },
+    away: {
+      quarters: { q1: '3.4', q2: '7.7', q3: '12.10', final: '15.17 (107)' },
+      goals: 'Membrey 4, Butler 3, Sinclair 2, Owens 2, Higgins, Marshall, Lonie, Ross',
+      best: 'Membrey, Butler, Sinclair, Higgins, Owens, Ross',
+      injuries: 'Phillipou (corked quad — minor), Ryan L. (corked shoulder — minor)',
+    },
+  },
+  {
+    fixtureId: 'r2-9',
+    crowd: '~22,000 at People First Stadium',
+    home: {
+      quarters: { q1: '6.3', q2: '12.5', q3: '17.8', final: '18.23 (131)' },
+      goals: 'King 5, Rosas 3, Humphrey 3, Anderson 2, Flanders 2, Ainsworth, Miller, Long',
+      best: 'King, Flanders, Anderson, Humphrey, Rosas, Miller',
+      injuries: 'Rowell (finger — 4–6 wks, pre-game)',
+    },
+    away: {
+      quarters: { q1: '2.3', q2: '4.5', q3: '8.7', final: '10.12 (72)' },
+      goals: 'Ryan 3, Darling 2, Waterman 2, Gaff, Yeo, Sheed',
+      best: 'Gaff, Ryan, Waterman, Yeo, Nelson',
+      injuries: 'Edwards H. (concussion protocol — pre-game)',
     },
   },
   {
@@ -250,7 +421,7 @@ export const ROUND_1_FIXTURES: AflFixture[] = [
 export const ROUND_2_FIXTURES: AflFixture[] = [
   {
     id: 'r2-1', round: 2,
-    date: 'Thursday March 12', time: 'FULL TIME',
+    date: 'Thursday March 12', time: '7:20pm AEDT',
     venue: 'MCG, Melbourne', country: 'Wurundjeri',
     homeTeam: 'Carlton', homePosition: null,
     awayTeam: 'Richmond', awayPosition: null,
@@ -261,90 +432,90 @@ export const ROUND_2_FIXTURES: AflFixture[] = [
   },
   {
     id: 'r2-2', round: 2,
-    date: 'Friday March 13', time: '4:40am EDT',
+    date: 'Friday March 13', time: '7:30pm AEDT',
     venue: 'MCG, Melbourne', country: 'Wurundjeri',
     homeTeam: 'Essendon', homePosition: null,
     awayTeam: 'Hawthorn', awayPosition: 10,
-    homeScore: null, awayScore: null,
+    homeScore: 83, awayScore: 145,
     homeOdds: '$4.60', awayOdds: '$1.20',
-    status: 'UPCOMING', winner: null,
+    status: 'FULL TIME', winner: 'Hawthorn won by 62',
     matchReportUrl: AFL_URL,
   },
   {
     id: 'r2-3', round: 2,
-    date: 'Friday March 13', time: '10:15pm EDT',
+    date: 'Friday March 13', time: '10:15pm AEDT',
     venue: 'Marvel Stadium, Melbourne', country: 'Wurundjeri',
     homeTeam: 'Western Bulldogs', homePosition: 5,
     awayTeam: 'GWS GIANTS', awayPosition: 3,
-    homeScore: null, awayScore: null,
+    homeScore: 134, awayScore: 53,
     homeOdds: '$1.35', awayOdds: '$3.25',
-    status: 'UPCOMING', winner: null,
+    status: 'FULL TIME', winner: 'Western Bulldogs won by 81',
     matchReportUrl: AFL_URL,
   },
   {
     id: 'r2-4', round: 2,
-    date: 'Saturday March 14', time: '1:15am EDT',
+    date: 'Saturday March 14', time: '1:15pm AEDT',
     venue: 'GMHBA Stadium, Geelong', country: 'Wadawurrung',
     homeTeam: 'Geelong Cats', homePosition: 11,
     awayTeam: 'Fremantle', awayPosition: null,
-    homeScore: null, awayScore: null,
+    homeScore: 110, awayScore: 100,
     homeOdds: '$1.47', awayOdds: '$2.68',
-    status: 'UPCOMING', winner: null,
+    status: 'FULL TIME', winner: 'Geelong Cats won by 10',
     matchReportUrl: AFL_URL,
   },
   {
     id: 'r2-5', round: 2,
-    date: 'Saturday March 14', time: '4:10am EDT',
+    date: 'Saturday March 14', time: '4:10pm AEDT',
     venue: 'SCG, Sydney', country: 'Gadigal',
     homeTeam: 'Sydney Swans', homePosition: 1,
     awayTeam: 'Brisbane Lions', awayPosition: 7,
-    homeScore: null, awayScore: null,
+    homeScore: 104, awayScore: 60,
     homeOdds: '$1.37', awayOdds: '$3.11',
-    status: 'UPCOMING', winner: null,
+    status: 'FULL TIME', winner: 'Sydney Swans won by 44',
     matchReportUrl: AFL_URL,
   },
   {
     id: 'r2-6', round: 2,
-    date: 'Saturday March 14', time: '4:35am EDT',
+    date: 'Saturday March 14', time: '7:25pm AEDT',
     venue: 'MCG, Melbourne', country: 'Wurundjeri',
     homeTeam: 'Collingwood', homePosition: 4,
     awayTeam: 'Adelaide Crows', awayPosition: null,
-    homeScore: null, awayScore: null,
+    homeScore: 79, awayScore: 93,
     homeOdds: '$1.73', awayOdds: '$2.12',
-    status: 'UPCOMING', winner: null,
+    status: 'FULL TIME', winner: 'Adelaide Crows won by 14',
     matchReportUrl: AFL_URL,
   },
   {
     id: 'r2-7', round: 2,
-    date: 'Saturday March 14', time: '10:10pm EDT',
+    date: 'Saturday March 14', time: '10:10pm AEDT',
     venue: 'Marvel Stadium, Melbourne', country: 'Wurundjeri',
     homeTeam: 'North Melbourne', homePosition: null,
     awayTeam: 'Port Adelaide', awayPosition: null,
-    homeScore: null, awayScore: null,
+    homeScore: 113, awayScore: 67,
     homeOdds: '$2.41', awayOdds: '$1.57',
-    status: 'UPCOMING', winner: null,
+    status: 'FULL TIME', winner: 'North Melbourne won by 46',
     matchReportUrl: AFL_URL,
   },
   {
     id: 'r2-8', round: 2,
-    date: 'Sunday March 15', time: '12:15am EDT',
+    date: 'Sunday March 15', time: '1:10pm AEDT',
     venue: 'MCG, Melbourne', country: 'Wurundjeri',
     homeTeam: 'Melbourne', homePosition: null,
     awayTeam: 'St Kilda', awayPosition: 9,
-    homeScore: null, awayScore: null,
+    homeScore: 120, awayScore: 107,
     homeOdds: '$2.47', awayOdds: '$1.54',
-    status: 'UPCOMING', winner: null,
+    status: 'FULL TIME', winner: 'Melbourne won by 13',
     matchReportUrl: AFL_URL,
   },
   {
     id: 'r2-9', round: 2,
-    date: 'Sunday March 15', time: '3:10am EDT',
+    date: 'Sunday March 15', time: '4:10pm AEST',
     venue: 'People First Stadium, Gold Coast', country: 'Yugambeh',
     homeTeam: 'Gold Coast SUNS', homePosition: 2,
     awayTeam: 'West Coast Eagles', awayPosition: null,
-    homeScore: null, awayScore: null,
+    homeScore: 131, awayScore: 72,
     homeOdds: '$1.01', awayOdds: '$19.00',
-    status: 'UPCOMING', winner: null,
+    status: 'FULL TIME', winner: 'Gold Coast SUNS won by 59',
     matchReportUrl: AFL_URL,
   },
 ]
@@ -392,6 +563,39 @@ export const ROUND_3_FIXTURES: AflFixture[] = [
     awayTeam: 'Essendon', awayPosition: null,
     homeScore: null, awayScore: null,
     homeOdds: '$1.55', awayOdds: '$2.45',
+    status: 'UPCOMING', winner: null,
+    matchReportUrl: AFL_URL,
+  },
+  {
+    id: 'r3-5', round: 3,
+    date: 'Saturday March 21', time: '4:15pm AEDT',
+    venue: 'ENGIE Stadium, Sydney', country: 'Wangal',
+    homeTeam: 'GWS GIANTS', homePosition: null,
+    awayTeam: 'St Kilda', awayPosition: null,
+    homeScore: null, awayScore: null,
+    homeOdds: '$1.65', awayOdds: '$2.25',
+    status: 'UPCOMING', winner: null,
+    matchReportUrl: AFL_URL,
+  },
+  {
+    id: 'r3-6', round: 3,
+    date: 'Saturday March 21', time: '7:35pm AEDT',
+    venue: 'Optus Stadium, Perth', country: 'Whadjuk Noongar',
+    homeTeam: 'Fremantle', homePosition: null,
+    awayTeam: 'Melbourne', awayPosition: null,
+    homeScore: null, awayScore: null,
+    homeOdds: '$1.70', awayOdds: '$2.15',
+    status: 'UPCOMING', winner: null,
+    matchReportUrl: AFL_URL,
+  },
+  {
+    id: 'r3-7', round: 3,
+    date: 'Sunday March 22', time: '6:10pm AEDT',
+    venue: 'Optus Stadium, Perth', country: 'Whadjuk Noongar',
+    homeTeam: 'West Coast Eagles', homePosition: null,
+    awayTeam: 'North Melbourne', awayPosition: null,
+    homeScore: null, awayScore: null,
+    homeOdds: '$2.80', awayOdds: '$1.45',
     status: 'UPCOMING', winner: null,
     matchReportUrl: AFL_URL,
   },
@@ -708,7 +912,7 @@ export const AFL_ROUNDS: AflRoundMeta[] = [
     index: 2,
     label: 'Round 2',
     shortLabel: 'Rd 2',
-    dateRange: 'Thu 19 – Sun 22 Mar',
+    dateRange: 'Thu 19 – Sun 22 Mar · Byes: BRL, CAR, COL, GEE',
     startDate: new Date('2026-03-19'),
     endDate:   new Date('2026-03-22'),
     fixtures: ROUND_3_FIXTURES,

@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
 
   const status = searchParams.get('status') ?? 'all'
   const prize  = searchParams.get('prize') ?? null
+  const source = searchParams.get('source') ?? null
   const page   = Math.max(1, parseInt(searchParams.get('page')  ?? '1',  10))
   const limit  = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '20', 10)))
   const from   = (page - 1) * limit
@@ -20,6 +21,10 @@ export async function GET(req: NextRequest) {
   let query = (supabase as any)
     .from('lucky_draw_wins')
     .select('*', { count: 'exact' })
+    .neq('prize', 'Better Luck')
+    .neq('prize', 'Free Spin')
+    .not('prize', 'ilike', '%Spin%')
+    .not('prize', 'ilike', '%spin%')
     .order('created_at', { ascending: false })
     .range(from, to)
 
@@ -31,6 +36,10 @@ export async function GET(req: NextRequest) {
     query = query.eq('prize', prize)
   }
 
+  if (source) {
+    query = query.eq('prize_source', source)
+  }
+
   const { data: wins, count, error } = await query
 
   if (error) return fail('Failed to fetch wins', 'DB_ERROR', 500)
@@ -38,15 +47,38 @@ export async function GET(req: NextRequest) {
   const total = count ?? 0
   const totalPages = Math.ceil(total / limit) || 1
 
-  // fetch counts per payout_status for stat tiles
+  // Fetch user display names for this page's telegram_ids
+  const telegramIds: number[] = [...new Set<number>((wins ?? []).map((w: { telegram_id: number }) => w.telegram_id))]
+  const userMap: Record<number, { first_name: string | null; username: string | null }> = {}
+  if (telegramIds.length > 0) {
+    const { data: users } = await (supabase as any)
+      .from('users')
+      .select('telegram_id, telegram_first_name, telegram_username')
+      .in('telegram_id', telegramIds)
+    for (const u of (users ?? [])) {
+      userMap[u.telegram_id] = { first_name: u.telegram_first_name ?? null, username: u.telegram_username ?? null }
+    }
+  }
+
+  const winsWithNames = (wins ?? []).map((w: { telegram_id: number }) => ({
+    ...w,
+    user_first_name: userMap[w.telegram_id]?.first_name ?? null,
+    user_username: userMap[w.telegram_id]?.username ?? null,
+  }))
+
+  // fetch counts per payout_status for stat tiles (exclude no-value misses)
   const { data: countRows } = await (supabase as any)
     .from('lucky_draw_wins')
     .select('payout_status')
+    .neq('prize', 'Better Luck')
+    .neq('prize', 'Free Spin')
+    .not('prize', 'ilike', '%Spin%')
+    .not('prize', 'ilike', '%spin%')
 
   const counts = { pending: 0, paid: 0, skipped: 0 }
   for (const row of (countRows ?? [])) {
     if (row.payout_status in counts) counts[row.payout_status as keyof typeof counts]++
   }
 
-  return ok({ wins: wins ?? [], total, page, totalPages, counts })
+  return ok({ wins: winsWithNames, total, page, totalPages, counts })
 }

@@ -30,6 +30,15 @@ export async function GET(req: NextRequest) {
 
   const supabase = createServiceClient()
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: userRow } = await (supabase as any)
+    .from('users')
+    .select('read_broadcast_ids, opt_in_telegram_notifications')
+    .eq('telegram_id', telegramUser.id)
+    .maybeSingle()
+
+  const readBroadcastIds: string[] = userRow?.read_broadcast_ids ?? []
+
   const { data: notifications, error } = await supabase
     .from('notifications')
     .select('*')
@@ -39,5 +48,15 @@ export async function GET(req: NextRequest) {
 
   if (error) return fail('Failed to fetch notifications', 'DB_ERROR', 500)
 
-  return ok({ notifications: notifications ?? [] })
+  // Broadcast rows (telegram_id null) are shared — "read" is per-user via read_broadcast_ids
+  const enriched = (notifications ?? []).map((n) =>
+    n.telegram_id === null
+      ? { ...n, read: readBroadcastIds.includes(String(n.id)) }
+      : n
+  )
+
+  return ok({
+    notifications: enriched,
+    telegramAlertsOptIn: userRow?.opt_in_telegram_notifications ?? false,
+  })
 }

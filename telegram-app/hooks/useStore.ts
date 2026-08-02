@@ -17,10 +17,10 @@ interface WalletStore {
   telegramUserId: number | null
   // Cached Telegram profile — set on wallet connect, persisted locally
   telegramUser: TelegramUserSnapshot | null
-  // AFL team selected after wallet connect (like a Hogwarts house)
+  // AFL team — freely changeable at any time
   favoriteTeam: string | null
-  // Pending team change request (waiting admin approval)
-  pendingTeamRequest: { teamId: string; requestedAt: number } | null
+  // WAFL team — optional, freely changeable
+  favoriteWaflTeam: string | null
   // How the user appears in public leaderboards/stats
   displayPreference: 'address' | 'name' | 'username'
   // First-time onboarding — set to true after slides dismissed
@@ -31,7 +31,7 @@ interface WalletStore {
   setTelegramUserId: (id: number) => void
   setTelegramUser: (user: TelegramUserSnapshot) => void
   setFavoriteTeam: (teamId: string) => void
-  setPendingTeamRequest: (req: { teamId: string; requestedAt: number } | null) => void
+  setFavoriteWaflTeam: (teamId: string | null) => void
   setDisplayPreference: (pref: 'address' | 'name' | 'username') => void
   setHasSeenOnboarding: () => void
   disconnect: () => void
@@ -47,7 +47,7 @@ export const useWalletStore = create<WalletStore>()(
       telegramUserId: null,
       telegramUser: null,
       favoriteTeam: null,
-      pendingTeamRequest: null,
+      favoriteWaflTeam: null,
       displayPreference: 'address',
       hasSeenOnboarding: false,
 
@@ -63,7 +63,7 @@ export const useWalletStore = create<WalletStore>()(
 
       setFavoriteTeam: (teamId) => set({ favoriteTeam: teamId }),
 
-      setPendingTeamRequest: (req) => set({ pendingTeamRequest: req }),
+      setFavoriteWaflTeam: (teamId) => set({ favoriteWaflTeam: teamId }),
 
       setDisplayPreference: (pref) => set({ displayPreference: pref }),
 
@@ -76,10 +76,10 @@ export const useWalletStore = create<WalletStore>()(
           xlmBalance: '0.00',
           isConnected: false,
           favoriteTeam: null,
+          favoriteWaflTeam: null,
           telegramUser: null,
           telegramUserId: null,
           displayPreference: 'address',
-          pendingTeamRequest: null,
         }),
     }),
     { name: 'homecoming-hub-wallet' }

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { ok, fail } from '@/lib/api-response'
 import { createServiceClient } from '@/lib/supabase-server'
+import { verifyAdminToken } from '@/app/api/admin/route'
 
 const isDev =
   process.env.NODE_ENV !== 'production' &&
@@ -31,13 +32,9 @@ async function sendTelegramMessage(
 }
 
 export async function POST(req: NextRequest) {
-  // Admin key check — skip if ADMIN_NOTIFY_KEY is not configured (dev convenience)
-  const adminKey = process.env.ADMIN_NOTIFY_KEY
-  if (adminKey) {
-    const provided = req.headers.get('x-admin-key') ?? ''
-    if (!isDev && provided !== adminKey) {
-      return fail('Unauthorized', 'UNAUTHORIZED', 401)
-    }
+  const adminToken = process.env.ADMIN_SECRET_TOKEN
+  if (adminToken && !isDev && !verifyAdminToken(req)) {
+    return fail('Unauthorized', 'UNAUTHORIZED', 401)
   }
 
   let body: { telegram_id?: unknown; broadcast?: unknown; message?: unknown }

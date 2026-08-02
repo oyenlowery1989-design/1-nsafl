@@ -1,78 +1,32 @@
+import { randomBytes } from 'crypto'
 import { NextRequest } from 'next/server'
 import { validateTelegramInitData } from '@/lib/telegram'
 import { createServiceClient } from '@/lib/supabase-server'
 import { ok, fail } from '@/lib/api-response'
-import { getTierForBalance, TIERS } from '@/config/tiers'
+import { prizeToAsset } from '@/lib/rewardAssets'
+import { sendPrizePayment, REWARD_SENDER_SECRET, notifyPrizeSent } from '@/lib/stellar-payment'
+import { checkRateLimit } from '@/lib/rate-limit'
+import { rollPrize, getSpinStatus, consumeSpin, incrementBonusPool } from '@/lib/gamePool'
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ''
 const IS_DEV = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_DEV_BYPASS === 'true'
-
-async function getDailySpinLimit(supabase: ReturnType<typeof createServiceClient>, telegramId: number): Promise<number> {
-  // Get primary wallet → nsafl_balance
-  const { data: userRow } = await (supabase as any)
-    .from('users')
-    .select('id, bonus_spins')
-    .eq('telegram_id', telegramId)
-    .single()
-
-  let tierIndex = 0
-  if (userRow?.id) {
-    const { data: wallet } = await (supabase as any)
-      .from('wallets')
-      .select('id')
-      .eq('user_id', userRow.id)
-      .eq('is_primary', true)
-      .single()
-
-    if (wallet?.id) {
-      const { data: balanceRow } = await (supabase as any)
-        .from('wallet_balances')
-        .select('nsafl_balance')
-        .eq('wallet_id', wallet.id)
-        .single()
-
-      if (balanceRow?.nsafl_balance != null) {
-        const tier = getTierForBalance(Number(balanceRow.nsafl_balance))
-        tierIndex = Math.max(0, TIERS.findIndex((t) => t.id === tier.id))
-      }
-    }
-  }
-
-  // Count referrals
-  const { count: referralCount } = await (supabase as any)
-    .from('users')
-    .select('telegram_id', { count: 'exact', head: true })
-    .eq('referred_by', telegramId)
-
-  const bonusSpins = userRow?.bonus_spins ?? 0
-  // minimum 1 so everyone gets at least 1 spin
-  return Math.max(1, tierIndex + (referralCount ?? 0) + bonusSpins)
-}
 
 export async function GET(req: NextRequest) {
   const initData = req.headers.get('x-telegram-init-data') ?? ''
   const user = IS_DEV ? { id: 0 } : validateTelegramInitData(initData, BOT_TOKEN)
   if (!user) return fail('Unauthorized', 'UNAUTHORIZED')
 
+  if (IS_DEV) return ok({ spinsUsed: 0, dailyLimit: 99, spinsRemaining: 99, canSpin: true, bonusSpins: 0 })
+
   const supabase = createServiceClient()
-  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const status = await getSpinStatus(supabase, user.id, 'lucky_draw')
 
-  const [{ count }, dailyLimit] = await Promise.all([
-    (supabase as any)
-      .from('lucky_draw_wins')
-      .select('id', { count: 'exact', head: true })
-      .eq('telegram_id', user.id)
-      .eq('prize_source', 'lucky_draw')
-      .gte('created_at', today.toISOString()),
-    IS_DEV ? Promise.resolve(99) : getDailySpinLimit(supabase, user.id),
-  ])
-
-  const spinsUsed = count ?? 0
   return ok({
-    spinsUsed,
-    dailyLimit,
-    spinsRemaining: Math.max(0, dailyLimit - spinsUsed),
-    canSpin: spinsUsed < dailyLimit,
+    spinsUsed: status.spinsUsed,
+    dailyLimit: status.baseLimit,
+    bonusSpins: status.bonusSpins,
+    spinsRemaining: status.spinsRemaining,
+    canSpin: status.canSpin,
   })
 }
 
@@ -81,62 +35,57 @@ export async function POST(req: NextRequest) {
   const user = IS_DEV ? { id: 0 } : validateTelegramInitData(initData, BOT_TOKEN)
   if (!user) return fail('Unauthorized', 'UNAUTHORIZED')
 
-  const body = await req.json().catch(() => null)
-  if (!body?.code || !body?.prize) return fail('Missing fields', 'BAD_REQUEST')
+  const limited = checkRateLimit(req, 10, `game:lucky_draw:${user.id}`)
+  if (limited) return limited
 
   const supabase = createServiceClient()
+  const { prize, index } = rollPrize('lucky_draw')
 
-  // Require the user to hold the primary asset — no free rides
-  if (!IS_DEV) {
-    const { data: userRow } = await (supabase as any)
-      .from('users').select('id').eq('telegram_id', user.id).single()
-    if (userRow?.id) {
-      const { data: w } = await (supabase as any)
-        .from('wallets').select('id').eq('user_id', userRow.id).eq('is_primary', true).single()
-      if (w?.id) {
-        const { data: bal } = await (supabase as any)
-          .from('wallet_balances').select('nsafl_balance').eq('wallet_id', w.id).single()
-        if (!bal || Number(bal.nsafl_balance) < 100) {
-          return fail('Tier 1 required (100+ NSAFL) to play', 'NO_BALANCE', 403)
-        }
-      }
-    }
+  // Non-consuming outcome: Free Spin — nothing recorded, nothing consumed
+  if (prize.label === 'Free Spin') {
+    return ok({ prize: prize.label, amount: null, prizeIndex: index, winCode: null, freeSpin: true, autoSent: false })
   }
 
-  // Server-side daily limit check
+  let walletAddress: string | null = null
   if (!IS_DEV) {
-    const today = new Date(); today.setHours(0, 0, 0, 0)
-    const [{ count }, dailyLimit] = await Promise.all([
-      (supabase as any)
-        .from('lucky_draw_wins')
-        .select('id', { count: 'exact', head: true })
-        .eq('telegram_id', user.id)
-        .eq('prize_source', 'lucky_draw')
-        .gte('created_at', today.toISOString()),
-      getDailySpinLimit(supabase, user.id),
-    ])
-
-    if ((count ?? 0) >= dailyLimit) {
-      return fail('Daily spin limit reached', 'DAILY_LIMIT', 429)
-    }
+    const consumed = await consumeSpin(supabase, user.id, 'lucky_draw')
+    if (!consumed.ok) return fail('No spins remaining', 'DAILY_LIMIT', 429)
+    walletAddress = consumed.walletAddress
   }
 
-  const { error } = await (supabase as any)
+  const winCode = `SPIN-${randomBytes(9).toString('base64url').toUpperCase()}`
+  const isAssetPrize = !!prizeToAsset(prize.label)
+  const { data: inserted, error } = await (supabase as any)
     .from('lucky_draw_wins')
     .insert({
       telegram_id: user.id,
-      prize: body.prize,
-      amount: body.amount ?? null,
-      win_code: body.code,
-      wallet_address: body.wallet ?? null,
+      prize: prize.label,
+      amount: prize.amount,
+      win_code: winCode,
+      wallet_address: walletAddress,
       claimed: false,
       prize_source: 'lucky_draw',
+      payout_status: isAssetPrize ? 'pending' : 'skipped',
     })
-
+    .select('id')
+    .single()
   if (error) {
     console.error('lucky_draw_wins insert error:', error.message)
     return fail('Failed to save win', 'DB_ERROR', 500)
   }
 
-  return ok({ saved: true })
+  if (prize.label === '+2 Spins' && !IS_DEV) {
+    await incrementBonusPool(supabase, user.id, 'bonus_spins', 2, prize.label)
+  }
+
+  const winId: number | undefined = inserted?.id
+  if (!IS_DEV && isAssetPrize && winId && walletAddress && REWARD_SENDER_SECRET) {
+    const payment = await sendPrizePayment(prize.label, prize.amount!, walletAddress, winId, supabase)
+    if (payment.sent) {
+      void notifyPrizeSent(user.id, prize.label, payment.txHash!)
+      return ok({ prize: prize.label, amount: prize.amount, prizeIndex: index, winCode, autoSent: true, txHash: payment.txHash })
+    }
+    return ok({ prize: prize.label, amount: prize.amount, prizeIndex: index, winCode, autoSent: false, paymentError: payment.code, lobstrDeeplink: payment.lobstrDeeplink })
+  }
+  return ok({ prize: prize.label, amount: prize.amount, prizeIndex: index, winCode, autoSent: false })
 }

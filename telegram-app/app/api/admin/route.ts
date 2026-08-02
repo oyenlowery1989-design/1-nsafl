@@ -1,10 +1,17 @@
+import crypto from 'crypto'
 import { NextRequest } from 'next/server'
 import { ok, fail } from '@/lib/api-response'
 import { createServiceClient } from '@/lib/supabase-server'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 export function verifyAdminToken(req: NextRequest): boolean {
-  const token = req.headers.get('x-admin-token') ?? req.nextUrl.searchParams.get('token')
-  return !!token && token === process.env.ADMIN_SECRET_TOKEN
+  if (checkRateLimit(req, 30, `admin:${req.headers.get('x-forwarded-for') ?? 'local'}`)) return false
+  const token = req.headers.get('x-admin-token') ?? ''   // header only — no query param
+  const secret = process.env.ADMIN_SECRET_TOKEN ?? ''
+  if (!token || !secret) return false
+  const a = crypto.createHash('sha256').update(token).digest()
+  const b = crypto.createHash('sha256').update(secret).digest()
+  return crypto.timingSafeEqual(a, b)  // hash first: equal length, constant-time
 }
 
 export async function GET(req: NextRequest) {

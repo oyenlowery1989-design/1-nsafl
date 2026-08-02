@@ -7,7 +7,7 @@
 
 NETWORK_PASSPHRASE="Public Global Stellar Network ; September 2015"
 
-VERSION="2.1.0"
+VERSION="2.7.0"
 
 # ======================================
 # ACCOUNTS
@@ -26,6 +26,8 @@ ORG_URL="https://nsafl.com"
 ORG_DESCRIPTION="The Northern Star AFL ($NSAFL) is Western Australia's sovereign sports asset on the Stellar blockchain, funding the physical rebuild of WA's heartland stadiums and returning full economic power to the fans and families of the West."
 ORG_LOGO="https://nsafl.com/logo.png"
 ORG_OFFICIAL_EMAIL="contact@nsafl.com"
+ORG_SUPPORT_EMAIL="t.me/NSAFL_bot"
+ORG_PHYSICAL_ADDRESS="Western Australia, Australia"
 
 # ======================================
 # PRINCIPALS
@@ -33,6 +35,9 @@ ORG_OFFICIAL_EMAIL="contact@nsafl.com"
 [[PRINCIPALS]]
 name="The Northern Star AFL"
 email="contact@nsafl.com"
+telegram="NSAFL_bot"
+id_photo_hash="8b7b35e4f89942977fdd0bc9641c1553afe44033241624835dd17101194a1494"
+verification_photo_hash="432542abd5174a7e66e9973c540cf5bfe528395ffc8b63c0ec7a03d77f5fcb43"
 
 # ======================================
 # ASSETS
@@ -45,7 +50,75 @@ display_decimals=7
 name="NSAFL"
 desc="The Northern Star AFL ($NSAFL) is Western Australia's sovereign sports asset on the Stellar blockchain, funding the physical rebuild of WA's heartland stadiums and returning full economic power to the fans and families of the West."
 conditions="The token is designed to provide users with fractional ownership and access to NSAFL assets. It will be available for trade through Stellar-enabled wallets and platforms."
+is_asset_anchored=false
+max_number=1000000
+regulated=false
 image="https://nsafl.com/logo.png"
+
+[[CURRENCIES]]
+code="wNSAFL"
+issuer="GAJVAQ5DCOJVZ6AL3P4QVDTGMOHRVHG6WJ6252SOCLTX5MXXX22Y67FL"
+status="live"
+display_decimals=7
+name="Wrapped NSAFL"
+desc="Wrapped NSAFL token in the Northern Star AFL ecosystem."
+is_asset_anchored=true
+anchor_asset_type="crypto"
+anchor_asset="NSAFL"
+redemption_instructions="Contact @NSAFL_bot on Telegram to redeem."
+image="https://nsafl.com/logo.png"
+
+[[CURRENCIES]]
+code="wUSDC"
+issuer="GAJVAQ5DCOJVZ6AL3P4QVDTGMOHRVHG6WJ6252SOCLTX5MXXX22Y67FL"
+status="live"
+display_decimals=2
+name="Wrapped USDC"
+desc="Wrapped USDC on the Stellar network via the NSAFL ecosystem."
+is_asset_anchored=true
+anchor_asset_type="fiat"
+anchor_asset="USDC"
+redemption_instructions="Contact @NSAFL_bot on Telegram to redeem."
+image="https://static.lobstr.co/media/cdcb75d1-d230-45d4-aa5a-64bdcb465463.png"
+
+[[CURRENCIES]]
+code="wUSDT"
+issuer="GAJVAQ5DCOJVZ6AL3P4QVDTGMOHRVHG6WJ6252SOCLTX5MXXX22Y67FL"
+status="live"
+display_decimals=2
+name="Wrapped USDT"
+desc="Wrapped USDT on the Stellar network via the NSAFL ecosystem."
+is_asset_anchored=true
+anchor_asset_type="fiat"
+anchor_asset="USDT"
+redemption_instructions="Contact @NSAFL_bot on Telegram to redeem."
+image="https://static.lobstr.co/media/9d3cb62a-72fd-475a-8269-e71c7c74e5ae.png"
+
+[[CURRENCIES]]
+code="wXLM"
+issuer="GAJVAQ5DCOJVZ6AL3P4QVDTGMOHRVHG6WJ6252SOCLTX5MXXX22Y67FL"
+status="live"
+display_decimals=7
+name="Wrapped XLM"
+desc="Wrapped XLM on the Stellar network via the NSAFL ecosystem."
+is_asset_anchored=true
+anchor_asset_type="crypto"
+anchor_asset="XLM"
+redemption_instructions="Contact @NSAFL_bot on Telegram to redeem."
+image="https://static.lobstr.co/media/16bf8471-a527-4f4b-9802-5e7666de575b.png"
+
+[[CURRENCIES]]
+code="wXRP"
+issuer="GAJVAQ5DCOJVZ6AL3P4QVDTGMOHRVHG6WJ6252SOCLTX5MXXX22Y67FL"
+status="live"
+display_decimals=6
+name="Wrapped XRP"
+desc="Wrapped XRP on the Stellar network via the NSAFL ecosystem."
+is_asset_anchored=true
+anchor_asset_type="crypto"
+anchor_asset="XRP"
+redemption_instructions="Contact @NSAFL_bot on Telegram to redeem."
+image="https://static.lobstr.co/media/8472ce72-3ed9-439f-94a1-80c5a6aac0b7.png"
 
 # ======================================
 # END OF FILE

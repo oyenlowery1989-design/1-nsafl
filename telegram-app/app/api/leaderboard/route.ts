@@ -20,7 +20,7 @@ export interface LeaderboardEntry {
   inApp: boolean        // true = has connected to the Homecoming Hub
 }
 
-// Fetch all Stellar accounts holding the NSAFL token, sorted by balance desc.
+// Fetch all Stellar accounts holding the primary token, sorted by balance desc.
 // Horizon paginates at 200 — we fetch up to 3 pages (600 holders max).
 async function fetchHorizonHolders(): Promise<{ address: string; balance: number }[]> {
   const assetCode    = process.env.NEXT_PUBLIC_PRIMARY_ASSET_CODE ?? 'NSAFL'

@@ -3,6 +3,33 @@ import { createServiceClient } from '@/lib/supabase-server'
 import { ok, fail } from '@/lib/api-response'
 import { verifyAdminToken } from '@/app/api/admin/route'
 
+// PATCH /api/admin/wins/[id] — update prize label (for override before send)
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  if (!verifyAdminToken(req)) return fail('Forbidden', 'FORBIDDEN', 403)
+  const { id } = await params
+  if (!id || isNaN(Number(id))) return fail('Invalid id', 'INVALID_ID', 400)
+
+  let body: { prize?: string } = {}
+  try { body = await req.json() } catch { return fail('Invalid JSON', 'BAD_REQUEST', 400) }
+
+  const prize = body.prize?.trim()
+  if (!prize) return fail('prize is required', 'BAD_REQUEST', 400)
+
+  const supabase = createServiceClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('lucky_draw_wins')
+    .update({ prize })
+    .eq('id', id)
+    .eq('payout_status', 'pending') // only allow override on pending wins
+
+  if (error) return fail('Failed to update prize', 'DB_ERROR', 500)
+  return ok({ updated: true, id: Number(id), prize })
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

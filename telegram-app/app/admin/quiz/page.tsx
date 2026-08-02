@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useAdminToken } from '../hooks/useAdminToken'
 
 interface Question {
   id: string
@@ -40,7 +41,7 @@ const BLANK_FORM = {
 }
 
 export default function AdminQuizPage() {
-  const [token, setToken] = useState('')
+  const token = useAdminToken() ?? ''
   const [questions, setQuestions] = useState<Question[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(false)
@@ -51,15 +52,13 @@ export default function AdminQuizPage() {
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    const t = new URLSearchParams(window.location.search).get('token') ?? ''
-    setToken(t)
-    if (t) fetchData(t)
-  }, [])
+    if (token) fetchData(token)
+  }, [token])
 
   async function fetchData(t: string) {
     setLoading(true)
     try {
-      const res = await fetch(`/api/admin/quiz?token=${t}`)
+      const res = await fetch('/api/admin/quiz', { headers: { 'x-admin-token': t } })
       const json = await res.json()
       const data = json.data ?? json
       if (!res.ok) { setError(data.error ?? 'Failed'); return }
@@ -132,7 +131,7 @@ export default function AdminQuizPage() {
     <div className="min-h-screen bg-[#0A0E1A] text-white" style={{ fontFamily: 'Inter, sans-serif' }}>
       <header className="sticky top-0 bg-[#0A0E1A]/95 backdrop-blur border-b border-white/10 px-4 py-3 flex items-center justify-between z-10">
         <div className="flex items-center space-x-3">
-          <a href={`/admin?token=${token}`} className="text-gray-400 hover:text-white text-sm transition">← Admin</a>
+          <a href="/admin" className="text-gray-400 hover:text-white text-sm transition">← Admin</a>
           <span className="text-gray-600">/</span>
           <h1 className="text-base font-bold">Quiz Management</h1>
         </div>

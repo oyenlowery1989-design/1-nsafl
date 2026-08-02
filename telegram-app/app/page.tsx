@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useWalletStore } from '@/hooks/useStore'
 import DashboardView from '@/components/DashboardView'
 import TeamSelectScreen from '@/components/TeamSelectScreen'
@@ -11,6 +11,7 @@ import { PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
 import { isValidStellarAddress, hasPrimaryAssetTrustline } from '@/lib/stellar'
 import { getTelegramInitData } from '@/lib/telegram'
 import { haptic } from '@/lib/telegram-ui'
+import { BRANDING } from '@/config/branding'
 
 type Phase = 'referral-welcome' | 'onboarding' | 'gate' | 'connecting' | 'no-trustline' | 'celebration' | 'team-select' | 'dashboard'
 
@@ -19,6 +20,7 @@ export default function HomePage() {
   const tokenBalance = useWalletStore((s) => s.tokenBalance)
   const isConnected = useWalletStore((s) => s.isConnected)
   const favoriteTeam = useWalletStore((s) => s.favoriteTeam)
+  const setFavoriteWaflTeam = useWalletStore((s) => s.setFavoriteWaflTeam)
   const setWallet = useWalletStore((s) => s.setWallet)
   const setBalances = useWalletStore((s) => s.setBalances)
   const setTelegramUser = useWalletStore((s) => s.setTelegramUser)
@@ -30,12 +32,21 @@ export default function HomePage() {
     : null
 
   const [phase, setPhase] = useState<Phase>(
-    !hasSeenOnboarding && referrerId
-      ? 'referral-welcome'
-      : !hasSeenOnboarding
-        ? 'onboarding'
-        : isConnected ? (favoriteTeam ? 'dashboard' : 'team-select') : 'gate'
+    !hasSeenOnboarding
+      ? 'onboarding'
+      : isConnected ? (favoriteTeam || BRANDING.teamSelection === 'off' ? 'dashboard' : 'team-select') : 'gate'
   )
+
+  // TelegramGuard writes 'nsafl_referrer' to sessionStorage after mount, so the
+  // referral-welcome upgrade must happen post-mount, not during useState init.
+  useEffect(() => {
+    if (!hasSeenOnboarding && referrerId && (phase === 'onboarding' || phase === 'gate')) {
+      setPhase('referral-welcome')
+    }
+    // phase is intentionally excluded from deps — effect must check current phase at invocation without re-firing on phase changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [referrerId, hasSeenOnboarding])
+
   const [inputAddress, setInputAddress] = useState('')
   const [pendingAddress, setPendingAddress] = useState('')   // address waiting on trustline
   const [error, setError] = useState('')
@@ -80,9 +91,12 @@ export default function HomePage() {
           username: authJson.data.telegramUsername ?? undefined,
           photoUrl: authJson.data.telegramPhotoUrl ?? undefined,
         })
-        // Restore team choice if user already picked one before
+        // Restore team choices if user already picked them before
         if (authJson.data.favoriteTeam) {
           setFavoriteTeam(authJson.data.favoriteTeam)
+        }
+        if (authJson.data.favoriteWaflTeam) {
+          setFavoriteWaflTeam(authJson.data.favoriteWaflTeam)
         }
       }
       const res = await fetch(`/api/stellar/balance?address=${addr}`)
@@ -148,7 +162,7 @@ export default function HomePage() {
   if (phase === 'team-select') {
     return (
       <TeamSelectScreen
-        onSelect={async (teamId) => {
+        onSelect={async (aflTeamId, waflTeamId) => {
           haptic.success()
           try {
             await fetch('/api/user/team', {
@@ -157,12 +171,13 @@ export default function HomePage() {
                 'Content-Type': 'application/json',
                 'x-telegram-init-data': getTelegramInitData(),
               },
-              body: JSON.stringify({ teamId }),
+              body: JSON.stringify({ teamId: aflTeamId, waflTeamId }),
             })
           } catch {
-            // Non-blocking — team is saved locally even if API fails
+            // Non-blocking — teams are saved locally even if API fails
           }
-          setFavoriteTeam(teamId)
+          setFavoriteTeam(aflTeamId)
+          setFavoriteWaflTeam(waflTeamId)
           setPhase('dashboard')
         }}
       />
@@ -174,7 +189,7 @@ export default function HomePage() {
       <CelebrationScreen
         address={inputAddress || stellarAddress!}
         balance={celebrationBalance}
-        onEnter={() => { haptic.light(); setPhase(favoriteTeam ? 'dashboard' : 'team-select') }}
+        onEnter={() => { haptic.light(); setPhase(favoriteTeam || BRANDING.teamSelection === 'off' ? 'dashboard' : 'team-select') }}
       />
     )
   }

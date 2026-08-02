@@ -13,16 +13,23 @@ export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 export const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 // Asset config parsed from NEXT_PUBLIC_SHOWN_ASSETS
-// Format: comma-separated entries
-//   Native XLM → "XLM"  (no colon — issuer will be null, matched by asset_type=native)
-//   Custom asset → "CODE:ISSUER_ADDRESS"
-// Example: "XLM,NSAFL:GCVLZL2..."
-// DO NOT use "XLM:native" — "native" would be treated as a literal issuer and break balance lookup
+// Format: comma-separated entries. Two forms supported:
+//   "XLM"              → native XLM (no issuer)
+//   "CODE:ISSUER"      → explicit issuer
+//   "CODE"             → issuer falls back to NEXT_PUBLIC_REWARD_ASSET_ISSUER
+//                        then NEXT_PUBLIC_PRIMARY_ASSET_ISSUER
+// This lets you write just code names when all assets share one issuer, e.g.:
+//   XLM,<PRIMARY>,w<PRIMARY>,wXLM,wXRP,wUSDC,wUSDT,wDAI
 export interface AssetConfig {
   code: string
   issuer: string | null  // null = native XLM
-  label: string          // display label e.g. "$NSAFL" or "XLM"
+  label: string          // display label e.g. "$<CODE>" or "XLM"
 }
+
+const DEFAULT_ISSUER =
+  process.env.NEXT_PUBLIC_REWARD_ASSET_ISSUER ??
+  process.env.NEXT_PUBLIC_PRIMARY_ASSET_ISSUER ??
+  ''
 
 export const SHOWN_ASSET_CONFIGS: AssetConfig[] = (
   process.env.NEXT_PUBLIC_SHOWN_ASSETS ?? 'XLM'
@@ -31,8 +38,8 @@ export const SHOWN_ASSET_CONFIGS: AssetConfig[] = (
   .map((entry) => {
     const [code, issuer] = entry.trim().split(':')
     const cleanCode = code.trim()
-    // "XLM" or "XLM:native" both mean native Stellar XLM (no issuer)
-    const cleanIssuer = cleanCode === 'XLM' ? null : (issuer?.trim() ?? null)
+    // XLM is always native (no issuer)
+    const cleanIssuer = cleanCode === 'XLM' ? null : (issuer?.trim() || DEFAULT_ISSUER)
     return {
       code: cleanCode,
       issuer: cleanIssuer,
@@ -41,9 +48,9 @@ export const SHOWN_ASSET_CONFIGS: AssetConfig[] = (
   })
 
 export const NAV_ITEMS = [
-  { href: '/stats', label: 'Stats', icon: 'query_stats', isCenter: false },
-  { href: '/clubs', label: 'Clubs', icon: 'stadium', isCenter: false },
-  { href: '/', label: 'Home', icon: 'sports_football', isCenter: true },
-  { href: '/rewards', label: 'Rewards', icon: 'redeem', isCenter: false },
-  { href: '/profile', label: 'Profile', icon: 'person', isCenter: false },
+  { href: '/stats',      label: 'Stats',      icon: 'query_stats',   isCenter: false },
+  { href: '/clubs',      label: 'Clubs',      icon: 'stadium',       isCenter: false },
+  { href: '/',           label: 'Home',       icon: 'sports_football', isCenter: true },
+  { href: '/rewards',    label: 'Rewards',    icon: 'redeem',        isCenter: false },
+  { href: '/profile',    label: 'Profile',    icon: 'person',        isCenter: false },
 ] as const

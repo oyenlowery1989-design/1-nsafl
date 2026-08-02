@@ -22,12 +22,12 @@ describe('getTierForBalance', () => {
     expect(getTierForBalance(501).id).toBe('tier-2')
   })
 
-  it('returns tier-12 for a very large balance', () => {
-    expect(getTierForBalance(999_999_999).id).toBe('tier-12')
+  it('returns tier-10 for a very large balance', () => {
+    expect(getTierForBalance(999_999_999).id).toBe('tier-10')
   })
 
-  it('returns tier-12 for balance of 400001', () => {
-    expect(getTierForBalance(400_001).id).toBe('tier-12')
+  it('returns tier-10 for balance of 100001', () => {
+    expect(getTierForBalance(100_001).id).toBe('tier-10')
   })
 
   it('returns pre-tier for negative balance', () => {
@@ -46,7 +46,7 @@ describe('getNextTier', () => {
     expect(getNextTier(current)?.id).toBe('tier-2')
   })
 
-  it('returns null when current is tier-12 (max tier)', () => {
+  it('returns null when current is tier-10 (max tier)', () => {
     const current = getTierForBalance(999_999)
     expect(getNextTier(current)).toBeNull()
   })
@@ -73,8 +73,8 @@ describe('formatReward', () => {
 })
 
 describe('TIERS integrity', () => {
-  it('has 13 tiers (pre-tier + 12)', () => {
-    expect(TIERS).toHaveLength(13)
+  it('has 11 tiers (pre-tier + 10)', () => {
+    expect(TIERS).toHaveLength(11)
   })
 
   it('tier ids are unique', () => {
@@ -88,10 +88,10 @@ describe('TIERS integrity', () => {
     }
   })
 
-  it('only tier-12 has null maxBalance', () => {
+  it('only tier-10 has null maxBalance', () => {
     const nullMax = TIERS.filter((t) => t.maxBalance === null)
     expect(nullMax).toHaveLength(1)
-    expect(nullMax[0].id).toBe('tier-12')
+    expect(nullMax[0].id).toBe('tier-10')
   })
 
   it('pre-tier has null rewards', () => {
