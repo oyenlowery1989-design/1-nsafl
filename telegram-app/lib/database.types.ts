@@ -249,6 +249,27 @@ export type Database = {
           },
         ]
       }
+      game_spin_counters: {
+        Row: {
+          count: number
+          day: string
+          source: string
+          telegram_id: number
+        }
+        Insert: {
+          count?: number
+          day: string
+          source: string
+          telegram_id: number
+        }
+        Update: {
+          count?: number
+          day?: string
+          source?: string
+          telegram_id?: number
+        }
+        Relationships: []
+      }
       lucky_draw_wins: {
         Row: {
           amount: number | null
@@ -672,6 +693,7 @@ export type Database = {
           is_blocked: boolean
           opt_in_telegram_notifications: boolean
           quiz_points: number
+          read_broadcast_ids: Json
           referred_by: number | null
           telegram_first_name: string | null
           telegram_id: number
@@ -691,6 +713,7 @@ export type Database = {
           is_blocked?: boolean
           opt_in_telegram_notifications?: boolean
           quiz_points?: number
+          read_broadcast_ids?: Json
           referred_by?: number | null
           telegram_first_name?: string | null
           telegram_id: number
@@ -710,6 +733,7 @@ export type Database = {
           is_blocked?: boolean
           opt_in_telegram_notifications?: boolean
           quiz_points?: number
+          read_broadcast_ids?: Json
           referred_by?: number | null
           telegram_first_name?: string | null
           telegram_id?: number
@@ -823,7 +847,10 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      consume_daily_spin: {
+        Args: { p_limit: number; p_source: string; p_telegram_id: number }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

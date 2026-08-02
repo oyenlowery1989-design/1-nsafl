@@ -22,6 +22,29 @@ ALTER SCHEMA "public" OWNER TO "pg_database_owner";
 COMMENT ON SCHEMA "public" IS 'standard public schema';
 
 
+
+CREATE OR REPLACE FUNCTION "public"."consume_daily_spin"("p_telegram_id" bigint, "p_source" "text", "p_limit" integer) RETURNS boolean
+    LANGUAGE "plpgsql"
+    AS $$
+declare
+  updated int;
+begin
+  insert into game_spin_counters (telegram_id, source, day, count)
+  values (p_telegram_id, p_source, current_date, 0)
+  on conflict (telegram_id, source, day) do nothing;
+
+  update game_spin_counters
+     set count = count + 1
+   where telegram_id = p_telegram_id and source = p_source and day = current_date
+     and count < p_limit;
+  get diagnostics updated = row_count;
+  return updated > 0;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."consume_daily_spin"("p_telegram_id" bigint, "p_source" "text", "p_limit" integer) OWNER TO "postgres";
+
 SET default_tablespace = '';
 
 SET default_table_access_method = "heap";
@@ -174,6 +197,7 @@ CREATE TABLE IF NOT EXISTS "public"."users" (
     "bonus_balls" integer DEFAULT 0 NOT NULL,
     "bonus_spins" integer DEFAULT 0 NOT NULL,
     "favorite_wafl_team" "text",
+    "read_broadcast_ids" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
     CONSTRAINT "users_display_preference_check" CHECK (("display_preference" = ANY (ARRAY['address'::"text", 'name'::"text", 'username'::"text"])))
 );
 
@@ -224,6 +248,17 @@ CREATE OR REPLACE VIEW "public"."game_leaderboard" AS
 ALTER VIEW "public"."game_leaderboard" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."game_spin_counters" (
+    "telegram_id" bigint NOT NULL,
+    "source" "text" NOT NULL,
+    "day" "date" NOT NULL,
+    "count" integer DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE "public"."game_spin_counters" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."lucky_draw_wins" (
     "id" bigint NOT NULL,
     "telegram_id" bigint NOT NULL,
@@ -240,7 +275,7 @@ CREATE TABLE IF NOT EXISTS "public"."lucky_draw_wins" (
     "payout_at" timestamp with time zone,
     "paid_by" "text",
     "prize_source" "text" DEFAULT 'lucky_draw'::"text" NOT NULL,
-    CONSTRAINT "lucky_draw_wins_payout_status_check" CHECK (("payout_status" = ANY (ARRAY['pending'::"text", 'paid'::"text", 'skipped'::"text"])))
+    CONSTRAINT "lucky_draw_wins_payout_status_check" CHECK (("payout_status" = ANY (ARRAY['pending'::"text", 'paying'::"text", 'paid'::"text", 'skipped'::"text"])))
 );
 
 
@@ -512,6 +547,11 @@ ALTER TABLE ONLY "public"."game_sessions"
 
 
 
+ALTER TABLE ONLY "public"."game_spin_counters"
+    ADD CONSTRAINT "game_spin_counters_pkey" PRIMARY KEY ("telegram_id", "source", "day");
+
+
+
 ALTER TABLE ONLY "public"."lucky_draw_wins"
     ADD CONSTRAINT "lucky_draw_wins_pkey" PRIMARY KEY ("id");
 
@@ -603,6 +643,10 @@ ALTER TABLE ONLY "public"."wallets"
 
 
 CREATE INDEX "blocked_ips_ip_idx" ON "public"."blocked_ips" USING "btree" ("ip");
+
+
+
+CREATE UNIQUE INDEX "donations_stellar_tx_hash_key" ON "public"."donations" USING "btree" ("stellar_tx_hash") WHERE ("stellar_tx_hash" IS NOT NULL);
 
 
 
@@ -827,6 +871,12 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."consume_daily_spin"("p_telegram_id" bigint, "p_source" "text", "p_limit" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."consume_daily_spin"("p_telegram_id" bigint, "p_source" "text", "p_limit" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."consume_daily_spin"("p_telegram_id" bigint, "p_source" "text", "p_limit" integer) TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."access_attempts" TO "anon";
 GRANT ALL ON TABLE "public"."access_attempts" TO "authenticated";
 GRANT ALL ON TABLE "public"."access_attempts" TO "service_role";
@@ -896,6 +946,12 @@ GRANT ALL ON TABLE "public"."wallets" TO "service_role";
 GRANT ALL ON TABLE "public"."game_leaderboard" TO "anon";
 GRANT ALL ON TABLE "public"."game_leaderboard" TO "authenticated";
 GRANT ALL ON TABLE "public"."game_leaderboard" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."game_spin_counters" TO "anon";
+GRANT ALL ON TABLE "public"."game_spin_counters" TO "authenticated";
+GRANT ALL ON TABLE "public"."game_spin_counters" TO "service_role";
 
 
 
