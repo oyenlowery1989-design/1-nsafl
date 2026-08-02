@@ -16,7 +16,7 @@ interface TimelineItem {
 
 const TIMELINE_DOT: Record<TimelineItem['type'], string> = {
   game:     'bg-green-500',
-  donation: 'bg-[#D4AF37]',
+  donation: 'bg-primary',
   purchase: 'bg-blue-500',
   team:     'bg-purple-500',
   access:   'bg-gray-500',
@@ -126,7 +126,7 @@ export function ActivityTimeline({ u, userSessions, userDonations, userPurchases
         ))}
       </div>
       {all.length > 20 && (
-        <button onClick={() => setShowAll(v => !v)} className="mt-2 text-xs text-[#D4AF37] hover:text-yellow-300 font-semibold transition">
+        <button onClick={() => setShowAll(v => !v)} className="mt-2 text-xs text-primary hover:text-yellow-300 font-semibold transition">
           {showAll ? 'Show less' : `Show all ${all.length} events`}
         </button>
       )}

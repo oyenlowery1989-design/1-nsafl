@@ -10,6 +10,7 @@ import {
   PRIMARY_CUSTOM_ASSET_CODE,
   PRIMARY_CUSTOM_ASSET_LABEL,
 } from "@/lib/constants";
+import { BRANDING } from "@/config/branding";
 import WalletGuard from "@/components/WalletGuard";
 import TrustlineChecker from "@/components/TrustlineChecker";
 import BottomNav from "@/components/BottomNav";
@@ -93,7 +94,7 @@ export const PRIZES: Prize[] = [
   {
     label: "2500 wNSAFL",
     emoji: "🥇",
-    color: "#D4AF37",
+    color: BRANDING.colors.primary,
     weight: 25,
     isWNSAFL: true,
     amount: 2500,
@@ -219,7 +220,7 @@ function LuckyDraw({
     ctx.arc(cx, cy, r + 6, 0, Math.PI * 2);
     const rimGrad = ctx.createLinearGradient(0, 0, size, size);
     rimGrad.addColorStop(0, "#f0d060");
-    rimGrad.addColorStop(0.5, "#D4AF37");
+    rimGrad.addColorStop(0.5, BRANDING.colors.primary);
     rimGrad.addColorStop(1, "#8a6520");
     ctx.fillStyle = rimGrad;
     ctx.fill();
@@ -273,7 +274,7 @@ function LuckyDraw({
     hubGrad.addColorStop(1, "#8a6520");
     ctx.fillStyle = hubGrad;
     ctx.fill();
-    ctx.strokeStyle = "#0A0E1A";
+    ctx.strokeStyle = BRANDING.colors.background;
     ctx.lineWidth = 2;
     ctx.stroke();
 
@@ -285,7 +286,7 @@ function LuckyDraw({
     ctx.lineTo(px - 9, py);
     ctx.lineTo(px + 9, py);
     ctx.closePath();
-    ctx.fillStyle = "#D4AF37";
+    ctx.fillStyle = BRANDING.colors.primary;
     ctx.fill();
   }, [segAngle]);
 
@@ -457,7 +458,7 @@ function LuckyDraw({
       className="fixed inset-0 flex flex-col overflow-y-auto"
       style={{
         background:
-          "radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.08) 0%, #0A0E1A 60%)",
+          `radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.08) 0%, ${BRANDING.colors.background} 60%)`,
       }}
     >
       <style>{`
@@ -492,7 +493,7 @@ function LuckyDraw({
         </button>
         <div className="text-center">
           <p
-            className="text-[#D4AF37] font-bold text-xl tracking-wide"
+            className="text-primary font-bold text-xl tracking-wide"
             style={{ fontFamily: "Playfair Display, serif" }}
           >
             Lucky Draw
@@ -514,10 +515,10 @@ function LuckyDraw({
       {recentWins.length > 0 && (
         <div className="px-4 mb-1 flex-shrink-0">
           <div
-            className="flex items-center space-x-2 px-3 py-1.5 rounded-full border border-[#D4AF37]/20"
+            className="flex items-center space-x-2 px-3 py-1.5 rounded-full border border-primary/20"
             style={{ background: "rgba(212,175,55,0.06)" }}
           >
-            <span className="text-[9px] text-[#D4AF37] font-bold whitespace-nowrap">
+            <span className="text-[9px] text-primary font-bold whitespace-nowrap">
               🏆 LATEST WIN
             </span>
             <p className="text-[9px] text-gray-400 truncate flex-1">
@@ -562,7 +563,7 @@ function LuckyDraw({
         >
           {[...Array(10)].map((_, i) => {
             const colors = [
-              "#D4AF37",
+              BRANDING.colors.primary,
               "#f0d060",
               "#4ade80",
               "#60a5fa",
@@ -604,7 +605,7 @@ function LuckyDraw({
           }}
         >
           <div
-            className={`rounded-3xl px-5 py-4 border text-center ${isWin ? "border-[#D4AF37]/60" : "border-white/10"}`}
+            className={`rounded-3xl px-5 py-4 border text-center ${isWin ? "border-primary/60" : "border-white/10"}`}
             style={{
               background: isWin
                 ? "rgba(212,175,55,0.12)"
@@ -614,12 +615,12 @@ function LuckyDraw({
           >
             <p className="text-4xl mb-1">{result.emoji}</p>
             <p
-              className={`text-lg font-bold ${isWin ? "text-[#D4AF37]" : "text-gray-400"}`}
+              className={`text-lg font-bold ${isWin ? "text-primary" : "text-gray-400"}`}
             >
               {result.label}
             </p>
             {result.label === "Free Spin" && (
-              <p className="text-xs text-[#D4AF37]/70 mt-1">
+              <p className="text-xs text-primary/70 mt-1">
                 Bonus spin — doesn&apos;t count against your daily limit!
               </p>
             )}
@@ -632,7 +633,7 @@ function LuckyDraw({
               <div className="mt-3 space-y-3 text-left">
                 {winCode && (
                   <div
-                    className="px-3 py-2 rounded-xl border border-[#D4AF37]/40 text-[11px] text-[#D4AF37] font-mono font-bold tracking-widest text-center"
+                    className="px-3 py-2 rounded-xl border border-primary/40 text-[11px] text-primary font-mono font-bold tracking-widest text-center"
                     style={{ background: "rgba(212,175,55,0.08)" }}
                   >
                     {winCode}
@@ -673,7 +674,7 @@ function LuckyDraw({
                       className="w-full py-2.5 rounded-xl text-sm font-bold text-black active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-1.5"
                       style={{
                         background:
-                          "linear-gradient(135deg, #D4AF37 0%, #f0d060 100%)",
+                          `linear-gradient(135deg, ${BRANDING.colors.primary} 0%, #f0d060 100%)`,
                       }}
                     >
                       {claimSending ? (
@@ -719,7 +720,7 @@ function LuckyDraw({
             style={{
               background: spinning
                 ? "#a08020"
-                : "linear-gradient(135deg, #D4AF37 0%, #f0d060 50%, #D4AF37 100%)",
+                : `linear-gradient(135deg, ${BRANDING.colors.primary} 0%, #f0d060 50%, ${BRANDING.colors.primary} 100%)`,
               boxShadow: spinning ? "none" : "0 4px 24px rgba(212,175,55,0.4)",
             }}
           >
@@ -832,7 +833,7 @@ function HubView({
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0A0E1A] pb-28">
+    <div className="min-h-screen bg-background-dark pb-28">
       <div
         className="sticky top-0 z-40 px-4 pt-3 pb-2 border-b border-white/5"
         style={{
@@ -854,7 +855,7 @@ function HubView({
       <div className="px-4 pt-4 space-y-4">
         {/* Spins card */}
         <div
-          className="rounded-2xl p-4 border border-[#D4AF37]/30"
+          className="rounded-2xl p-4 border border-primary/30"
           style={{
             background: "rgba(212,175,55,0.06)",
             backdropFilter: "blur(12px)",
@@ -862,12 +863,12 @@ function HubView({
         >
           <div className="flex items-start justify-between mb-3">
             <div>
-              <p className="text-xs text-[#D4AF37]/70 uppercase tracking-widest font-semibold mb-1">
+              <p className="text-xs text-primary/70 uppercase tracking-widest font-semibold mb-1">
                 Your Spins
               </p>
               <div className="flex items-baseline space-x-2">
                 <span
-                  className="text-5xl font-bold text-[#D4AF37]"
+                  className="text-5xl font-bold text-primary"
                   style={{ fontFamily: "Playfair Display, serif" }}
                 >
                   {isTier0 ? luckyBonusSpins : luckyDailyLimit}
@@ -897,8 +898,8 @@ function HubView({
           </div>
 
           {isTier0 ? (
-            <div className="rounded-xl bg-[#D4AF37]/8 border border-[#D4AF37]/20 p-3 mb-3">
-              <p className="text-xs font-semibold text-[#D4AF37] mb-0.5">
+            <div className="rounded-xl bg-primary/8 border border-primary/20 p-3 mb-3">
+              <p className="text-xs font-semibold text-primary mb-0.5">
                 🚀 Upgrade to Tier 1
               </p>
               <p className="text-[10px] text-gray-400">
@@ -921,7 +922,7 @@ function HubView({
               haptic.light();
               router.push("/buy");
             }}
-            className="w-full py-2.5 rounded-xl text-xs font-bold text-black bg-[#D4AF37] active:scale-95 transition"
+            className="w-full py-2.5 rounded-xl text-xs font-bold text-black bg-primary active:scale-95 transition"
           >
             Buy {PRIMARY_CUSTOM_ASSET_LABEL} → More Spins
           </button>
@@ -944,7 +945,7 @@ function HubView({
         {/* ── Lucky Draw card ── */}
         <div
           className={`rounded-2xl border overflow-hidden ${
-            luckyUnlocked ? "border-[#D4AF37]/40" : "border-white/10"
+            luckyUnlocked ? "border-primary/40" : "border-white/10"
           }`}
           style={{
             background: luckyUnlocked
@@ -957,7 +958,7 @@ function HubView({
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center space-x-2">
                 <span
-                  className={`material-symbols-outlined text-2xl ${luckyUnlocked ? "text-[#D4AF37]" : "text-gray-500"}`}
+                  className={`material-symbols-outlined text-2xl ${luckyUnlocked ? "text-primary" : "text-gray-500"}`}
                   style={{ fontVariationSettings: "'FILL' 1" }}
                 >
                   casino
@@ -969,7 +970,7 @@ function HubView({
                 </p>
               </div>
               {luckyUnlocked ? (
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">
                   {luckySpinsRemaining} spin
                   {luckySpinsRemaining !== 1 ? "s" : ""} left
                 </span>
@@ -998,7 +999,7 @@ function HubView({
                 className="w-full py-3 rounded-xl text-sm font-bold text-black active:scale-95 transition"
                 style={{
                   background:
-                    "linear-gradient(135deg, #D4AF37 0%, #f0d060 50%, #D4AF37 100%)",
+                    `linear-gradient(135deg, ${BRANDING.colors.primary} 0%, #f0d060 50%, ${BRANDING.colors.primary} 100%)`,
                 }}
               >
                 🎰 Spin the Wheel
@@ -1022,7 +1023,7 @@ function HubView({
                         haptic.light();
                         router.push("/buy");
                       }}
-                      className="w-full py-2 rounded-lg text-[11px] font-bold text-black bg-[#D4AF37] active:scale-95 transition"
+                      className="w-full py-2 rounded-lg text-[11px] font-bold text-black bg-primary active:scale-95 transition"
                     >
                       Buy {PRIMARY_CUSTOM_ASSET_LABEL} →
                     </button>
@@ -1268,7 +1269,7 @@ function HubView({
           <div className="grid grid-cols-3 gap-2">
             {[
               { label: "Quick", q: "5 Q", color: "text-blue-300" },
-              { label: "Standard", q: "10 Q", color: "text-[#D4AF37]" },
+              { label: "Standard", q: "10 Q", color: "text-primary" },
               { label: "Champion", q: "20 Q", color: "text-purple-400" },
             ].map(({ label, q, color }) => (
               <div
@@ -1604,8 +1605,8 @@ export default function GamePage() {
     <WalletGuard>
       {view === "scratch" ? (
         !scratchStatusReady ? (
-          <div className="fixed inset-0 bg-[#0A0E1A] flex items-center justify-center">
-            <span className="material-symbols-outlined text-[#D4AF37] text-4xl animate-spin">
+          <div className="fixed inset-0 bg-background-dark flex items-center justify-center">
+            <span className="material-symbols-outlined text-primary text-4xl animate-spin">
               progress_activity
             </span>
           </div>
@@ -1624,8 +1625,8 @@ export default function GamePage() {
         )
       ) : view === "slot" ? (
         !slotStatusReady ? (
-          <div className="fixed inset-0 bg-[#0A0E1A] flex items-center justify-center">
-            <span className="material-symbols-outlined text-[#D4AF37] text-4xl animate-spin">
+          <div className="fixed inset-0 bg-background-dark flex items-center justify-center">
+            <span className="material-symbols-outlined text-primary text-4xl animate-spin">
               progress_activity
             </span>
           </div>
@@ -1644,8 +1645,8 @@ export default function GamePage() {
         )
       ) : view === "lucky" ? (
         !luckyStatusReady ? (
-          <div className="fixed inset-0 bg-[#0A0E1A] flex items-center justify-center">
-            <span className="material-symbols-outlined text-[#D4AF37] text-4xl animate-spin">
+          <div className="fixed inset-0 bg-background-dark flex items-center justify-center">
+            <span className="material-symbols-outlined text-primary text-4xl animate-spin">
               progress_activity
             </span>
           </div>

@@ -84,7 +84,7 @@ export default function TrustlineChecker({ stellarAddress, requiredCodes, onAllA
 
         <button
           onClick={() => setModalOpen(true)}
-          className="w-full py-2 rounded-xl text-xs font-bold border border-[#D4AF37]/40 text-[#D4AF37] transition hover:bg-[#D4AF37]/10 flex items-center justify-center space-x-1.5"
+          className="w-full py-2 rounded-xl text-xs font-bold border border-primary/40 text-primary transition hover:bg-primary/10 flex items-center justify-center space-x-1.5"
           style={{ background: 'rgba(212,175,55,0.08)' }}
         >
           <span className="material-symbols-outlined text-xs leading-none">link</span>

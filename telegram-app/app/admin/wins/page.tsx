@@ -5,6 +5,7 @@ import { useAdminToken } from '@/app/admin/hooks/useAdminToken'
 import { REWARD_ASSETS, prizeToAsset } from '@/lib/rewardAssets'
 import { buildTrustlineMessage } from '@/lib/messages'
 import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
+import { BRANDING } from '@/config/branding'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface WinRow {
@@ -44,7 +45,7 @@ type FilterStatus = 'all' | 'pending' | 'paid' | 'skipped'
 type FilterSource = 'all' | 'lucky_draw' | 'slot_machine' | 'scratch_card'
 
 const SOURCE_LABELS: Record<string, { label: string; icon: string; color: string }> = {
-  lucky_draw:   { label: 'Lucky Draw',  icon: 'casino',        color: 'text-[#D4AF37]' },
+  lucky_draw:   { label: 'Lucky Draw',  icon: 'casino',        color: 'text-primary' },
   slot_machine: { label: 'Slot',        icon: 'view_column',   color: 'text-purple-400' },
   scratch_card: { label: 'Scratch',     icon: 'grid_view',     color: 'text-blue-400' },
 }
@@ -83,7 +84,7 @@ function CopyBtn({ value, label }: { value: string; label?: string }) {
     <button
       onClick={() => { navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 1500) }}
       title={`Copy ${label ?? value}`}
-      className="ml-1.5 text-gray-600 hover:text-[#D4AF37] transition align-middle"
+      className="ml-1.5 text-gray-600 hover:text-primary transition align-middle"
     >
       {copied ? <span className="text-[10px] text-green-400">✓</span> : <span className="text-[11px]">⎘</span>}
     </button>
@@ -505,7 +506,7 @@ function WinsPageInner() {
         </Link>
         <div className="w-px h-5 bg-white/10" />
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <Icon name="emoji_events" className="text-[#D4AF37] text-xl" />
+          <Icon name="emoji_events" className="text-primary text-xl" />
           <h1 className="text-white font-bold text-sm truncate">Game Wins</h1>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -538,7 +539,7 @@ function WinsPageInner() {
 
         {/* ── Send All Pending ── */}
         {counts.pending > 0 && (
-          <div className="bg-[#0d1424] border border-[#D4AF37]/20 rounded-xl px-4 py-3 flex flex-wrap items-center gap-3">
+          <div className="bg-[#0d1424] border border-primary/20 rounded-xl px-4 py-3 flex flex-wrap items-center gap-3">
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-white">
                 {counts.pending} pending reward{counts.pending !== 1 ? 's' : ''} waiting
@@ -554,7 +555,7 @@ function WinsPageInner() {
                 <span className="text-xs text-gray-400">Send all {wins.filter(w => w.payout_status === 'pending' && !!prizeToAsset(w.prize) && !!w.wallet_address).length} sendable?</span>
                 <button
                   onClick={handleSendAll}
-                  className="text-xs bg-[#D4AF37] text-black font-bold px-3 py-1.5 rounded-lg hover:bg-[#f0d060] transition"
+                  className="text-xs bg-primary text-black font-bold px-3 py-1.5 rounded-lg hover:bg-[#f0d060] transition"
                 >
                   Confirm
                 </button>
@@ -570,7 +571,7 @@ function WinsPageInner() {
                 onClick={() => setConfirmSendAll(true)}
                 disabled={sendingAll}
                 className="flex items-center gap-2 text-sm font-bold text-black px-4 py-2 rounded-lg disabled:opacity-50 transition"
-                style={{ background: sendingAll ? '#888' : 'linear-gradient(135deg, #D4AF37 0%, #f0d060 100%)' }}
+                style={{ background: sendingAll ? '#888' : `linear-gradient(135deg, ${BRANDING.colors.primary} 0%, #f0d060 100%)` }}
               >
                 {sendingAll ? (
                   <><Icon name="progress_activity" className="text-sm animate-spin" /><span>Sending…</span></>
@@ -591,7 +592,7 @@ function WinsPageInner() {
                 const bal = parseFloat(senderBalances[a.code]?.replace(/,/g, '') ?? '0')
                 const isLow = bal < 50
                 return (
-                  <span key={a.code} className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${isLow ? 'bg-red-500/10 text-red-400 border-red-500/30' : 'bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/20'}`}>
+                  <span key={a.code} className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${isLow ? 'bg-red-500/10 text-red-400 border-red-500/30' : 'bg-primary/10 text-primary border-primary/20'}`}>
                     {isLow && <Icon name="warning" className="text-[11px]" />}
                     {a.code}
                     <span className="text-white font-bold">{senderBalances[a.code]}</span>
@@ -646,10 +647,10 @@ function WinsPageInner() {
               <div className="space-y-1.5">
                 {sorted.map(([prize, count]) => (
                   <div key={prize} className="flex items-center gap-3">
-                    <span className="text-xs text-[#D4AF37] w-32 truncate shrink-0" title={prize}>{prize}</span>
+                    <span className="text-xs text-primary w-32 truncate shrink-0" title={prize}>{prize}</span>
                     <div className="flex-1 h-4 bg-white/5 rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-[#D4AF37]/60 transition-all"
+                        className="h-full rounded-full bg-primary/60 transition-all"
                         style={{ width: `${(count / max) * 100}%` }}
                       />
                     </div>
@@ -672,7 +673,7 @@ function WinsPageInner() {
             <select
               value={filterStatus}
               onChange={e => { setFilterStatus(e.target.value as FilterStatus); setPage(1) }}
-              className="bg-[#111827] border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/50"
+              className="bg-[#111827] border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/50"
             >
               <option value="all">All</option>
               <option value="pending">Pending</option>
@@ -687,7 +688,7 @@ function WinsPageInner() {
             <select
               value={filterSource}
               onChange={e => { setFilterSource(e.target.value as FilterSource); setPage(1) }}
-              className="bg-[#111827] border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/50"
+              className="bg-[#111827] border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/50"
             >
               <option value="all">All Games</option>
               <option value="lucky_draw">Lucky Draw</option>
@@ -704,11 +705,11 @@ function WinsPageInner() {
               value={prizeInput}
               onChange={e => setPrizeInput(e.target.value)}
               placeholder="filter prize…"
-              className="bg-[#111827] border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-1.5 w-40 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/50 placeholder-gray-600"
+              className="bg-[#111827] border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-1.5 w-40 focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder-gray-600"
             />
             <button
               type="submit"
-              className="text-xs bg-[#D4AF37]/15 text-[#D4AF37] hover:bg-[#D4AF37]/25 px-3 py-1.5 rounded-lg font-semibold transition"
+              className="text-xs bg-primary/15 text-primary hover:bg-primary/25 px-3 py-1.5 rounded-lg font-semibold transition"
             >
               Search
             </button>
@@ -720,7 +721,7 @@ function WinsPageInner() {
             <select
               value={pageSize}
               onChange={e => { setPageSize(Number(e.target.value)); setPage(1) }}
-              className="bg-[#111827] border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/50"
+              className="bg-[#111827] border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/50"
             >
               <option value={20}>20</option>
               <option value={50}>50</option>
@@ -903,7 +904,7 @@ function SecretKeyChecker({ token }: { token: string }) {
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/3 transition text-left"
       >
         <div className="flex items-center gap-2">
-          <Icon name="key" className="text-[#D4AF37] text-base" />
+          <Icon name="key" className="text-primary text-base" />
           <span className="text-sm font-semibold text-gray-200">Secret Key Checker</span>
           <span className="text-[9px] px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400 border border-yellow-500/20 font-bold">ADMIN</span>
         </div>
@@ -924,7 +925,7 @@ function SecretKeyChecker({ token }: { token: string }) {
               value={secretInput}
               onChange={e => { setSecretInput(e.target.value); setResult(null); setErr('') }}
               onKeyDown={e => { if (e.key === 'Enter') handleCheck() }}
-              className="flex-1 bg-black/40 border border-white/10 text-gray-200 text-xs font-mono rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/50 placeholder-gray-600"
+              className="flex-1 bg-black/40 border border-white/10 text-gray-200 text-xs font-mono rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder-gray-600"
               autoComplete="off"
               spellCheck={false}
             />
@@ -932,7 +933,7 @@ function SecretKeyChecker({ token }: { token: string }) {
               onClick={handleCheck}
               disabled={checking || !secretInput.trim()}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold text-black disabled:opacity-40 transition"
-              style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #f0d060 100%)' }}
+              style={{ background: `linear-gradient(135deg, ${BRANDING.colors.primary} 0%, #f0d060 100%)` }}
             >
               {checking
                 ? <><Icon name="progress_activity" className="text-xs animate-spin" /><span>Checking…</span></>
@@ -958,9 +959,9 @@ function SecretKeyChecker({ token }: { token: string }) {
             <div className="rounded-xl border border-green-500/25 bg-green-500/5 overflow-hidden">
               {/* Reward sender badge */}
               {result.isRewardSender && (
-                <div className="px-4 py-2.5 bg-[#D4AF37]/10 border-b border-[#D4AF37]/20 flex items-center gap-2">
-                  <Icon name="verified" className="text-[#D4AF37] text-base" />
-                  <span className="text-xs font-bold text-[#D4AF37]">Reward Sender Wallet — key is correct ✓</span>
+                <div className="px-4 py-2.5 bg-primary/10 border-b border-primary/20 flex items-center gap-2">
+                  <Icon name="verified" className="text-primary text-base" />
+                  <span className="text-xs font-bold text-primary">Reward Sender Wallet — key is correct ✓</span>
                 </div>
               )}
               {/* Public key */}
@@ -971,7 +972,7 @@ function SecretKeyChecker({ token }: { token: string }) {
                 </div>
                 <button
                   onClick={() => navigator.clipboard.writeText(result.publicKey ?? '')}
-                  className="text-gray-600 hover:text-[#D4AF37] transition flex-shrink-0"
+                  className="text-gray-600 hover:text-primary transition flex-shrink-0"
                   title="Copy public key"
                 >
                   <Icon name="content_copy" className="text-sm" />
@@ -1007,7 +1008,7 @@ function SecretKeyChecker({ token }: { token: string }) {
               {result.balance && (
                 <div className="px-4 py-3 grid grid-cols-2 gap-x-6 gap-y-1.5">
                   <p className="text-[10px] text-gray-500 uppercase tracking-widest col-span-2 mb-0.5">Balance</p>
-                  <KeyVal label={PRIMARY_CUSTOM_ASSET_CODE} value={result.balance.nsafl != null ? Number(result.balance.nsafl).toLocaleString() : '—'} accent="text-[#D4AF37]" />
+                  <KeyVal label={PRIMARY_CUSTOM_ASSET_CODE} value={result.balance.nsafl != null ? Number(result.balance.nsafl).toLocaleString() : '—'} accent="text-primary" />
                   <KeyVal label="XLM" value={result.balance.xlm != null ? Number(result.balance.xlm).toLocaleString() : '—'} />
                   {result.balance.lastSynced && (
                     <KeyVal label="Last Synced" value={new Date(result.balance.lastSynced).toLocaleString()} />
@@ -1130,7 +1131,7 @@ function WinTableRow({
               value={overrideInput}
               onChange={e => onOverrideInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') onSaveOverride(w.id); if (e.key === 'Escape') onCancelOverride() }}
-              className="bg-black/40 border border-[#D4AF37]/40 text-gray-200 text-xs font-mono rounded px-2 py-1 w-28 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/50"
+              className="bg-black/40 border border-primary/40 text-gray-200 text-xs font-mono rounded px-2 py-1 w-28 focus:outline-none focus:ring-1 focus:ring-primary/50"
               autoFocus
             />
             <button onClick={() => onSaveOverride(w.id)} disabled={overrideSaving} className="text-green-400 hover:text-green-300 transition disabled:opacity-40">
@@ -1142,7 +1143,7 @@ function WinTableRow({
           </div>
         ) : (
           <div className="flex items-center gap-1 group">
-            <span className="text-[#D4AF37] font-medium">{w.prize}</span>
+            <span className="text-primary font-medium">{w.prize}</span>
             {w.payout_status === 'pending' && (
               <button
                 onClick={() => onStartOverride(w.id, w.prize)}
@@ -1170,7 +1171,7 @@ function WinTableRow({
       <Td mono>
         {w.wallet_address
           ? <span className="inline-flex items-center gap-0.5">
-              <span className="text-xs text-[#D4AF37]" title={w.wallet_address}>{shortStr(w.wallet_address)}</span>
+              <span className="text-xs text-primary" title={w.wallet_address}>{shortStr(w.wallet_address)}</span>
               <CopyBtn value={w.wallet_address} label="wallet address" />
             </span>
           : <span className="text-gray-600">—</span>

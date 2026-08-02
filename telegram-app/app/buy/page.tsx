@@ -12,6 +12,7 @@ import {
   PRIMARY_CUSTOM_ASSET_CODE,
   PRIMARY_CUSTOM_ASSET_ISSUER,
 } from "@/lib/constants";
+import { BRANDING } from "@/config/branding";
 import { haptic } from "@/lib/telegram-ui";
 import ErrorCard from "@/components/ErrorCard";
 
@@ -96,7 +97,7 @@ export default function BuyPage() {
 
   return (
     <WalletGuard>
-      <header className="pt-3 pb-2 px-4 sticky top-0 z-20 bg-[#0A0E1A] border-b border-white/10">
+      <header className="pt-3 pb-2 px-4 sticky top-0 z-20 bg-background-dark border-b border-white/10">
         <div className="flex items-center space-x-3">
           <button
             onClick={() => router.back()}
@@ -113,7 +114,7 @@ export default function BuyPage() {
             <p className="text-[11px] text-gray-400">
               {balance.toLocaleString()} {PRIMARY_CUSTOM_ASSET_LABEL} held
               {nextTier && (
-                <span className="text-[#D4AF37]">
+                <span className="text-primary">
                   {" "}
                   · {toNextTier.toLocaleString()} to {nextTier.label}
                 </span>
@@ -130,11 +131,11 @@ export default function BuyPage() {
             className="glass-card rounded-xl p-4 relative overflow-hidden"
             style={{ border: "1px solid rgba(212,175,55,0.3)" }}
           >
-            <div className="absolute -right-6 -top-6 w-28 h-28 bg-[#D4AF37]/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -right-6 -top-6 w-28 h-28 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
             <div className="relative z-10">
               <div className="flex items-center space-x-2 mb-2">
                 <span className="text-xl">{currentTier.emoji}</span>
-                <span className="material-symbols-outlined text-[#D4AF37] text-base">
+                <span className="material-symbols-outlined text-primary text-base">
                   arrow_forward
                 </span>
                 <span className="text-xl">{nextTier.emoji}</span>
@@ -156,7 +157,7 @@ export default function BuyPage() {
                   className="h-full rounded-full transition-all"
                   style={{
                     width: `${nextTier ? Math.min(100, ((balance - currentTier.minBalance) / (nextTier.minBalance - currentTier.minBalance)) * 100) : 100}%`,
-                    background: `linear-gradient(90deg, ${currentTier.color}, #D4AF37)`,
+                    background: `linear-gradient(90deg, ${currentTier.color}, ${BRANDING.colors.primary})`,
                   }}
                 />
               </div>
@@ -168,8 +169,8 @@ export default function BuyPage() {
         <div className="glass-card rounded-xl p-3 space-y-2.5">
           {/* Header */}
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-full bg-[#D4AF37]/20 border border-[#D4AF37]/30 flex items-center justify-center flex-shrink-0">
-              <span className="material-symbols-outlined text-[#D4AF37] text-base">account_balance_wallet</span>
+            <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center flex-shrink-0">
+              <span className="material-symbols-outlined text-primary text-base">account_balance_wallet</span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-bold text-white leading-tight">Buy Direct with XLM</p>
@@ -191,7 +192,7 @@ export default function BuyPage() {
               <p className="text-xs text-gray-200 font-mono flex-1 break-all leading-relaxed">{DIRECT_BUY_ADDRESS}</p>
               <button
                 onClick={handleCopy}
-                className="flex-shrink-0 flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/25 transition active:scale-[0.97]"
+                className="flex-shrink-0 flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-primary/15 border border-primary/30 text-primary hover:bg-primary/25 transition active:scale-[0.97]"
               >
                 <span className="material-symbols-outlined text-sm">{copied ? "check" : "content_copy"}</span>
                 <span className="text-[10px] font-semibold">{copied ? "Copied!" : "Copy"}</span>
@@ -207,14 +208,14 @@ export default function BuyPage() {
             placeholder="XLM amount (optional — to see estimate)"
             min="0"
             step="any"
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#D4AF37]/50"
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-primary/50"
           />
 
           {/* Calculated token amount */}
           {xlmAmount && parseFloat(xlmAmount) > 0 && (
             <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
               <span className="text-[11px] text-gray-400">You&apos;ll receive (incl. bonus)</span>
-              <span className="text-xs font-bold text-[#D4AF37]">
+              <span className="text-xs font-bold text-primary">
                 {(parseFloat(calculatedTokens) * 1.2).toLocaleString(undefined, { maximumFractionDigits: 2 })}{" "}{PRIMARY_CUSTOM_ASSET_LABEL}
               </span>
             </div>
@@ -223,7 +224,7 @@ export default function BuyPage() {
           {/* Open bot button */}
           <button
             onClick={handleOpenBot}
-            className="w-full py-2 rounded-lg font-semibold text-sm transition-all bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 active:scale-[0.98]"
+            className="w-full py-2 rounded-lg font-semibold text-sm transition-all bg-primary text-black hover:bg-primary/90 active:scale-[0.98]"
           >
             <span className="flex items-center justify-center space-x-2">
               <span className="material-symbols-outlined text-base">send</span>

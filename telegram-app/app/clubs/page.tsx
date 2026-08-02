@@ -9,6 +9,7 @@ import { useWalletStore } from "@/hooks/useStore";
 import { toast } from "@/components/Toast";
 import { getTelegramInitData } from "@/lib/telegram";
 import { PRIMARY_CUSTOM_ASSET_LABEL } from "@/lib/constants";
+import { BRANDING } from "@/config/branding";
 import {
   ALL_CLUBS,
   AFL_CLUBS,
@@ -85,10 +86,10 @@ function MatchReport({
         ].map(({ team, q, won }) => (
           <div
             key={team}
-            className={`grid grid-cols-6 px-3 py-2 border-t border-white/5 ${won ? "bg-[#D4AF37]/5" : ""}`}
+            className={`grid grid-cols-6 px-3 py-2 border-t border-white/5 ${won ? "bg-primary/5" : ""}`}
           >
             <span
-              className={`col-span-2 text-xs font-bold truncate pr-2 ${won ? "text-[#D4AF37]" : "text-gray-400"}`}
+              className={`col-span-2 text-xs font-bold truncate pr-2 ${won ? "text-primary" : "text-gray-400"}`}
             >
               {team.split(" ").slice(-1)[0]}
               {won ? " ✓" : ""}
@@ -126,10 +127,10 @@ function MatchReport({
             className="rounded-xl bg-white/3 border border-white/8 p-3 space-y-2.5"
           >
             <div className="flex items-center space-x-1.5">
-              <span className="material-symbols-outlined text-[13px] text-[#D4AF37]">
+              <span className="material-symbols-outlined text-[13px] text-primary">
                 {icon}
               </span>
-              <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-widest">
+              <span className="text-[9px] font-bold text-primary uppercase tracking-widest">
                 {label}
               </span>
             </div>
@@ -213,14 +214,14 @@ function MatchReport({
               disabled
               className="w-full flex items-center justify-center space-x-2 py-2.5 rounded-xl border border-white/8 bg-white/3 opacity-40 cursor-not-allowed"
             >
-              <span className="material-symbols-outlined text-[#D4AF37] text-[15px]">
+              <span className="material-symbols-outlined text-primary text-[15px]">
                 {icon}
               </span>
               <span className="text-xs font-semibold text-gray-300">
                 {label}
               </span>
             </button>
-            <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold text-black bg-[#D4AF37] px-1.5 py-0.5 rounded-full leading-none">
+            <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold text-black bg-primary px-1.5 py-0.5 rounded-full leading-none">
               SOON
             </span>
           </div>
@@ -253,7 +254,7 @@ function FixtureCard({
     <div
       className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
         open
-          ? "border-[#D4AF37]/30 bg-[#D4AF37]/3"
+          ? "border-primary/30 bg-primary/3"
           : "border-white/8 bg-white/2"
       }`}
       style={{
@@ -269,7 +270,7 @@ function FixtureCard({
                 ? "bg-green-500/20 text-green-400 border border-green-500/30"
                 : f.status === "FULL TIME"
                   ? "bg-white/8 text-gray-400 border border-white/10"
-                  : "bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/25"
+                  : "bg-primary/15 text-primary border border-primary/25"
             }`}
           >
             {isUpcoming ? `🕐 ${f.time}` : f.status}
@@ -383,10 +384,10 @@ function FixtureCard({
         {/* Winner / odds attribution */}
         {f.winner && (
           <div className="flex items-center space-x-1.5">
-            <span className="material-symbols-outlined text-[13px] text-[#D4AF37]">
+            <span className="material-symbols-outlined text-[13px] text-primary">
               emoji_events
             </span>
-            <p className="text-xs text-[#D4AF37] font-medium">{f.winner}</p>
+            <p className="text-xs text-primary font-medium">{f.winner}</p>
           </div>
         )}
 
@@ -397,8 +398,8 @@ function FixtureCard({
               onClick={() => setOpen((v) => !v)}
               className={`flex-1 flex items-center justify-center space-x-2 py-2 rounded-xl border text-xs font-semibold transition ${
                 open
-                  ? "bg-[#D4AF37]/20 border-[#D4AF37]/40 text-[#D4AF37]"
-                  : "bg-[#D4AF37]/8 border-[#D4AF37]/20 text-[#D4AF37] hover:bg-[#D4AF37]/15"
+                  ? "bg-primary/20 border-primary/40 text-primary"
+                  : "bg-primary/8 border-primary/20 text-primary hover:bg-primary/15"
               }`}
             >
               <span className="material-symbols-outlined text-[15px]">
@@ -411,7 +412,7 @@ function FixtureCard({
               href={f.matchReportUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center space-x-2 py-2 rounded-xl border border-white/10 text-xs font-medium text-gray-400 hover:text-[#D4AF37] hover:border-[#D4AF37]/20 transition"
+              className="flex-1 flex items-center justify-center space-x-2 py-2 rounded-xl border border-white/10 text-xs font-medium text-gray-400 hover:text-primary hover:border-primary/20 transition"
             >
               <span className="material-symbols-outlined text-[14px]">
                 open_in_new
@@ -460,7 +461,7 @@ function ClubGrid({
             key={club.id}
             className={`relative rounded-2xl border p-3 flex flex-col items-center text-center transition-all duration-200 ${
               isFavorite
-                ? "border-[#D4AF37]/60 bg-[#D4AF37]/8 shadow-[0_0_18px_rgba(212,175,55,0.25)]"
+                ? "border-primary/60 bg-primary/8 shadow-[0_0_18px_rgba(212,175,55,0.25)]"
                 : "border-white/8 bg-white/2 hover:border-white/15"
             }`}
           >
@@ -469,7 +470,7 @@ function ClubGrid({
               <div
                 className={`absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold border ${
                   rank === 1
-                    ? "bg-[#D4AF37] text-black border-[#D4AF37]"
+                    ? "bg-primary text-black border-primary"
                     : rank === 2
                       ? "bg-gray-300 text-black border-gray-300"
                       : "bg-amber-700 text-white border-amber-700"
@@ -481,7 +482,7 @@ function ClubGrid({
 
             {/* Favorite star */}
             {isFavorite && (
-              <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#D4AF37] flex items-center justify-center">
+              <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                 <span
                   className="material-symbols-outlined text-[11px] text-black"
                   style={{ fontVariationSettings: "'FILL' 1" }}
@@ -493,7 +494,7 @@ function ClubGrid({
 
             {/* Logo */}
             <div
-              className={`w-14 h-14 flex items-center justify-center mb-2 rounded-xl ${isFavorite ? "bg-[#D4AF37]/10" : "bg-white/3"}`}
+              className={`w-14 h-14 flex items-center justify-center mb-2 rounded-xl ${isFavorite ? "bg-primary/10" : "bg-white/3"}`}
             >
               {club.logo ? (
                 <img
@@ -516,7 +517,7 @@ function ClubGrid({
 
             {/* Club name */}
             <p
-              className={`text-[10px] font-bold leading-tight mb-1.5 ${isFavorite ? "text-[#D4AF37]" : "text-gray-200"}`}
+              className={`text-[10px] font-bold leading-tight mb-1.5 ${isFavorite ? "text-primary" : "text-gray-200"}`}
             >
               {club.shortName}
             </p>
@@ -526,7 +527,7 @@ function ClubGrid({
               className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${
                 fans > 0
                   ? isFavorite
-                    ? "bg-[#D4AF37]/20 text-[#D4AF37] border-[#D4AF37]/30"
+                    ? "bg-primary/20 text-primary border-primary/30"
                     : "bg-white/8 text-gray-300 border-white/12"
                   : "bg-white/3 text-gray-600 border-white/6"
               }`}
@@ -541,7 +542,7 @@ function ClubGrid({
                   className="h-1 rounded-full transition-all duration-700"
                   style={{
                     width: `${Math.max(Math.round((fans / topFans) * 100), 8)}%`,
-                    background: isFavorite ? "#D4AF37" : club.color,
+                    background: isFavorite ? BRANDING.colors.primary : club.color,
                   }}
                 />
               </div>
@@ -657,7 +658,7 @@ function WhipLash347Tab({
       {/* ── Captain's Pick ──────────────────────────────────────── */}
       {captain && (
         <div className="rounded-2xl relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.04) 100%)', border: '1px solid rgba(212,175,55,0.35)' }}>
-          <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, #D4AF37, transparent)' }} />
+          <div className="absolute top-0 left-0 right-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${BRANDING.colors.primary}, transparent)` }} />
           <div className="flex items-center gap-3 p-4">
             <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 text-2xl"
               style={{ background: 'rgba(212,175,55,0.15)', border: '2px solid rgba(212,175,55,0.4)' }}>
@@ -665,7 +666,7 @@ function WhipLash347Tab({
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-0.5">
-                <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full" style={{ background: '#D4AF3725', color: '#D4AF37', border: '1px solid #D4AF3740' }}>⚡ Captain</span>
+                <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full" style={{ background: `${BRANDING.colors.primary}25`, color: BRANDING.colors.primary, border: `1px solid ${BRANDING.colors.primary}40` }}>⚡ Captain</span>
                 <PositionBadge position={captain.position} />
               </div>
               <p className="text-base font-black text-white leading-tight">{captain.name}</p>
@@ -721,7 +722,7 @@ function WhipLash347Tab({
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold text-gray-200 truncate">{entry.displayName}</p>
                 </div>
-                <span className="text-xs font-black" style={{ color: '#D4AF37' }}>
+                <span className="text-xs font-black" style={{ color: BRANDING.colors.primary }}>
                   {Number(entry.balance).toLocaleString()}
                 </span>
               </div>
@@ -798,7 +799,7 @@ function FanHubTab({
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-3">
-        <div className="w-8 h-8 border-2 border-[#D4AF37]/30 border-t-[#D4AF37] rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
         <p className="text-xs text-gray-500">Loading fan counts…</p>
       </div>
     );
@@ -809,7 +810,7 @@ function FanHubTab({
       {/* Summary strip */}
       <div className="glass-card rounded-xl px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <span className="material-symbols-outlined text-[#D4AF37] text-base">
+          <span className="material-symbols-outlined text-primary text-base">
             groups
           </span>
           <div>
@@ -840,7 +841,7 @@ function FanHubTab({
               </div>
             )}
             <div className="text-right">
-              <p className="text-[10px] font-bold text-[#D4AF37]">Your Club</p>
+              <p className="text-[10px] font-bold text-primary">Your Club</p>
               <p className="text-[9px] text-gray-400">
                 {myClub.shortName} · {myClub.league}
               </p>
@@ -861,7 +862,7 @@ function FanHubTab({
             onClick={() => setLeague(id)}
             className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
               league === id
-                ? id === "WL347" ? "text-white" : "bg-[#D4AF37] text-[#0A0E1A]"
+                ? id === "WL347" ? "text-white" : "bg-primary text-background-dark"
                 : "text-gray-400 hover:text-white"
             }`}
             style={league === id && id === "WL347" ? { background: 'linear-gradient(135deg, #E8192C, #00D4FF)' } : undefined}
@@ -917,7 +918,7 @@ function FanHubTab({
       {/* Legend */}
       <div className="flex items-center justify-center space-x-4 text-[9px] text-gray-600">
         <div className="flex items-center space-x-1">
-          <div className="w-3 h-3 rounded-full bg-[#D4AF37]" />
+          <div className="w-3 h-3 rounded-full bg-primary" />
           <span>Your club</span>
         </div>
         <div className="flex items-center space-x-1">
@@ -1002,14 +1003,14 @@ export default function ClubsPage() {
 
   return (
     <WalletGuard>
-      <header className="pt-3 pb-0 px-4 sticky top-0 z-30 bg-[#0A0E1A] border-b border-white/10">
+      <header className="pt-3 pb-0 px-4 sticky top-0 z-30 bg-background-dark border-b border-white/10">
         {/* Title + optional round selector (only shown on fixtures tab) */}
         <div className="flex items-center justify-between mb-3">
           <div>
             <h1 className="text-xl font-bold text-white tracking-tight">
               Clubs
             </h1>
-            <p className="text-xs text-[#D4AF37] font-medium">
+            <p className="text-xs text-primary font-medium">
               AFL & WAFL · 2026 Season
             </p>
           </div>
@@ -1030,7 +1031,7 @@ export default function ClubsPage() {
               onClick={() => switchTab(id)}
               className={`flex-1 flex items-center justify-center space-x-1.5 py-2.5 text-xs font-bold border-b-2 transition-colors ${
                 activeTab === id
-                  ? "border-[#D4AF37] text-[#D4AF37]"
+                  ? "border-primary text-primary"
                   : "border-transparent text-gray-500 hover:text-gray-300"
               }`}
             >
@@ -1045,7 +1046,7 @@ export default function ClubsPage() {
         {/* Round selector — WAFL label */}
         {activeTab === "fixtures" && fixturesLeague === "WAFL" && (
           <div className="pb-3 pt-1">
-            <span className="inline-flex items-center px-3 py-1.5 rounded-xl border border-[#D4AF37] bg-[#D4AF37] text-black text-xs font-bold">
+            <span className="inline-flex items-center px-3 py-1.5 rounded-xl border border-primary bg-primary text-black text-xs font-bold">
               Round 1 · 29–30 Mar
             </span>
           </div>
@@ -1073,7 +1074,7 @@ export default function ClubsPage() {
                     title={`${r.label} · ${r.dateRange}`}
                     className={`flex flex-col items-center px-3 py-1.5 rounded-xl border text-xs font-bold transition whitespace-nowrap ${
                       isActive
-                        ? "bg-[#D4AF37] text-black border-[#D4AF37] shadow-[0_0_10px_rgba(212,175,55,0.35)]"
+                        ? "bg-primary text-black border-primary shadow-[0_0_10px_rgba(212,175,55,0.35)]"
                         : "bg-white/5 text-gray-400 border-white/10 hover:text-white hover:bg-white/10"
                     }`}
                   >
@@ -1106,7 +1107,7 @@ export default function ClubsPage() {
                   onClick={() => setFixturesLeague(lg)}
                   className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
                     fixturesLeague === lg
-                      ? "bg-[#D4AF37] text-[#0A0E1A]"
+                      ? "bg-primary text-background-dark"
                       : "text-gray-400 hover:text-white"
                   }`}
                 >
@@ -1135,7 +1136,7 @@ export default function ClubsPage() {
                 </>
               )}
               {upcomingFixtures.length > 0 && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/20 uppercase tracking-wider">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-primary/10 text-primary border border-primary/20 uppercase tracking-wider">
                   {upcomingFixtures.length} upcoming
                 </span>
               )}
@@ -1164,7 +1165,7 @@ export default function ClubsPage() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
                       <div className="h-px flex-1 bg-white/8" />
-                      <span className="text-[9px] font-bold text-[#D4AF37]/60 uppercase tracking-widest">
+                      <span className="text-[9px] font-bold text-primary/60 uppercase tracking-widest">
                         Upcoming
                       </span>
                       <div className="h-px flex-1 bg-white/8" />

@@ -65,7 +65,7 @@ export default function ErrorCard({ error, context, onRetry }: ErrorCardProps) {
         {onRetry && (
           <button
             onClick={onRetry}
-            className="flex-1 flex items-center justify-center space-x-1.5 py-2 rounded-xl border border-[#D4AF37]/30 bg-[#D4AF37]/10 text-[#D4AF37] text-xs font-semibold hover:bg-[#D4AF37]/20 transition"
+            className="flex-1 flex items-center justify-center space-x-1.5 py-2 rounded-xl border border-primary/30 bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition"
           >
             <span className="material-symbols-outlined text-[13px]">refresh</span>
             <span>Retry</span>

@@ -137,7 +137,7 @@ export default function HomePage() {
 
   if (phase === 'no-trustline') {
     return (
-      <div className="min-h-screen bg-[#0A0E1A] flex flex-col items-center justify-center px-6 py-12">
+      <div className="min-h-screen bg-background-dark flex flex-col items-center justify-center px-6 py-12">
         <NoTrustlineHelp
           onTrustlineAdded={() => {
             setInputAddress(pendingAddress)
@@ -196,20 +196,20 @@ export default function HomePage() {
 
   return (
     <>
-      <header className="pt-3 pb-2 px-4 sticky top-0 z-10 bg-[#0A0E1A] border-b border-white/10">
+      <header className="pt-3 pb-2 px-4 sticky top-0 z-10 bg-background-dark border-b border-white/10">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 border border-[#D4AF37]/50 flex items-center justify-center">
-            <span className="material-symbols-outlined text-[#D4AF37]">sports_football</span>
+          <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center">
+            <span className="material-symbols-outlined text-primary">sports_football</span>
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">The Homecoming Hub</h1>
-            <p className="text-xs text-[#D4AF37] font-medium">Dashboard</p>
+            <h1 className="text-xl font-bold text-white tracking-tight">{BRANDING.appName}</h1>
+            <p className="text-xs text-primary font-medium">Dashboard</p>
           </div>
         </div>
       </header>
       <main className="px-6 py-6 space-y-8 pb-32">
-        <div className="glass-card rounded-2xl p-6 relative overflow-hidden border border-[#D4AF37]/30">
-          <div className="absolute -right-4 -top-4 w-32 h-32 bg-[#D4AF37]/10 rounded-full blur-2xl" />
+        <div className="glass-card rounded-2xl p-6 relative overflow-hidden border border-primary/30">
+          <div className="absolute -right-4 -top-4 w-32 h-32 bg-primary/10 rounded-full blur-2xl" />
           <div className="relative z-10">
             <div className="w-full flex justify-between items-start mb-6">
               <p className="text-sm text-gray-400 font-medium tracking-wide uppercase">Legacy Wallet</p>
@@ -219,7 +219,7 @@ export default function HomePage() {
               </span>
             </div>
             <div className="mb-6 text-center">
-              <span className="material-symbols-outlined text-6xl text-[#D4AF37]/50 mb-4 block">account_balance_wallet</span>
+              <span className="material-symbols-outlined text-6xl text-primary/50 mb-4 block">account_balance_wallet</span>
               <p className="text-sm text-gray-300 max-w-xs mx-auto">
                 Connect your Stellar wallet to view your {PRIMARY_CUSTOM_ASSET_LABEL} balance.
               </p>
@@ -229,13 +229,13 @@ export default function HomePage() {
               placeholder="G... (your Stellar address)"
               value={inputAddress}
               onChange={(e) => setInputAddress(e.target.value)}
-              className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 font-mono mb-3 focus:outline-none focus:border-[#D4AF37]/50"
+              className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 font-mono mb-3 focus:outline-none focus:border-primary/50"
             />
             {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
             <button
               onClick={handleConnect}
               disabled={phase === 'connecting'}
-              className="w-full bg-[#D4AF37] text-black font-semibold py-4 rounded-xl text-base transition hover:bg-[#D4AF37]/90 flex items-center justify-center shadow-[0_0_15px_rgba(212,175,55,0.3)] disabled:opacity-50"
+              className="w-full bg-primary text-black font-semibold py-4 rounded-xl text-base transition hover:bg-primary/90 flex items-center justify-center shadow-[0_0_15px_rgba(212,175,55,0.3)] disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[20px] mr-2">account_balance_wallet</span>
               {phase === 'connecting' ? 'Connecting...' : 'Connect Stellar Wallet'}
@@ -283,16 +283,16 @@ function CelebrationScreen({
     <main className="px-6 py-10 pb-32 flex flex-col items-center justify-center min-h-[75vh] space-y-10">
       {/* Wallet icon orb */}
       <div className="relative w-40 h-40 flex items-center justify-center">
-        <div className="absolute inset-0 bg-[#D4AF37]/30 rounded-full blur-3xl" />
-        <div className="absolute inset-4 bg-[#D4AF37]/20 rounded-full blur-xl animate-pulse" />
-        <div className="w-32 h-32 rounded-full border border-[#D4AF37]/50 bg-[#0A0E1A]/80 backdrop-blur-md flex items-center justify-center relative z-10 shadow-[0_0_30px_rgba(212,175,55,0.4)]">
+        <div className="absolute inset-0 bg-primary/30 rounded-full blur-3xl" />
+        <div className="absolute inset-4 bg-primary/20 rounded-full blur-xl animate-pulse" />
+        <div className="w-32 h-32 rounded-full border border-primary/50 bg-background-dark/80 backdrop-blur-md flex items-center justify-center relative z-10 shadow-[0_0_30px_rgba(212,175,55,0.4)]">
           <span
-            className="material-symbols-outlined text-[72px] text-[#D4AF37] drop-shadow-[0_0_15px_rgba(212,175,55,1)]"
+            className="material-symbols-outlined text-[72px] text-primary drop-shadow-[0_0_15px_rgba(212,175,55,1)]"
             style={{ fontVariationSettings: "'FILL' 1" }}
           >
             sports_football
           </span>
-          <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-green-500 rounded-full border-4 border-[#0A0E1A] flex items-center justify-center shadow-[0_0_15px_rgba(34,197,94,0.6)]">
+          <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-green-500 rounded-full border-4 border-background-dark flex items-center justify-center shadow-[0_0_15px_rgba(34,197,94,0.6)]">
             <span
               className="material-symbols-outlined text-white text-[20px] font-bold"
               style={{ fontVariationSettings: "'FILL' 1" }}
@@ -305,26 +305,26 @@ function CelebrationScreen({
 
       {/* Title */}
       <div className="text-center space-y-3">
-        <h2 className="text-4xl font-bold text-[#D4AF37] font-['Playfair_Display'] tracking-tight drop-shadow-md">
+        <h2 className="text-4xl font-bold text-primary font-['Playfair_Display'] tracking-tight drop-shadow-md">
           Wallet Connected
         </h2>
         <p className="text-gray-400 text-sm max-w-[250px] mx-auto leading-relaxed">
-          Your secure link to the Homecoming Hub has been successfully established.
+          {BRANDING.copy.walletConnectedSubtitle}
         </p>
       </div>
 
       {/* Balance card */}
-      <div className="w-full glass-card rounded-2xl p-6 relative overflow-hidden border border-[#D4AF37]/40 bg-gradient-to-br from-white/10 to-transparent shadow-[0_8px_32px_rgba(212,175,55,0.2)]">
-        <div className="absolute -right-8 -top-8 w-40 h-40 bg-[#D4AF37]/15 rounded-full blur-3xl" />
+      <div className="w-full glass-card rounded-2xl p-6 relative overflow-hidden border border-primary/40 bg-gradient-to-br from-white/10 to-transparent shadow-[0_8px_32px_rgba(212,175,55,0.2)]">
+        <div className="absolute -right-8 -top-8 w-40 h-40 bg-primary/15 rounded-full blur-3xl" />
         <div className="relative z-10 flex flex-col items-center text-center">
-          <span className="inline-flex items-center px-3 py-1 mb-4 rounded-full text-[11px] font-semibold bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30 uppercase tracking-widest">
+          <span className="inline-flex items-center px-3 py-1 mb-4 rounded-full text-[11px] font-semibold bg-primary/20 text-primary border border-primary/30 uppercase tracking-widest">
             <span className="material-symbols-outlined text-[14px] mr-1.5" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
             Legacy Wallet
           </span>
           <h3 className="text-4xl font-bold text-white tracking-tight font-['Playfair_Display'] mb-6">
-            {formatBalance(balance)} <span className="text-xl text-[#D4AF37] font-['Inter']">{PRIMARY_CUSTOM_ASSET_LABEL}</span>
+            {formatBalance(balance)} <span className="text-xl text-primary font-['Inter']">{PRIMARY_CUSTOM_ASSET_LABEL}</span>
           </h3>
-          <div className="flex items-center space-x-3 bg-[#0A0E1A]/70 px-4 py-2.5 rounded-xl border border-white/10 backdrop-blur-md w-full justify-center shadow-inner">
+          <div className="flex items-center space-x-3 bg-background-dark/70 px-4 py-2.5 rounded-xl border border-white/10 backdrop-blur-md w-full justify-center shadow-inner">
             <span className="text-[11px] text-gray-400 uppercase tracking-wider font-semibold">Stellar</span>
             <div className="w-px h-4 bg-white/20" />
             <span className="text-sm text-gray-200 font-mono tracking-wider font-medium">{short}</span>
@@ -335,7 +335,7 @@ function CelebrationScreen({
       {/* Enter button */}
       <button
         onClick={onEnter}
-        className="w-full bg-[#D4AF37] text-[#0A0E1A] font-bold py-4 rounded-xl text-base transition hover:bg-[#D4AF37]/90 shadow-[0_0_20px_rgba(212,175,55,0.4)] uppercase tracking-wide flex items-center justify-center"
+        className="w-full bg-primary text-background-dark font-bold py-4 rounded-xl text-base transition hover:bg-primary/90 shadow-[0_0_20px_rgba(212,175,55,0.4)] uppercase tracking-wide flex items-center justify-center"
       >
         Enter Dashboard <span className="material-symbols-outlined ml-2 text-[20px]">arrow_forward</span>
       </button>

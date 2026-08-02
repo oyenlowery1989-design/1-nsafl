@@ -170,7 +170,7 @@ function AccessPageInner() {
         <div className="text-center">
           <Icon name="error" className="text-4xl text-red-400 mb-2" />
           <p className="text-red-400 text-sm">{error}</p>
-          <button onClick={fetchData} className="mt-3 text-xs text-[#D4AF37] underline">Retry</button>
+          <button onClick={fetchData} className="mt-3 text-xs text-primary underline">Retry</button>
         </div>
       </div>
     )
@@ -185,7 +185,7 @@ function AccessPageInner() {
             <Link href="/admin" className="text-gray-500 hover:text-white transition">
               <Icon name="arrow_back" className="text-xl" />
             </Link>
-            <Icon name="shield" className="text-xl text-[#D4AF37]" />
+            <Icon name="shield" className="text-xl text-primary" />
             <h1 className="text-base font-bold text-white">Access Attempts</h1>
             {suspiciousCount > 0 && (
               <Badge color="red">{suspiciousCount} suspicious</Badge>
@@ -211,7 +211,7 @@ function AccessPageInner() {
                 onClick={() => setTimeFilter(f.key)}
                 className={`px-3 py-1.5 text-xs font-semibold rounded-md transition ${
                   timeFilter === f.key
-                    ? 'bg-[#D4AF37] text-black'
+                    ? 'bg-primary text-black'
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >

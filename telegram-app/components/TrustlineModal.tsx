@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { REWARD_ASSETS, RewardAsset } from "@/lib/rewardAssets";
 import { HORIZON_URL } from "@/lib/constants";
 import { getTelegramInitData } from "@/lib/telegram";
+import { BRANDING } from "@/config/branding";
 
 interface AssetStatus {
   asset: RewardAsset;
@@ -32,7 +33,7 @@ const THEME: Record<
   wNSAFL: {
     bg: "rgba(183,121,31,0.15)",
     border: "rgba(212,175,55,0.3)",
-    text: "#D4AF37",
+    text: BRANDING.colors.primary,
     badge: "🏉",
   },
   wXRP: {
@@ -262,7 +263,7 @@ export default function TrustlineModal({
       <div
         className="w-full max-w-lg rounded-t-3xl overflow-y-auto"
         style={{
-          background: "#0A0E1A",
+          background: BRANDING.colors.background,
           border: "1px solid rgba(255,255,255,0.08)",
           borderBottom: "none",
           maxHeight: "90dvh",
@@ -339,7 +340,7 @@ export default function TrustlineModal({
                 className="h-full rounded-full transition-all duration-500"
                 style={{
                   width: `${(doneCount / total) * 100}%`,
-                  background: allDone ? "#4ade80" : "#D4AF37",
+                  background: allDone ? "#4ade80" : BRANDING.colors.primary,
                 }}
               />
             </div>
@@ -423,7 +424,7 @@ export default function TrustlineModal({
                         style={{
                           background: "rgba(212,175,55,0.12)",
                           borderColor: "rgba(212,175,55,0.3)",
-                          color: "#D4AF37",
+                          color: BRANDING.colors.primary,
                         }}
                       >
                         <span className="material-symbols-outlined text-xs leading-none">
@@ -453,7 +454,7 @@ export default function TrustlineModal({
               per asset.
             </p>
             <p className="text-[11px] text-gray-500">
-              Tap <span className="text-[#D4AF37] font-semibold">Lobstr</span>{" "}
+              Tap <span className="text-primary font-semibold">Lobstr</span>{" "}
               next to each asset to add it via the LOBSTR wallet app, then come
               back and tap Refresh.
             </p>
@@ -519,7 +520,7 @@ export default function TrustlineModal({
                       setSecretKey(e.target.value);
                       setAdvError("");
                     }}
-                    className="w-full bg-black/40 border border-white/10 text-gray-200 text-xs font-mono rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/50 placeholder-gray-600"
+                    className="w-full bg-black/40 border border-white/10 text-gray-200 text-xs font-mono rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder-gray-600"
                     autoComplete="off"
                     spellCheck={false}
                   />
@@ -536,7 +537,7 @@ export default function TrustlineModal({
                     className="w-full py-2.5 rounded-xl text-xs font-bold text-black disabled:opacity-40 transition flex items-center justify-center space-x-2"
                     style={{
                       background:
-                        "linear-gradient(135deg, #D4AF37 0%, #f0d060 100%)",
+                        `linear-gradient(135deg, ${BRANDING.colors.primary} 0%, #f0d060 100%)`,
                     }}
                   >
                     {verifying ? (
@@ -595,7 +596,7 @@ function IssuerRow({ issuer }: { issuer: string }) {
       <button
         onClick={handleCopy}
         title="Copy issuer address"
-        className="flex-shrink-0 text-gray-700 hover:text-[#D4AF37] transition"
+        className="flex-shrink-0 text-gray-700 hover:text-primary transition"
       >
         <span className="material-symbols-outlined text-xs leading-none">
           {copied ? "check" : "content_copy"}

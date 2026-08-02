@@ -146,8 +146,8 @@ export default function QuizSession({ mode, sessionId, questions, onComplete, on
   }
 
   return (
-    <div className="flex flex-col min-h-dvh bg-[#0A0E1A]">
-      <header className="pt-3 pb-2 px-4 sticky top-0 z-30 bg-[#0A0E1A] border-b border-white/10">
+    <div className="flex flex-col min-h-dvh bg-background-dark">
+      <header className="pt-3 pb-2 px-4 sticky top-0 z-30 bg-background-dark border-b border-white/10">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <button onClick={onBack} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition">
@@ -166,7 +166,7 @@ export default function QuizSession({ mode, sessionId, questions, onComplete, on
           </div>
         </div>
         <div className="mt-2 h-1 bg-white/5 rounded-full overflow-hidden">
-          <div className="h-1 bg-[#D4AF37] rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
+          <div className="h-1 bg-primary rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
         </div>
       </header>
 
@@ -183,7 +183,7 @@ export default function QuizSession({ mode, sessionId, questions, onComplete, on
 
         <div className="glass-card rounded-2xl p-5">
           <div className="flex items-center space-x-2 mb-3">
-            <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${currentQ.category === 'wafl' ? 'bg-blue-500/15 text-blue-300' : 'bg-[#D4AF37]/15 text-[#D4AF37]'}`}>
+            <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${currentQ.category === 'wafl' ? 'bg-blue-500/15 text-blue-300' : 'bg-primary/15 text-primary'}`}>
               {currentQ.category.toUpperCase()}
             </span>
             <span className="text-[10px] text-gray-500 uppercase">{currentQ.difficulty}</span>
@@ -227,7 +227,7 @@ export default function QuizSession({ mode, sessionId, questions, onComplete, on
             )}
             <button
               onClick={handleNext}
-              className="w-full py-3 rounded-xl bg-[#D4AF37] text-black font-bold text-sm transition active:scale-[0.98] hover:brightness-110"
+              className="w-full py-3 rounded-xl bg-primary text-black font-bold text-sm transition active:scale-[0.98] hover:brightness-110"
             >
               {isLast ? 'See Results' : 'Next Question →'}
             </button>

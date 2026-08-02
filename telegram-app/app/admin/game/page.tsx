@@ -15,7 +15,7 @@ interface WinRow {
 }
 
 const SOURCE_LABELS: Record<string, { label: string; icon: string; color: string }> = {
-  lucky_draw:   { label: 'Lucky Draw',    icon: 'casino',      color: 'text-[#D4AF37]' },
+  lucky_draw:   { label: 'Lucky Draw',    icon: 'casino',      color: 'text-primary' },
   slot_machine: { label: 'Slot Machine',  icon: 'view_column', color: 'text-purple-400' },
   scratch_card: { label: 'Scratch Card',  icon: 'grid_view',   color: 'text-blue-400' },
 }
@@ -44,7 +44,7 @@ function GamePageInner() {
       .finally(() => setLoading(false))
   }, [token])
 
-  if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin h-8 w-8 border-2 border-[#D4AF37] border-t-transparent rounded-full" /></div>
+  if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>
   if (error) return <div className="text-red-400 text-center py-20">{error}</div>
   if (!data) return null
 
@@ -81,7 +81,7 @@ function GamePageInner() {
   return (
     <div className="space-y-6 p-4 sm:p-6 min-h-screen bg-[#0a0f1e]">
       <div className="flex items-center gap-2 mb-2">
-        <Icon name="sports_esports" className="text-xl text-[#D4AF37]" />
+        <Icon name="sports_esports" className="text-xl text-primary" />
         <h1 className="text-lg font-bold text-white">Game Analytics</h1>
       </div>
 
@@ -91,7 +91,7 @@ function GamePageInner() {
         <StatTile label="Total Kicks"          value={num(totalGameKicks)}  accent="text-yellow-400" />
         <StatTile label="Avg Kicks / Session"  value={avgKicks}             accent="text-blue-400" />
         <StatTile label="Play Time"            value={playTime}             accent="text-green-400" />
-        <StatTile label="Total Wins"           value={num(totalWins)}       accent="text-[#D4AF37]" />
+        <StatTile label="Total Wins"           value={num(totalWins)}       accent="text-primary" />
       </div>
 
       {/* Per-source win breakdown */}
@@ -136,7 +136,7 @@ function GamePageInner() {
                   <div key={prize} className="flex items-center gap-3">
                     <span className="text-sm text-gray-300 w-40 shrink-0 truncate" title={prize}>{prize}</span>
                     <div className="flex-1 bg-white/5 rounded h-2 overflow-hidden">
-                      <div style={{ width: `${(count / maxCount) * 100}%` }} className="h-2 bg-[#D4AF37] rounded" />
+                      <div style={{ width: `${(count / maxCount) * 100}%` }} className="h-2 bg-primary rounded" />
                     </div>
                     <span className="text-xs font-bold text-gray-400 w-10 text-right">{count}</span>
                   </div>
@@ -178,7 +178,7 @@ function GamePageInner() {
 
 export default function GamePage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh] bg-[#0a0f1e]"><div className="animate-spin h-8 w-8 border-2 border-[#D4AF37] border-t-transparent rounded-full" /></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh] bg-[#0a0f1e]"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>}>
       <GamePageInner />
     </Suspense>
   )

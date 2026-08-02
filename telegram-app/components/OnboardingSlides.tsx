@@ -11,7 +11,7 @@ const SLIDES = BRANDING.copy.onboardingSlides
 const TIERS = [
   { label: 'Pre-Tier', range: '0–99', color: 'text-gray-400', border: 'border-gray-600' },
   { label: 'T1 Starter', range: '100+', color: 'text-blue-400', border: 'border-blue-500/50' },
-  { label: 'T10 Legend', range: '100k+', color: 'text-[#D4AF37]', border: 'border-[#D4AF37]/50' },
+  { label: 'T10 Legend', range: '100k+', color: 'text-primary', border: 'border-primary/50' },
 ]
 
 export default function OnboardingSlides({ onDone }: Props) {
@@ -43,13 +43,13 @@ export default function OnboardingSlides({ onDone }: Props) {
 
   return (
     <div
-      className="min-h-screen bg-[#0A0E1A] flex flex-col select-none"
+      className="min-h-screen bg-background-dark flex flex-col select-none"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
       {/* Ambient background glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-80px] left-1/2 -translate-x-1/2 w-[320px] h-[320px] bg-[#D4AF37]/10 rounded-full blur-[80px]" />
+        <div className="absolute top-[-80px] left-1/2 -translate-x-1/2 w-[320px] h-[320px] bg-primary/10 rounded-full blur-[80px]" />
       </div>
 
       {/* Skip link */}
@@ -68,10 +68,10 @@ export default function OnboardingSlides({ onDone }: Props) {
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-8 text-center">
         {/* Icon orb */}
         <div className="relative mb-8">
-          <div className="absolute inset-0 bg-[#D4AF37]/20 rounded-full blur-2xl scale-150" />
-          <div className="relative w-24 h-24 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 flex items-center justify-center shadow-[0_0_30px_rgba(212,175,55,0.25)]">
+          <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl scale-150" />
+          <div className="relative w-24 h-24 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center shadow-[0_0_30px_rgba(212,175,55,0.25)]">
             <span
-              className="material-symbols-outlined text-[52px] text-[#D4AF37]"
+              className="material-symbols-outlined text-[52px] text-primary"
               style={{ fontVariationSettings: "'FILL' 1" }}
             >
               {slide.icon}
@@ -121,7 +121,7 @@ export default function OnboardingSlides({ onDone }: Props) {
               onClick={() => setIndex(i)}
               className={`rounded-full transition-all duration-300 ${
                 i === index
-                  ? 'w-6 h-2 bg-[#D4AF37]'
+                  ? 'w-6 h-2 bg-primary'
                   : 'w-2 h-2 bg-white/20 hover:bg-white/40'
               }`}
               aria-label={`Go to slide ${i + 1}`}
@@ -132,7 +132,7 @@ export default function OnboardingSlides({ onDone }: Props) {
         {/* CTA button */}
         <button
           onClick={next}
-          className="w-full bg-[#D4AF37] text-[#0A0E1A] font-bold py-4 rounded-xl text-base transition hover:bg-[#D4AF37]/90 shadow-[0_0_20px_rgba(212,175,55,0.35)] flex items-center justify-center gap-2"
+          className="w-full bg-primary text-background-dark font-bold py-4 rounded-xl text-base transition hover:bg-primary/90 shadow-[0_0_20px_rgba(212,175,55,0.35)] flex items-center justify-center gap-2"
         >
           {isLast ? (
             <>

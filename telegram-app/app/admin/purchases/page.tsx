@@ -64,11 +64,11 @@ function PurchasesContent() {
       {toast && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#1a2235] border border-white/10 text-white text-sm px-5 py-3 rounded-xl shadow-2xl">{toast}</div>}
       <input type="text" placeholder="Search by wallet address or TX hash…" value={search}
         onChange={e => setSearch(e.target.value)}
-        className="w-full bg-[#111827] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#D4AF37]/40" />
+        className="w-full bg-[#111827] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-primary/40" />
       <div className="flex flex-wrap gap-2 items-center">
         {(['all', 'unverified', 'direct', 'advanced'] as const).map(f => (
           <button key={f} onClick={() => setFilter(f)}
-            className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition ${filter === f ? 'bg-[#D4AF37] text-black' : 'bg-white/6 text-gray-400 hover:bg-white/10 hover:text-white'}`}>
+            className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition ${filter === f ? 'bg-primary text-black' : 'bg-white/6 text-gray-400 hover:bg-white/10 hover:text-white'}`}>
             {f === 'all' ? `All (${purchases.length})` : f === 'unverified' ? `Unverified (${purchases.filter(p => !p.verified).length})` : `${f.charAt(0).toUpperCase() + f.slice(1)} (${purchases.filter(p => p.purchase_type === f).length})`}
           </button>
         ))}

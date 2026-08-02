@@ -23,7 +23,7 @@ export default function NoTrustlineHelp({ onTrustlineAdded: _onTrustlineAdded }:
         <h2 className="text-base font-bold text-white">No Trustline Found</h2>
         <p className="text-xs text-gray-400 leading-relaxed">
           Your wallet needs a trustline for{" "}
-          <span className="text-[#D4AF37] font-semibold">
+          <span className="text-primary font-semibold">
             {PRIMARY_CUSTOM_ASSET_CODE}
           </span>{" "}
           before connecting. Choose a method below.
@@ -36,7 +36,7 @@ export default function NoTrustlineHelp({ onTrustlineAdded: _onTrustlineAdded }:
         target="_blank"
         rel="noopener noreferrer"
         onClick={() => haptic.light()}
-        className="flex items-center space-x-3 glass-card border border-white/10 rounded-xl px-4 py-3 hover:border-[#D4AF37]/40 transition active:scale-[0.98]"
+        className="flex items-center space-x-3 glass-card border border-white/10 rounded-xl px-4 py-3 hover:border-primary/40 transition active:scale-[0.98]"
       >
         <div className="w-9 h-9 rounded-full bg-[#1a1a2e] border border-white/10 flex items-center justify-center flex-shrink-0">
           <span className="text-lg">🌊</span>
@@ -58,7 +58,7 @@ export default function NoTrustlineHelp({ onTrustlineAdded: _onTrustlineAdded }:
         target="_blank"
         rel="noopener noreferrer"
         onClick={() => haptic.light()}
-        className="flex items-center space-x-3 glass-card border border-white/10 rounded-xl px-4 py-3 hover:border-[#D4AF37]/40 transition active:scale-[0.98]"
+        className="flex items-center space-x-3 glass-card border border-white/10 rounded-xl px-4 py-3 hover:border-primary/40 transition active:scale-[0.98]"
       >
         <div className="w-9 h-9 rounded-full bg-[#1a1a2e] border border-white/10 flex items-center justify-center flex-shrink-0">
           <span className="text-lg">📊</span>

@@ -32,12 +32,12 @@ export default function PageLoader({ label = 'Loading…' }: { label?: string })
       <div className="relative w-60 h-24 flex items-center justify-center">
         {/* Shadow on the ground */}
         <div
-          className="absolute bottom-2 w-10 h-2 rounded-full bg-[#D4AF37]/20"
+          className="absolute bottom-2 w-10 h-2 rounded-full bg-primary/20"
           style={{ animation: 'football-shadow 1.4s ease-in-out infinite' }}
         />
         {/* Flying football */}
         <span
-          className="material-symbols-outlined text-[#D4AF37] drop-shadow-[0_0_12px_rgba(212,175,55,0.6)]"
+          className="material-symbols-outlined text-primary drop-shadow-[0_0_12px_rgba(212,175,55,0.6)]"
           style={{
             fontSize: 44,
             fontVariationSettings: "'FILL' 1",

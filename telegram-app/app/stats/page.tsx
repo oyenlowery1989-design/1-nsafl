@@ -7,6 +7,7 @@ import WalletGuard from '@/components/WalletGuard'
 import PageLoader, { useMinLoader } from '@/components/PageLoader'
 import Link from 'next/link'
 import { PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
+import { BRANDING } from '@/config/branding'
 import { ALL_CLUBS, AFL_CLUBS, WAFL_CLUBS } from "@/config/afl"
 import { getTelegramInitData } from '@/lib/telegram'
 import { TIERS, formatReward } from '@/config/tiers'
@@ -69,7 +70,7 @@ interface GameStatsData {
 function MiniStat({ icon, label, value, color = 'text-white' }: { icon: string; label: string; value: string | number; color?: string }) {
   return (
     <div className="glass-card p-3 rounded-xl text-center">
-      <span className="material-symbols-outlined text-[#D4AF37] text-lg">{icon}</span>
+      <span className="material-symbols-outlined text-primary text-lg">{icon}</span>
       <p className={`text-lg font-bold mt-0.5 ${color}`}>{value}</p>
       <p className="text-[9px] text-gray-400 uppercase tracking-wide">{label}</p>
     </div>
@@ -129,10 +130,10 @@ export default function StatsPage() {
 
   return (
     <WalletGuard>
-      <header className="pt-3 pb-2 px-4 sticky top-0 z-10 bg-[#0A0E1A] border-b border-white/10">
+      <header className="pt-3 pb-2 px-4 sticky top-0 z-10 bg-background-dark border-b border-white/10">
         <div>
           <h1 className="text-lg font-bold text-white tracking-tight">Movement Stats</h1>
-          <p className="text-xs text-[#D4AF37] font-medium">Global Homecoming Progress</p>
+          <p className="text-xs text-primary font-medium">{BRANDING.copy.statsProgressTagline}</p>
         </div>
       </header>
 
@@ -157,13 +158,13 @@ export default function StatsPage() {
               const toNextMilestone = Math.max(0, nextMilestone - raised)
               const milestoneLabel = nextMilestone >= 1000 ? `${nextMilestone / 1000}k` : nextMilestone.toString()
               return (
-                <div className="rounded-2xl overflow-hidden border border-[#D4AF37]/25" style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, rgba(10,14,26,0.95) 60%)', boxShadow: '0 0 40px rgba(212,175,55,0.1)' }}>
+                <div className="rounded-2xl overflow-hidden border border-primary/25" style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, rgba(10,14,26,0.95) 60%)', boxShadow: '0 0 40px rgba(212,175,55,0.1)' }}>
                   {/* Header */}
                   <div className="px-4 pt-4 pb-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] font-bold text-[#D4AF37] uppercase tracking-widest">Offer Sale · Live</span>
+                          <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Offer Sale · Live</span>
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
                             ✦ Early Backer
                           </span>
@@ -174,7 +175,7 @@ export default function StatsPage() {
                               ? raised.toLocaleString(undefined, { maximumFractionDigits: 0 })
                               : (raised / 1000).toFixed(1) + 'k'}
                           </span>
-                          <span className="text-[#D4AF37] text-base font-semibold">XLM</span>
+                          <span className="text-primary text-base font-semibold">XLM</span>
                           <span className="text-gray-500 text-xs">raised of 100k goal</span>
                         </div>
                       </div>
@@ -198,22 +199,22 @@ export default function StatsPage() {
                           className="h-full rounded-full transition-all duration-1000"
                           style={{
                             width: `${Math.max(pct, 0.6)}%`,
-                            background: 'linear-gradient(90deg, #D4AF3760, #D4AF37, #F5D76E)',
+                            background: `linear-gradient(90deg, ${BRANDING.colors.primary}60, ${BRANDING.colors.primary}, #F5D76E)`,
                             boxShadow: '0 0 12px rgba(212,175,55,0.6)',
                           }}
                         />
                       </div>
                       <div className="flex justify-between mt-1.5 text-[10px]">
-                        <span className="text-[#D4AF37] font-bold">{pct < 0.1 ? '<0.1' : pct.toFixed(1)}% funded</span>
+                        <span className="text-primary font-bold">{pct < 0.1 ? '<0.1' : pct.toFixed(1)}% funded</span>
                         <span className="text-gray-500">{remaining.toLocaleString(undefined, { maximumFractionDigits: 0 })} XLM remaining</span>
                       </div>
                     </div>
 
                     {/* Next milestone nudge */}
-                    <div className="mt-2.5 flex items-center gap-2 px-3 py-2 rounded-xl bg-[#D4AF37]/8 border border-[#D4AF37]/15">
-                      <span className="material-symbols-outlined text-[#D4AF37] text-base">flag</span>
+                    <div className="mt-2.5 flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/8 border border-primary/15">
+                      <span className="material-symbols-outlined text-primary text-base">flag</span>
                       <p className="text-[11px] text-gray-300 flex-1">
-                        Next milestone: <span className="text-[#D4AF37] font-bold">{milestoneLabel} XLM</span>
+                        Next milestone: <span className="text-primary font-bold">{milestoneLabel} XLM</span>
                         <span className="text-gray-500"> · only </span>
                         <span className="text-white font-semibold">
                           {toNextMilestone < 1000
@@ -235,7 +236,7 @@ export default function StatsPage() {
                       <p className="text-[9px] text-gray-500 uppercase tracking-wide mt-0.5">Holders</p>
                     </div>
                     <div className="px-3 py-3 text-center">
-                      <p className="text-base font-bold text-[#D4AF37]">{supply}</p>
+                      <p className="text-base font-bold text-primary">{supply}</p>
                       <p className="text-[9px] text-gray-500 uppercase tracking-wide mt-0.5">Circulating</p>
                     </div>
                     <div className="px-3 py-3 text-center">
@@ -253,7 +254,7 @@ export default function StatsPage() {
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                       <p className="text-[9px] text-gray-600">Live · Stellar DEX trade volume</p>
                     </div>
-                    <Link href="/buy" className="text-[10px] font-bold text-[#D4AF37] flex items-center gap-0.5">
+                    <Link href="/buy" className="text-[10px] font-bold text-primary flex items-center gap-0.5">
                       Buy now <span className="material-symbols-outlined text-[12px]">arrow_forward</span>
                     </Link>
                   </div>
@@ -264,12 +265,12 @@ export default function StatsPage() {
             {/* ── Community Stats ─────────────────────────────────────── */}
             <section>
               <div className="flex items-center space-x-1.5 mb-2">
-                <span className="material-symbols-outlined text-[#D4AF37] text-base">groups</span>
+                <span className="material-symbols-outlined text-primary text-base">groups</span>
                 <h3 className="text-sm font-bold text-white">Community</h3>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <MiniStat icon="person" label="Users" value={data.totalUsers} />
-                <MiniStat icon="account_balance_wallet" label="Wallets" value={data.tokenStats?.holderCount ?? 0} color="text-[#D4AF37]" />
+                <MiniStat icon="account_balance_wallet" label="Wallets" value={data.tokenStats?.holderCount ?? 0} color="text-primary" />
                 <MiniStat icon="verified" label="Active" value={data.activeWallets} color="text-green-400" />
               </div>
             </section>
@@ -278,7 +279,7 @@ export default function StatsPage() {
             {data.walletCount > 0 && (
               <section>
                 <div className="flex items-center space-x-1.5 mb-2">
-                  <span className="material-symbols-outlined text-[#D4AF37] text-base">pie_chart</span>
+                  <span className="material-symbols-outlined text-primary text-base">pie_chart</span>
                   <h3 className="text-sm font-bold text-white">Holder Distribution</h3>
                 </div>
                 <div className="glass-card p-4 rounded-xl space-y-3">
@@ -294,7 +295,7 @@ export default function StatsPage() {
             {(!data.teamDistribution || Object.keys(data.teamDistribution).length === 0) && (
               <section>
                 <div className="flex items-center space-x-1.5 mb-2">
-                  <span className="material-symbols-outlined text-[#D4AF37] text-base">shield</span>
+                  <span className="material-symbols-outlined text-primary text-base">shield</span>
                   <h3 className="text-sm font-bold text-white">Team Allegiance</h3>
                 </div>
                 <div className="glass-card rounded-xl">
@@ -355,21 +356,21 @@ export default function StatsPage() {
               return (
                 <section>
                   <div className="flex items-center space-x-1.5 mb-2">
-                    <span className="material-symbols-outlined text-[#D4AF37] text-base">shield</span>
+                    <span className="material-symbols-outlined text-primary text-base">shield</span>
                     <h3 className="text-sm font-bold text-white">Team Allegiance</h3>
                     <span className="text-[10px] text-gray-500 ml-auto">{totalFans} members</span>
                   </div>
                   <div className="glass-card p-4 rounded-xl space-y-4">
                     {aflEntries.length > 0 && (
                       <div>
-                        <p className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-widest mb-2">AFL</p>
+                        <p className="text-[9px] font-bold text-primary uppercase tracking-widest mb-2">AFL</p>
                         <AllegianceRows entries={aflEntries} />
                       </div>
                     )}
                     {waflEntries.length > 0 && (
                       <div>
                         {aflEntries.length > 0 && <div className="h-px bg-white/8 mb-3" />}
-                        <p className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-widest mb-2">WAFL</p>
+                        <p className="text-[9px] font-bold text-primary uppercase tracking-widest mb-2">WAFL</p>
                         <AllegianceRows entries={waflEntries} />
                       </div>
                     )}
@@ -403,7 +404,7 @@ export default function StatsPage() {
             {/* ── AFL Snapshot ──────────────────────────────────────── */}
             <section>
               <div className="flex items-center space-x-1.5 mb-2">
-                <span className="material-symbols-outlined text-[#D4AF37] text-base">sports_football</span>
+                <span className="material-symbols-outlined text-primary text-base">sports_football</span>
                 <h3 className="text-sm font-bold text-white">AFL Results — Rds 1 & 2</h3>
               </div>
               {(() => {
@@ -457,10 +458,10 @@ export default function StatsPage() {
             <section>
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center space-x-1.5">
-                  <span className="material-symbols-outlined text-[#D4AF37] text-base">emoji_events</span>
+                  <span className="material-symbols-outlined text-primary text-base">emoji_events</span>
                   <h3 className="text-sm font-bold text-white">Top Holders</h3>
                 </div>
-                <Link href="/leaderboard" className="text-[10px] text-[#D4AF37] font-semibold flex items-center space-x-0.5 hover:opacity-80">
+                <Link href="/leaderboard" className="text-[10px] text-primary font-semibold flex items-center space-x-0.5 hover:opacity-80">
                   <span>View all</span>
                   <span className="material-symbols-outlined text-[12px]">chevron_right</span>
                 </Link>
@@ -478,14 +479,14 @@ export default function StatsPage() {
                     return (
                       <div key={h.stellarAddress} className={`glass-card p-3 rounded-xl flex items-center justify-between relative overflow-hidden ${
                         isMe
-                          ? 'border border-[#D4AF37]/60 bg-[#D4AF37]/8 shadow-[0_0_16px_rgba(212,175,55,0.18)]'
+                          ? 'border border-primary/60 bg-primary/8 shadow-[0_0_16px_rgba(212,175,55,0.18)]'
                           : ''
                       }`}>
-                        {isMe && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#D4AF37] rounded-l-xl" />}
+                        {isMe && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-primary rounded-l-xl" />}
                         <div className="flex items-center space-x-2.5">
                           <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs border ${
                             h.rank === 1
-                              ? 'bg-[#D4AF37]/20 text-[#D4AF37] border-[#D4AF37]/30'
+                              ? 'bg-primary/20 text-primary border-primary/30'
                               : h.rank === 2
                               ? 'bg-white/10 text-gray-300 border-white/20'
                               : 'bg-white/5 text-gray-400 border-white/10'
@@ -494,9 +495,9 @@ export default function StatsPage() {
                           </div>
                           <div>
                             <div className="flex items-center space-x-1.5">
-                              <h4 className={`font-semibold text-xs ${isMe ? 'text-[#D4AF37]' : 'text-white'}`}>{displayName}</h4>
+                              <h4 className={`font-semibold text-xs ${isMe ? 'text-primary' : 'text-white'}`}>{displayName}</h4>
                               {isMe && (
-                                <span className="text-[9px] text-[#D4AF37] font-bold border border-[#D4AF37]/30 rounded px-1 py-px flex-shrink-0">YOU</span>
+                                <span className="text-[9px] text-primary font-bold border border-primary/30 rounded px-1 py-px flex-shrink-0">YOU</span>
                               )}
                             </div>
                             <div className="flex items-center space-x-1 mt-0.5">
@@ -510,7 +511,7 @@ export default function StatsPage() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <span className={`font-bold text-xs ${isMe || h.rank === 1 ? 'text-[#D4AF37]' : 'text-white'}`}>{bal}</span>
+                          <span className={`font-bold text-xs ${isMe || h.rank === 1 ? 'text-primary' : 'text-white'}`}>{bal}</span>
                           <p className="text-[9px] text-gray-500">{PRIMARY_CUSTOM_ASSET_LABEL}</p>
                         </div>
                       </div>
@@ -534,7 +535,7 @@ export default function StatsPage() {
             <section>
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center space-x-1.5">
-                  <span className="material-symbols-outlined text-[#D4AF37] text-base">volunteer_activism</span>
+                  <span className="material-symbols-outlined text-primary text-base">volunteer_activism</span>
                   <h3 className="text-sm font-bold text-white">Top Supporters</h3>
                 </div>
                 {donationsData && donationsData.topDonors.length > 0 && (
@@ -550,7 +551,7 @@ export default function StatsPage() {
                       <div className="flex items-center space-x-2.5">
                         <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs border ${
                           d.rank === 1
-                            ? 'bg-[#D4AF37]/20 text-[#D4AF37] border-[#D4AF37]/30'
+                            ? 'bg-primary/20 text-primary border-primary/30'
                             : d.rank === 2
                             ? 'bg-white/10 text-gray-300 border-white/20'
                             : 'bg-white/5 text-gray-400 border-white/10'
@@ -565,7 +566,7 @@ export default function StatsPage() {
                                 const teamMatch = cause.match(/^Team:\s*(.+)$/i)
                                 const teamClub = teamMatch ? ALL_CLUBS.find((c) => c.id === teamMatch[1]) : null
                                 return (
-                                  <span key={i} className="inline-flex items-center space-x-1 text-[9px] text-[#D4AF37]/70">
+                                  <span key={i} className="inline-flex items-center space-x-1 text-[9px] text-primary/70">
                                     {teamClub && <img src={teamClub.logo} alt="" width={12} height={12} className="object-contain" />}
                                     <span>{teamClub ? teamClub.shortName : cause}</span>
                                     {i < d.causes!.length - 1 && <span className="text-gray-600 ml-0.5">·</span>}
@@ -579,7 +580,7 @@ export default function StatsPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <span className={`font-bold text-xs ${d.rank === 1 ? 'text-[#D4AF37]' : 'text-white'}`}>
+                        <span className={`font-bold text-xs ${d.rank === 1 ? 'text-primary' : 'text-white'}`}>
                           {d.amount}
                         </span>
                         <p className="text-[9px] text-gray-500">donated</p>
@@ -597,7 +598,7 @@ export default function StatsPage() {
                     <p className="text-xs text-gray-500 max-w-[220px] leading-relaxed">Be the first to support a player&apos;s homecoming campaign.</p>
                     <a
                       href="/rewards"
-                      className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-[#D4AF37] text-black text-xs font-bold hover:bg-[#D4AF37]/90 transition active:scale-[0.98]"
+                      className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-primary text-black text-xs font-bold hover:bg-primary/90 transition active:scale-[0.98]"
                     >
                       <span>Donate Now</span>
                       <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -609,19 +610,19 @@ export default function StatsPage() {
             {/* ── Game Zone teaser ──────────────────────────────────── */}
             <section>
               <div className="flex items-center space-x-1.5 mb-2">
-                <span className="material-symbols-outlined text-[#D4AF37] text-base">sports_esports</span>
+                <span className="material-symbols-outlined text-primary text-base">sports_esports</span>
                 <h3 className="text-sm font-bold text-white">Game Zone</h3>
-                <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-full bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 font-bold uppercase tracking-wide">
+                <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30 font-bold uppercase tracking-wide">
                   Beta
                 </span>
               </div>
 
-              <div className="glass-card rounded-xl p-4 border border-[#D4AF37]/20 bg-gradient-to-br from-[#D4AF37]/5 to-transparent relative overflow-hidden">
+              <div className="glass-card rounded-xl p-4 border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent relative overflow-hidden">
                   <div className="absolute -right-4 -top-4 text-7xl opacity-10 select-none transition-opacity">🏈</div>
                   <div className="relative z-10">
                     <p className="text-xs text-gray-400 mb-3 leading-relaxed">
                       A mini-game lives inside this app. Press the{' '}
-                      <span className="text-[#D4AF37] font-semibold">🏈</span> button in the nav to enter.
+                      <span className="text-primary font-semibold">🏈</span> button in the nav to enter.
                     </p>
 
                     {/* Stats grid */}
@@ -636,7 +637,7 @@ export default function StatsPage() {
                           const fmt = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n / 1_000).toFixed(1)}K` : String(n)
                           return (
                             <div key={label} className="flex items-center space-x-2 bg-black/20 rounded-lg px-3 py-2">
-                              <span className="material-symbols-outlined text-[#D4AF37] text-sm">{icon}</span>
+                              <span className="material-symbols-outlined text-primary text-sm">{icon}</span>
                               <div>
                                 <p className="text-white text-xs font-bold leading-none">{fmt(value)}</p>
                                 <p className="text-gray-500 text-[9px]">{label}</p>
@@ -658,10 +659,10 @@ export default function StatsPage() {
                         {gameStats.leaderboard.slice(0, 3).map((p) => (
                           <div key={p.rank} className="flex items-center justify-between text-xs">
                             <div className="flex items-center space-x-1.5">
-                              <span className={`font-bold w-4 ${p.rank === 1 ? 'text-[#D4AF37]' : 'text-gray-500'}`}>{p.rank}</span>
+                              <span className={`font-bold w-4 ${p.rank === 1 ? 'text-primary' : 'text-gray-500'}`}>{p.rank}</span>
                               <span className="text-gray-300 truncate max-w-[120px]">{p.name}</span>
                             </div>
-                            <span className={`font-bold ${p.rank === 1 ? 'text-[#D4AF37]' : 'text-white'}`}>
+                            <span className={`font-bold ${p.rank === 1 ? 'text-primary' : 'text-white'}`}>
                               {p.kicks} ⚡
                             </span>
                           </div>
@@ -670,10 +671,10 @@ export default function StatsPage() {
                     )}
 
                     <div className="flex items-center justify-between">
-                      <p className="text-[10px] text-[#D4AF37] font-semibold">
+                      <p className="text-[10px] text-primary font-semibold">
                         Press the 🏈 in the nav to enter →
                       </p>
-                      <span className="material-symbols-outlined text-[#D4AF37] text-base">chevron_right</span>
+                      <span className="material-symbols-outlined text-primary text-base">chevron_right</span>
                     </div>
                   </div>
               </div>
@@ -681,17 +682,17 @@ export default function StatsPage() {
             {/* ── View Leaderboard CTA ──────────────────────────────── */}
             <section>
               <Link href="/leaderboard">
-                <div className="glass-card rounded-xl p-4 border border-[#D4AF37]/20 flex items-center justify-between hover:bg-[#D4AF37]/5 transition-colors cursor-pointer">
+                <div className="glass-card rounded-xl p-4 border border-primary/20 flex items-center justify-between hover:bg-primary/5 transition-colors cursor-pointer">
                   <div className="flex items-center space-x-3">
-                    <div className="w-9 h-9 rounded-full bg-[#D4AF37]/15 flex items-center justify-center flex-shrink-0">
-                      <span className="material-symbols-outlined text-[#D4AF37] text-lg">emoji_events</span>
+                    <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
+                      <span className="material-symbols-outlined text-primary text-lg">emoji_events</span>
                     </div>
                     <div>
                       <p className="text-sm font-bold text-white">View Leaderboard</p>
                       <p className="text-[10px] text-gray-400">Top {PRIMARY_CUSTOM_ASSET_LABEL} holders ranked</p>
                     </div>
                   </div>
-                  <span className="material-symbols-outlined text-[#D4AF37] text-lg">chevron_right</span>
+                  <span className="material-symbols-outlined text-primary text-lg">chevron_right</span>
                 </div>
               </Link>
             </section>

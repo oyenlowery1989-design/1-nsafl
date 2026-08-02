@@ -16,7 +16,7 @@ const BADGE_MAP: Record<string, string> = {
   blue:   'bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/30',
   orange: 'bg-orange-500/15 text-orange-400 ring-1 ring-orange-500/30',
   purple: 'bg-purple-500/15 text-purple-400 ring-1 ring-purple-500/30',
-  gold:   'bg-yellow-500/10 text-[#D4AF37] ring-1 ring-[#D4AF37]/30',
+  gold:   'bg-yellow-500/10 text-primary ring-1 ring-primary/30',
 }
 export function Badge({ children, color }: { children: React.ReactNode; color: string }) {
   return (
@@ -55,7 +55,7 @@ export function Card({ children, className = '' }: { children: React.ReactNode; 
 export function SectionTitle({ icon, title, count }: { icon: string; title: string; count?: number }) {
   return (
     <div className="flex items-center gap-2 mb-4">
-      <Icon name={icon} className="text-lg text-[#D4AF37]" />
+      <Icon name={icon} className="text-lg text-primary" />
       <h3 className="text-sm font-bold text-white">{title}</h3>
       {count !== undefined && (
         <span className="bg-white/8 text-gray-400 text-[11px] font-semibold px-2 py-0.5 rounded-full">{count}</span>

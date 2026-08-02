@@ -2,8 +2,10 @@
 // config/tiers.ts, config/afl.ts, and public/ assets. Nothing else.
 import { PRIMARY_CUSTOM_ASSET_CODE, PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
 
+const APP_NAME = 'The Homecoming Hub'
+
 export const BRANDING = {
-  appName: 'NSAFL Homecoming Hub',
+  appName: APP_NAME,
   shortName: 'NSAFL Hub',
   domain: 'app.nsafl.com',
   botUsername: process.env.NEXT_PUBLIC_BOT_USERNAME ?? 'NSAFL_bot',
@@ -13,7 +15,7 @@ export const BRANDING = {
     onboardingSlides: [
       {
         icon: 'sports_football',
-        title: 'Welcome to The Homecoming Hub',
+        title: `Welcome to ${APP_NAME}`,
         body: `The home of ${PRIMARY_CUSTOM_ASSET_LABEL} — supporting AFL & WAFL players on their journey home.`,
         showTiers: false,
       },
@@ -53,5 +55,7 @@ export const BRANDING = {
     buyMemo: `${PRIMARY_CUSTOM_ASSET_CODE} buy`,
     rewardMemo: `${PRIMARY_CUSTOM_ASSET_CODE} Prize`,
     prizeNotificationTitle: `Your ${PRIMARY_CUSTOM_ASSET_CODE} prize has been sent!`,
+    walletConnectedSubtitle: `Your secure link to ${APP_NAME} has been successfully established.`,
+    statsProgressTagline: 'Global Homecoming Progress',
   },
 } as const

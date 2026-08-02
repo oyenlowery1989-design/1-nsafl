@@ -222,8 +222,8 @@ export default function TelegramGuard({
 
   if (state === "blocked") {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#0A0E1A] px-8 text-center space-y-4">
-        <span className="material-symbols-outlined text-[#D4AF37] text-6xl">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background-dark px-8 text-center space-y-4">
+        <span className="material-symbols-outlined text-primary text-6xl">
           error_outline
         </span>
         <h1 className="text-2xl font-bold text-white">Something went wrong</h1>
@@ -237,8 +237,8 @@ export default function TelegramGuard({
 
   if (state === "denied") {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#0A0E1A] px-8 text-center space-y-4">
-        <span className="material-symbols-outlined text-[#D4AF37] text-6xl">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background-dark px-8 text-center space-y-4">
+        <span className="material-symbols-outlined text-primary text-6xl">
           lock
         </span>
         <h1 className="text-2xl font-bold text-white">Telegram Only</h1>

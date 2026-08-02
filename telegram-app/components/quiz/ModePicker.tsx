@@ -12,7 +12,7 @@ export interface QuizMode {
 
 export const QUIZ_MODES: QuizMode[] = [
   { id: 'quick', label: 'Quick', questions: 5, multiplier: '1×', icon: 'bolt', color: 'text-blue-300', border: 'border-blue-500/30' },
-  { id: 'standard', label: 'Standard', questions: 10, multiplier: '1.5×', icon: 'sports_football', color: 'text-[#D4AF37]', border: 'border-[#D4AF37]/30' },
+  { id: 'standard', label: 'Standard', questions: 10, multiplier: '1.5×', icon: 'sports_football', color: 'text-primary', border: 'border-primary/30' },
   { id: 'champion', label: 'Champion', questions: 20, multiplier: '2×', icon: 'emoji_events', color: 'text-purple-400', border: 'border-purple-500/30' },
 ]
 
@@ -24,8 +24,8 @@ interface Props {
 
 export default function ModePicker({ playsLeft, onSelect, onBack }: Props) {
   return (
-    <div className="flex flex-col min-h-dvh bg-[#0A0E1A]">
-      <header className="pt-3 pb-2 px-4 sticky top-0 z-30 bg-[#0A0E1A] border-b border-white/10">
+    <div className="flex flex-col min-h-dvh bg-background-dark">
+      <header className="pt-3 pb-2 px-4 sticky top-0 z-30 bg-background-dark border-b border-white/10">
         <div className="flex items-center space-x-3">
           <button onClick={onBack} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition">
             <span className="material-symbols-outlined text-white">arrow_back</span>

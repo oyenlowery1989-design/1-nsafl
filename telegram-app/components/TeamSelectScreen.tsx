@@ -107,12 +107,12 @@ function AflPicker({ onNext, onSelectPartner }: {
       {/* Header */}
       <div className="mb-5">
         <div className="flex items-center gap-2 mb-1">
-          <div className="w-6 h-6 rounded-full bg-[#D4AF37]/20 border border-[#D4AF37]/40 flex items-center justify-center text-[10px] font-bold text-[#D4AF37]">1</div>
+          <div className="w-6 h-6 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-[10px] font-bold text-primary">1</div>
           <h2 className="text-lg font-bold text-white tracking-tight">Pick Your Team</h2>
         </div>
         <p className="text-[10px] text-gray-500 pl-8">{AFL_CLUBS.length} AFL clubs + partner team · required</p>
         <div className="mt-2 flex items-center gap-1.5 pl-8">
-          <div className="h-1 w-16 rounded-full bg-[#D4AF37]" />
+          <div className="h-1 w-16 rounded-full bg-primary" />
           <div className="h-1 w-16 rounded-full bg-white/10" />
         </div>
       </div>
@@ -176,7 +176,7 @@ function AflPicker({ onNext, onSelectPartner }: {
         <button
           onClick={handleNext}
           disabled={!selected || confirming}
-          className="w-full py-4 rounded-xl font-bold text-base transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-[#D4AF37] text-[#0A0E1A] hover:bg-[#D4AF37]/90 shadow-[0_0_20px_rgba(212,175,55,0.4)] uppercase tracking-wide flex items-center justify-center active:scale-[0.98]"
+          className="w-full py-4 rounded-xl font-bold text-base transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-primary text-background-dark hover:bg-primary/90 shadow-[0_0_20px_rgba(212,175,55,0.4)] uppercase tracking-wide flex items-center justify-center active:scale-[0.98]"
         >
           {selected ? (
             <>Next — Pick WAFL Club <span className="material-symbols-outlined text-[20px] ml-2">arrow_forward</span></>
@@ -222,13 +222,13 @@ function WaflPicker({ aflTeamId, onDone, onBack }: {
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-0.5">
-            <div className="w-6 h-6 rounded-full bg-[#D4AF37]/20 border border-[#D4AF37]/40 flex items-center justify-center text-[10px] font-bold text-[#D4AF37]">2</div>
+            <div className="w-6 h-6 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-[10px] font-bold text-primary">2</div>
             <h2 className="text-lg font-bold text-white tracking-tight">Pick Your WAFL Club</h2>
           </div>
           <p className="text-[10px] text-gray-500 pl-8">{WAFL_CLUBS.length} teams · optional</p>
           <div className="mt-2 flex items-center gap-1.5 pl-8">
-            <div className="h-1 w-16 rounded-full bg-[#D4AF37]" />
-            <div className="h-1 w-16 rounded-full bg-[#D4AF37]" />
+            <div className="h-1 w-16 rounded-full bg-primary" />
+            <div className="h-1 w-16 rounded-full bg-primary" />
           </div>
         </div>
       </div>
@@ -293,7 +293,7 @@ function WaflPicker({ aflTeamId, onDone, onBack }: {
         <button
           onClick={handleConfirm}
           disabled={!selected || confirming}
-          className="w-full py-4 rounded-xl font-bold text-base transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-[#D4AF37] text-[#0A0E1A] hover:bg-[#D4AF37]/90 shadow-[0_0_20px_rgba(212,175,55,0.4)] uppercase tracking-wide flex items-center justify-center active:scale-[0.98]"
+          className="w-full py-4 rounded-xl font-bold text-base transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-primary text-background-dark hover:bg-primary/90 shadow-[0_0_20px_rgba(212,175,55,0.4)] uppercase tracking-wide flex items-center justify-center active:scale-[0.98]"
         >
           {confirming ? (
             <><span className="material-symbols-outlined text-[20px] mr-2 animate-spin">progress_activity</span>Saving...</>

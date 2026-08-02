@@ -2,6 +2,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { haptic } from '@/lib/telegram-ui'
 import { getTelegramInitData, openTelegramLink, buildBotStartLink } from '@/lib/telegram'
+import { BRANDING } from '@/config/branding'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const SYM_SIZE = 64       // px per symbol cell
@@ -361,7 +362,7 @@ export default function SlotMachine({
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-y-auto"
-      style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.07) 0%, #0A0E1A 60%)' }}>
+      style={{ background: `radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.07) 0%, ${BRANDING.colors.background} 60%)` }}>
       <style>{`
         @keyframes result-pop { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         @keyframes confetti-fall { 0% { transform: translateY(-20px) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
@@ -376,7 +377,7 @@ export default function SlotMachine({
           <span className="text-white text-xs font-semibold">Hub</span>
         </button>
         <div className="text-center">
-          <p className="text-[#D4AF37] font-bold text-xl tracking-wide" style={{ fontFamily: 'Playfair Display, serif' }}>
+          <p className="text-primary font-bold text-xl tracking-wide" style={{ fontFamily: 'Playfair Display, serif' }}>
             Slot Machine
           </p>
           <p className="text-white/40 text-[10px] mt-0.5">
@@ -392,9 +393,9 @@ export default function SlotMachine({
       {/* Recent win ticker */}
       {recentWins.length > 0 && (
         <div className="px-4 mb-1 flex-shrink-0">
-          <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full border border-[#D4AF37]/20"
+          <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full border border-primary/20"
             style={{ background: 'rgba(212,175,55,0.06)' }}>
-            <span className="text-[9px] text-[#D4AF37] font-bold whitespace-nowrap">🎰 LATEST WIN</span>
+            <span className="text-[9px] text-primary font-bold whitespace-nowrap">🎰 LATEST WIN</span>
             <p className="text-[9px] text-gray-400 truncate flex-1">
               {recentWins[0].prize} · {new Date(recentWins[0].created_at).toLocaleDateString()}
             </p>
@@ -420,9 +421,9 @@ export default function SlotMachine({
 
           {/* Win line label */}
           <div className="flex items-center justify-center mt-3 space-x-2">
-            <div className="h-px flex-1 bg-[#D4AF37]/20" />
-            <span className="text-[9px] text-[#D4AF37]/50 font-bold tracking-widest uppercase">WIN LINE</span>
-            <div className="h-px flex-1 bg-[#D4AF37]/20" />
+            <div className="h-px flex-1 bg-primary/20" />
+            <span className="text-[9px] text-primary/50 font-bold tracking-widest uppercase">WIN LINE</span>
+            <div className="h-px flex-1 bg-primary/20" />
           </div>
         </div>
       </div>
@@ -431,7 +432,7 @@ export default function SlotMachine({
       {showConfetti && (
         <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 100 }}>
           {[...Array(12)].map((_, i) => {
-            const colors = ['#D4AF37', '#f0d060', '#4ade80', '#60a5fa', '#f472b6', '#a78bfa', '#fb923c', '#34d399']
+            const colors = [BRANDING.colors.primary, '#f0d060', '#4ade80', '#60a5fa', '#f472b6', '#a78bfa', '#fb923c', '#34d399']
             return (
               <div key={i} style={{
                 position: 'absolute', left: `${5 + i * 8}%`, top: 0,
@@ -448,13 +449,13 @@ export default function SlotMachine({
       {/* Result banner */}
       {result && result.label !== 'Free Spin' && (
         <div className="px-4 mb-3 flex-shrink-0" style={{ animation: 'result-pop 0.3s cubic-bezier(0.34,1.56,0.64,1)' }}>
-          <div className={`rounded-3xl px-5 py-4 border text-center ${isWin ? 'border-[#D4AF37]/60' : 'border-white/10'}`}
+          <div className={`rounded-3xl px-5 py-4 border text-center ${isWin ? 'border-primary/60' : 'border-white/10'}`}
             style={{
               background: isWin ? 'rgba(212,175,55,0.12)' : 'rgba(255,255,255,0.03)',
               boxShadow: isWin ? '0 0 32px rgba(212,175,55,0.2)' : 'none',
             }}>
             <p className="text-4xl mb-1">{result.symbol}</p>
-            <p className={`text-lg font-bold ${isWin ? 'text-[#D4AF37]' : 'text-gray-500'}`}>{result.label}</p>
+            <p className={`text-lg font-bold ${isWin ? 'text-primary' : 'text-gray-500'}`}>{result.label}</p>
 
             {result.label === '+2 Spins' && (
               <p className="text-xs text-green-400/80 mt-1">Added to your spin balance 🎱</p>
@@ -463,7 +464,7 @@ export default function SlotMachine({
             {result.isAsset && (
               <div className="mt-3 space-y-3 text-left">
                 {winCode && (
-                  <div className="px-3 py-2 rounded-xl border border-[#D4AF37]/40 text-[11px] text-[#D4AF37] font-mono font-bold tracking-widest text-center"
+                  <div className="px-3 py-2 rounded-xl border border-primary/40 text-[11px] text-primary font-mono font-bold tracking-widest text-center"
                     style={{ background: 'rgba(212,175,55,0.08)' }}>{winCode}</div>
                 )}
                 {autoSent ? (
@@ -476,7 +477,7 @@ export default function SlotMachine({
                 ) : (
                   <button onClick={handleClaimViaBot} disabled={claimed}
                     className="w-full py-2.5 rounded-xl text-sm font-bold text-black active:scale-95 transition disabled:opacity-50"
-                    style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #f0d060 100%)' }}>
+                    style={{ background: `linear-gradient(135deg, ${BRANDING.colors.primary} 0%, #f0d060 100%)` }}>
                     {claimed ? '✅ Claim sent — check bot' : '🤖 Claim via Bot'}
                   </button>
                 )}
@@ -502,7 +503,7 @@ export default function SlotMachine({
           <button onClick={handleSpin} disabled={spinning || processing}
             className="w-full py-4 rounded-2xl text-base font-bold text-black active:scale-95 transition disabled:opacity-50"
             style={{
-              background: spinning ? '#a08020' : 'linear-gradient(135deg, #D4AF37 0%, #f0d060 50%, #D4AF37 100%)',
+              background: spinning ? '#a08020' : `linear-gradient(135deg, ${BRANDING.colors.primary} 0%, #f0d060 50%, ${BRANDING.colors.primary} 100%)`,
               boxShadow: spinning ? 'none' : '0 4px 24px rgba(212,175,55,0.4)',
             }}>
             {spinning ? '🎰 Spinning...' : processing ? '🎲 Rolling...' : freeSpin ? '🔄 Free Spin!' : '🎰 Pull the Lever'}

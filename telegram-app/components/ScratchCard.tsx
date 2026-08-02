@@ -2,6 +2,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { haptic } from '@/lib/telegram-ui'
 import { getTelegramInitData, openTelegramLink, buildBotStartLink } from '@/lib/telegram'
+import { BRANDING } from '@/config/branding'
 
 // ── Prize table ────────────────────────────────────────────────────────────────
 interface ScratchPrize {
@@ -137,7 +138,7 @@ function HistoryPill({ prize, date }: { prize: string; date: string }) {
       }}>
       <span style={{ fontSize: 14 }}>{p?.emoji ?? '💨'}</span>
       <div>
-        <p className={`text-[9px] font-bold ${isWin ? 'text-[#D4AF37]' : 'text-gray-500'}`}>{prize}</p>
+        <p className={`text-[9px] font-bold ${isWin ? 'text-primary' : 'text-gray-500'}`}>{prize}</p>
         <p className="text-[8px] text-gray-600">{new Date(date).toLocaleDateString()}</p>
       </div>
     </div>
@@ -417,7 +418,7 @@ export default function ScratchCard({
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-y-auto"
-      style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.07) 0%, #0A0E1A 60%)' }}>
+      style={{ background: `radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.07) 0%, ${BRANDING.colors.background} 60%)` }}>
       <style>{`
         @keyframes result-pop { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         @keyframes confetti-fall { 0% { transform: translateY(-20px) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
@@ -434,7 +435,7 @@ export default function ScratchCard({
           <span className="text-white text-xs font-semibold">Hub</span>
         </button>
         <div className="text-center">
-          <p className="text-[#D4AF37] font-bold text-xl tracking-wide" style={{ fontFamily: 'Playfair Display, serif' }}>
+          <p className="text-primary font-bold text-xl tracking-wide" style={{ fontFamily: 'Playfair Display, serif' }}>
             Scratch Card
           </p>
           <p className="text-white/40 text-[10px] mt-0.5">
@@ -473,7 +474,7 @@ export default function ScratchCard({
 
         {!cardDealt ? (
           /* No card yet */
-          <div className="w-full max-w-xs rounded-3xl border border-dashed border-[#D4AF37]/30 flex flex-col items-center justify-center py-14 space-y-4"
+          <div className="w-full max-w-xs rounded-3xl border border-dashed border-primary/30 flex flex-col items-center justify-center py-14 space-y-4"
             style={{ background: 'rgba(212,175,55,0.04)' }}>
             <span style={{ fontSize: 52 }}>🃏</span>
             <p className="text-gray-400 text-sm font-semibold">Your card is waiting</p>
@@ -481,7 +482,7 @@ export default function ScratchCard({
           </div>
         ) : (
           /* Active card */
-          <div className="w-full max-w-xs rounded-3xl p-5 border border-[#D4AF37]/25"
+          <div className="w-full max-w-xs rounded-3xl p-5 border border-primary/25"
             style={{
               background: 'linear-gradient(160deg, rgba(212,175,55,0.09) 0%, rgba(10,14,26,0.97) 70%)',
               animation: 'card-deal 0.35s cubic-bezier(0.34,1.56,0.64,1)',
@@ -489,7 +490,7 @@ export default function ScratchCard({
 
             {/* Card header — reveal counter + match indicator */}
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] text-[#D4AF37]/60 font-bold uppercase tracking-widest">
+              <p className="text-[10px] text-primary/60 font-bold uppercase tracking-widest">
                 {allRevealed
                   ? (isWin ? '🎉 You won!' : '💨 Better luck next time')
                   : cardPending ? '⏳ Dealing…' : 'Scratch to reveal'}
@@ -497,7 +498,7 @@ export default function ScratchCard({
               <div className="flex items-center space-x-2">
                 {/* Match counter — shown while scratching, hides on allRevealed */}
                 {!allRevealed && matchCount > 0 && prize && !prize.isMiss && (
-                  <span className="text-[10px] font-bold text-[#D4AF37]"
+                  <span className="text-[10px] font-bold text-primary"
                     style={{ animation: matchCount >= 2 ? 'match-pulse 0.8s ease-in-out infinite' : 'none' }}>
                     {matchCount}/3 {prize.emoji}
                   </span>
@@ -552,7 +553,7 @@ export default function ScratchCard({
             {/* Reveal All button */}
             {!allRevealed && !submitted && !isRevealingAll && !cardPending && (
               <button onClick={revealAllTiles}
-                className="w-full py-2.5 rounded-xl text-xs font-bold text-[#D4AF37] border border-[#D4AF37]/30 active:scale-95 transition"
+                className="w-full py-2.5 rounded-xl text-xs font-bold text-primary border border-primary/30 active:scale-95 transition"
                 style={{ background: 'rgba(212,175,55,0.06)' }}>
                 Reveal All
               </button>
@@ -569,7 +570,7 @@ export default function ScratchCard({
         {showConfetti && (
           <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 100 }}>
             {[...Array(14)].map((_, i) => {
-              const colors = ['#D4AF37', '#f0d060', '#4ade80', '#60a5fa', '#f472b6', '#a78bfa', '#fb923c', '#34d399']
+              const colors = [BRANDING.colors.primary, '#f0d060', '#4ade80', '#60a5fa', '#f472b6', '#a78bfa', '#fb923c', '#34d399']
               return (
                 <div key={i} style={{
                   position: 'absolute', left: `${4 + i * 7}%`, top: 0,
@@ -586,13 +587,13 @@ export default function ScratchCard({
         {/* Result banner */}
         {allRevealed && prize && (
           <div className="w-full max-w-xs mt-4" style={{ animation: 'result-pop 0.3s cubic-bezier(0.34,1.56,0.64,1)' }}>
-            <div className={`rounded-3xl px-5 py-4 border text-center ${isWin ? 'border-[#D4AF37]/60' : 'border-white/10'}`}
+            <div className={`rounded-3xl px-5 py-4 border text-center ${isWin ? 'border-primary/60' : 'border-white/10'}`}
               style={{
                 background: isWin ? 'rgba(212,175,55,0.12)' : 'rgba(255,255,255,0.03)',
                 boxShadow: isWin ? '0 0 32px rgba(212,175,55,0.2)' : 'none',
               }}>
               <p className="text-4xl mb-1">{prize.emoji}</p>
-              <p className={`text-lg font-bold ${isWin ? 'text-[#D4AF37]' : 'text-gray-500'}`}>{prize.label}</p>
+              <p className={`text-lg font-bold ${isWin ? 'text-primary' : 'text-gray-500'}`}>{prize.label}</p>
 
               {prize.label === '+2 Cards' && (
                 <p className="text-xs text-green-400/80 mt-1">Added to your card balance 🃏</p>
@@ -601,7 +602,7 @@ export default function ScratchCard({
               {isAsset && (
                 <div className="mt-3 space-y-3 text-left">
                   {winCode && (
-                    <div className="px-3 py-2 rounded-xl border border-[#D4AF37]/40 text-[11px] text-[#D4AF37] font-mono font-bold tracking-widest text-center"
+                    <div className="px-3 py-2 rounded-xl border border-primary/40 text-[11px] text-primary font-mono font-bold tracking-widest text-center"
                       style={{ background: 'rgba(212,175,55,0.08)' }}>{winCode}</div>
                   )}
                   {autoSent ? (
@@ -614,7 +615,7 @@ export default function ScratchCard({
                   ) : (
                     <button onClick={handleClaimViaBot} disabled={claimed}
                       className="w-full py-2.5 rounded-xl text-sm font-bold text-black active:scale-95 transition disabled:opacity-50"
-                      style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #f0d060 100%)' }}>
+                      style={{ background: `linear-gradient(135deg, ${BRANDING.colors.primary} 0%, #f0d060 100%)` }}>
                       {claimed ? '✅ Claim sent — check bot' : '🤖 Claim via Bot'}
                     </button>
                   )}
@@ -630,7 +631,7 @@ export default function ScratchCard({
         {allRevealed && canScratch && (
           <button onClick={dealCard}
             className="w-full py-4 rounded-2xl text-base font-bold text-black active:scale-95 transition"
-            style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #f0d060 50%, #D4AF37 100%)', boxShadow: '0 4px 24px rgba(212,175,55,0.4)' }}>
+            style={{ background: `linear-gradient(135deg, ${BRANDING.colors.primary} 0%, #f0d060 50%, ${BRANDING.colors.primary} 100%)`, boxShadow: '0 4px 24px rgba(212,175,55,0.4)' }}>
             🃏 New Card ({cardsRemaining} left)
           </button>
         )}
@@ -638,7 +639,7 @@ export default function ScratchCard({
         {!cardDealt && canScratch && (
           <button onClick={dealCard}
             className="w-full py-4 rounded-2xl text-base font-bold text-black active:scale-95 transition"
-            style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #f0d060 50%, #D4AF37 100%)', boxShadow: '0 4px 24px rgba(212,175,55,0.4)' }}>
+            style={{ background: `linear-gradient(135deg, ${BRANDING.colors.primary} 0%, #f0d060 50%, ${BRANDING.colors.primary} 100%)`, boxShadow: '0 4px 24px rgba(212,175,55,0.4)' }}>
             🃏 Deal Card
           </button>
         )}

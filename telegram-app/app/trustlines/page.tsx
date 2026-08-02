@@ -12,7 +12,7 @@ export default function TrustlinesPage() {
 
   return (
     <WalletGuard>
-      <div className="min-h-screen bg-[#0A0E1A]" />
+      <div className="min-h-screen bg-background-dark" />
       <BottomNav />
       {stellarAddress && (
         <TrustlineModal

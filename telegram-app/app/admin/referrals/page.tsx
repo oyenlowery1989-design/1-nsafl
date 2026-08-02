@@ -23,7 +23,7 @@ function ReferralsPageInner() {
       .finally(() => setLoading(false))
   }, [token])
 
-  if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin h-8 w-8 border-2 border-[#D4AF37] border-t-transparent rounded-full" /></div>
+  if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>
   if (error) return <div className="text-red-400 text-center py-20">{error}</div>
   if (!data) return null
 
@@ -37,7 +37,7 @@ function ReferralsPageInner() {
   return (
     <div className="space-y-6 p-4 sm:p-6 min-h-screen bg-[#0a0f1e]">
       <div className="flex items-center gap-2 mb-2">
-        <Icon name="group_add" className="text-xl text-[#D4AF37]" />
+        <Icon name="group_add" className="text-xl text-primary" />
         <h1 className="text-lg font-bold text-white">Referrals</h1>
       </div>
 
@@ -47,7 +47,7 @@ function ReferralsPageInner() {
         <StatTile
           label="Top Referrer"
           value={topReferrer ? (topReferrer.referrer_name ?? `#${topReferrer.referrer_id}`) : '—'}
-          accent="text-[#D4AF37]"
+          accent="text-primary"
           sub={topReferrer ? `${topReferrer.referral_count} referrals${topReferrer.referrer_username ? ` · @${topReferrer.referrer_username}` : ''}` : 'No referrals yet'}
         />
       </div>
@@ -73,7 +73,7 @@ function ReferralsPageInner() {
                         </span>
                         <span className="block text-[10px] text-gray-600 font-mono">#{s.referrer_id}</span>
                       </Td>
-                      <Td>{s.referrer_username ? <span className="text-[#D4AF37]">@{s.referrer_username}</span> : <span className="text-gray-600">—</span>}</Td>
+                      <Td>{s.referrer_username ? <span className="text-primary">@{s.referrer_username}</span> : <span className="text-gray-600">—</span>}</Td>
                       <Td><span className="font-bold text-green-400 text-base">{s.referral_count}</span></Td>
                       <Td><span className="text-gray-500 text-xs">{ago(s.last_referral_at)}</span></Td>
                     </tr>
@@ -100,7 +100,7 @@ function ReferralsPageInner() {
                       <span className="font-medium text-white">{r.telegram_first_name ?? '—'}</span>
                       <span className="block text-[10px] text-gray-600 font-mono">#{r.telegram_id}</span>
                     </Td>
-                    <Td>{r.telegram_username ? <span className="text-[#D4AF37]">@{r.telegram_username}</span> : <span className="text-gray-600">—</span>}</Td>
+                    <Td>{r.telegram_username ? <span className="text-primary">@{r.telegram_username}</span> : <span className="text-gray-600">—</span>}</Td>
                     <Td><span className="text-gray-500 font-mono text-xs">#{r.referred_by}</span></Td>
                     <Td><span className="text-gray-500 text-xs">{ago(r.created_at)}</span></Td>
                   </tr>
@@ -115,7 +115,7 @@ function ReferralsPageInner() {
 
 export default function ReferralsPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh] bg-[#0a0f1e]"><div className="animate-spin h-8 w-8 border-2 border-[#D4AF37] border-t-transparent rounded-full" /></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh] bg-[#0a0f1e]"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>}>
       <ReferralsPageInner />
     </Suspense>
   )

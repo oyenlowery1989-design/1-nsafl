@@ -42,7 +42,7 @@ function BroadcastContent() {
   return (
     <div className="space-y-4 max-w-2xl">
       <h2 className="text-lg font-bold text-white flex items-center gap-2">
-        <Icon name="campaign" className="text-[#D4AF37] text-xl" />
+        <Icon name="campaign" className="text-primary text-xl" />
         Broadcast Message
       </h2>
       <div className="bg-[#0d1424] border border-white/8 rounded-xl p-5 space-y-4">
@@ -55,7 +55,7 @@ function BroadcastContent() {
               if (tmpl) { setMessage(tmpl.message); setPreview(null); setConfirm(false); setResult(null) }
               setSelectedTemplate(e.target.value)
             }}
-            className="w-full bg-black/40 border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/50"
+            className="w-full bg-black/40 border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary/50"
           >
             <option value="">— Select a template —</option>
             {TEMPLATES.map(t => <option key={t.label} value={t.label}>{t.label}</option>)}
@@ -68,7 +68,7 @@ function BroadcastContent() {
             onChange={e => { setMessage(e.target.value); setPreview(null); setConfirm(false); setResult(null) }}
             rows={6}
             placeholder="Write your broadcast message here…"
-            className="w-full bg-black/40 border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/50 placeholder-gray-600 resize-y"
+            className="w-full bg-black/40 border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder-gray-600 resize-y"
           />
         </div>
         <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer select-none">
@@ -89,7 +89,7 @@ function BroadcastContent() {
           {preview && !confirm && (
             <button onClick={() => setConfirm(true)} disabled={sending || !message.trim()}
               className="flex items-center gap-1.5 text-sm font-bold text-black px-4 py-2 rounded-lg disabled:opacity-40 transition"
-              style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #f0d060 100%)' }}>
+              style={{ background: `linear-gradient(135deg, ${BRANDING.colors.primary} 0%, #f0d060 100%)` }}>
               <Icon name="send" className="text-sm" />
               Send to {preview.recipientCount}
             </button>
@@ -97,7 +97,7 @@ function BroadcastContent() {
           {confirm && (
             <div className="flex items-center gap-2">
               <span className="text-sm text-yellow-400 font-semibold">⚠ Confirm broadcast?</span>
-              <button onClick={handleSend} className="text-sm bg-[#D4AF37] text-black font-bold px-3 py-1.5 rounded-lg hover:bg-[#f0d060] transition">Yes, send</button>
+              <button onClick={handleSend} className="text-sm bg-primary text-black font-bold px-3 py-1.5 rounded-lg hover:bg-[#f0d060] transition">Yes, send</button>
               <button onClick={() => setConfirm(false)} className="text-sm bg-white/10 text-gray-400 px-3 py-1.5 rounded-lg hover:bg-white/20 transition">Cancel</button>
             </div>
           )}

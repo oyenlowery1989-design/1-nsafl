@@ -72,11 +72,11 @@ function DonationsContent() {
       {toast && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#1a2235] border border-white/10 text-white text-sm px-5 py-3 rounded-xl shadow-2xl">{toast}</div>}
       <input type="text" placeholder="Search by wallet address, TX hash, or target…" value={search}
         onChange={e => setSearch(e.target.value)}
-        className="w-full bg-[#111827] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#D4AF37]/40" />
+        className="w-full bg-[#111827] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-primary/40" />
       <div className="flex flex-wrap gap-2 items-center">
         {(['all', 'unverified', 'team', 'player', 'general'] as const).map(f => (
           <button key={f} onClick={() => setFilter(f)}
-            className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition ${filter === f ? 'bg-[#D4AF37] text-black' : 'bg-white/6 text-gray-400 hover:bg-white/10 hover:text-white'}`}>
+            className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition ${filter === f ? 'bg-primary text-black' : 'bg-white/6 text-gray-400 hover:bg-white/10 hover:text-white'}`}>
             {f === 'all' ? `All (${donations.length})` : f === 'unverified' ? `Unverified (${donations.filter(d => !d.verified).length})` : `${f.charAt(0).toUpperCase() + f.slice(1)} (${donations.filter(d => d.donation_type === f).length})`}
           </button>
         ))}
@@ -99,7 +99,7 @@ function DonationsContent() {
                         <Td><span className="font-semibold text-yellow-400">{num(d.amount)}</span></Td>
                         <Td><span className="text-gray-300">{d.asset_code}</span></Td>
                         <Td><DonationTypeBadge type={d.donation_type} /></Td>
-                        <Td>{d.donation_target ? <span className="font-bold text-[#D4AF37] text-sm">{d.donation_target}</span> : <span className="text-gray-500 italic text-sm">General</span>}</Td>
+                        <Td>{d.donation_target ? <span className="font-bold text-primary text-sm">{d.donation_target}</span> : <span className="text-gray-500 italic text-sm">General</span>}</Td>
                         <Td mono><span className="text-xs text-gray-500">{d.stellar_tx_hash ? `${d.stellar_tx_hash.slice(0, 16)}…` : '—'}</span></Td>
                         <Td>
                           <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold ${d.verified ? 'bg-green-500/15 text-green-400 ring-1 ring-green-500/30' : 'bg-yellow-500/15 text-yellow-400 ring-1 ring-yellow-500/30'}`}>

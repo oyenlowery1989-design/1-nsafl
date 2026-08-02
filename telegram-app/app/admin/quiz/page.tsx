@@ -30,7 +30,7 @@ const DIFF_COLORS: Record<string, string> = {
   hard: 'text-red-400',
 }
 const CAT_COLORS: Record<string, string> = {
-  afl: 'text-[#D4AF37]',
+  afl: 'text-primary',
   wafl: 'text-blue-300',
   general: 'text-gray-300',
 }
@@ -117,19 +117,19 @@ export default function AdminQuizPage() {
   )
 
   if (loading) return (
-    <div className="min-h-screen bg-[#0A0E1A] flex items-center justify-center">
+    <div className="min-h-screen bg-background-dark flex items-center justify-center">
       <p className="text-white">Loading…</p>
     </div>
   )
   if (error) return (
-    <div className="min-h-screen bg-[#0A0E1A] flex items-center justify-center">
+    <div className="min-h-screen bg-background-dark flex items-center justify-center">
       <p className="text-red-400">{error}</p>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-[#0A0E1A] text-white" style={{ fontFamily: 'Inter, sans-serif' }}>
-      <header className="sticky top-0 bg-[#0A0E1A]/95 backdrop-blur border-b border-white/10 px-4 py-3 flex items-center justify-between z-10">
+    <div className="min-h-screen bg-background-dark text-white" style={{ fontFamily: 'Inter, sans-serif' }}>
+      <header className="sticky top-0 bg-background-dark/95 backdrop-blur border-b border-white/10 px-4 py-3 flex items-center justify-between z-10">
         <div className="flex items-center space-x-3">
           <a href="/admin" className="text-gray-400 hover:text-white text-sm transition">← Admin</a>
           <span className="text-gray-600">/</span>
@@ -137,7 +137,7 @@ export default function AdminQuizPage() {
         </div>
         <button
           onClick={() => setShowAddForm(v => !v)}
-          className="px-3 py-1.5 rounded-lg bg-[#D4AF37] text-black text-sm font-bold hover:brightness-110 transition"
+          className="px-3 py-1.5 rounded-lg bg-primary text-black text-sm font-bold hover:brightness-110 transition"
         >
           + Add Question
         </button>
@@ -151,7 +151,7 @@ export default function AdminQuizPage() {
               { label: 'Total Questions', value: stats.totalQuestions, color: 'text-white' },
               { label: 'Active', value: stats.activeQuestions, color: 'text-green-400' },
               { label: 'Sessions Played', value: stats.totalSessions, color: 'text-blue-300' },
-              { label: 'Avg Score', value: `${stats.avgScorePct}%`, color: 'text-[#D4AF37]' },
+              { label: 'Avg Score', value: `${stats.avgScorePct}%`, color: 'text-primary' },
             ].map(({ label, value, color }) => (
               <div key={label} className="bg-white/3 border border-white/8 rounded-xl p-3 text-center">
                 <p className={`text-xl font-bold ${color}`}>{value}</p>
@@ -231,7 +231,7 @@ export default function AdminQuizPage() {
               <button
                 onClick={addQuestion}
                 disabled={saving}
-                className="flex-1 py-2 rounded-lg bg-[#D4AF37] text-black font-bold text-sm disabled:opacity-60 hover:brightness-110 transition"
+                className="flex-1 py-2 rounded-lg bg-primary text-black font-bold text-sm disabled:opacity-60 hover:brightness-110 transition"
               >
                 {saving ? 'Saving…' : 'Add Question'}
               </button>

@@ -5,10 +5,11 @@ import TelegramGuard from "@/components/guards/TelegramGuard";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ToastContainer } from "@/components/Toast";
 import { PRIMARY_CUSTOM_ASSET_CODE } from "@/lib/constants";
+import { BRANDING } from "@/config/branding";
 
 export const metadata: Metadata = {
-  title: "The Homecoming Hub",
-  description: `${PRIMARY_CUSTOM_ASSET_CODE} — The Homecoming Hub Telegram Mini App`,
+  title: BRANDING.appName,
+  description: `${PRIMARY_CUSTOM_ASSET_CODE} — ${BRANDING.appName} Telegram Mini App`,
 };
 
 export default function RootLayout({
@@ -37,7 +38,7 @@ export default function RootLayout({
         />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){var d=document,l=d.createElement('div');l.id='app-loader';l.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#0A0E1A';var s=d.createElement('div');s.style.cssText='width:48px;height:48px;border:3px solid rgba(212,175,55,0.2);border-top-color:#D4AF37;border-radius:50%;animation:loader-spin .8s linear infinite';l.appendChild(s);var st=d.createElement('style');st.textContent='@keyframes loader-spin{to{transform:rotate(360deg)}}';l.appendChild(st);d.currentScript.after(l)})()`,
+            __html: `(function(){var d=document,l=d.createElement('div');l.id='app-loader';l.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:${BRANDING.colors.background}';var s=d.createElement('div');s.style.cssText='width:48px;height:48px;border:3px solid rgba(212,175,55,0.2);border-top-color:${BRANDING.colors.primary};border-radius:50%;animation:loader-spin .8s linear infinite';l.appendChild(s);var st=d.createElement('style');st.textContent='@keyframes loader-spin{to{transform:rotate(360deg)}}';l.appendChild(st);d.currentScript.after(l)})()`,
           }}
         />
       </head>

@@ -98,7 +98,7 @@ function AdminShellInner({ children }: { children: React.ReactNode }) {
           >
             <Icon name={sidebarOpen ? 'close' : 'menu'} className="text-xl" />
           </button>
-          <div className="w-8 h-8 rounded-lg bg-[#D4AF37] flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
             <Icon name="sports_football" className="text-sm text-black" />
           </div>
           <div>
@@ -136,9 +136,9 @@ function AdminShellInner({ children }: { children: React.ReactNode }) {
                       const isWins = item.href === '/admin/wins'
                       return (
                         <Link key={item.href} href={item.href} onClick={() => setSidebarOpen(false)}
-                          className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition ${isActive ? 'bg-[#D4AF37]/10 text-[#D4AF37]' : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition ${isActive ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}
                         >
-                          <Icon name={item.icon} className={`text-base ${isActive ? 'text-[#D4AF37]' : ''}`} />
+                          <Icon name={item.icon} className={`text-base ${isActive ? 'text-primary' : ''}`} />
                           <span className="flex-1">{item.label}</span>
                           {isWins && pendingWins > 0 && (
                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400">{pendingWins}</span>
@@ -171,11 +171,11 @@ function AdminShellInner({ children }: { children: React.ReactNode }) {
                         href={item.href}
                         className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition relative ${
                           isActive
-                            ? 'bg-[#D4AF37]/10 text-[#D4AF37]'
+                            ? 'bg-primary/10 text-primary'
                             : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
                         }`}
                       >
-                        <Icon name={item.icon} className={`text-base ${isActive ? 'text-[#D4AF37]' : ''}`} />
+                        <Icon name={item.icon} className={`text-base ${isActive ? 'text-primary' : ''}`} />
                         <span className="flex-1">{item.label}</span>
                         {isWins && pendingWins > 0 && (
                           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400">

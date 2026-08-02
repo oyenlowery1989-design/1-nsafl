@@ -38,12 +38,12 @@ function ActivityContent() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-lg font-bold text-white flex items-center gap-2">
-          <Icon name="history" className="text-[#D4AF37] text-xl" />
+          <Icon name="history" className="text-primary text-xl" />
           Activity Log — Paid Wins
         </h2>
         <input type="text" value={filterAdmin} onChange={e => setFilterAdmin(e.target.value)}
           placeholder="Filter by admin…"
-          className="bg-[#111827] border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-1.5 w-48 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/50 placeholder-gray-600" />
+          className="bg-[#111827] border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-1.5 w-48 focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder-gray-600" />
       </div>
       {loading ? (
         <div className="flex items-center justify-center py-12 text-gray-600 gap-2">
@@ -68,7 +68,7 @@ function ActivityContent() {
                     {w.user_first_name ?? ''}{w.user_username ? ` @${w.user_username}` : ''}
                     <span className="text-gray-600 ml-1">#{w.telegram_id}</span>
                   </td>
-                  <td className="px-3 py-2.5 text-xs text-[#D4AF37] font-medium">{w.prize}</td>
+                  <td className="px-3 py-2.5 text-xs text-primary font-medium">{w.prize}</td>
                   <td className="px-3 py-2.5 text-xs text-gray-300">{w.paid_by ?? <span className="text-gray-600">—</span>}</td>
                   <td className="px-3 py-2.5 text-xs font-mono">
                     {w.payout_tx_hash ? (

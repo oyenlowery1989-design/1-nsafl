@@ -23,7 +23,7 @@ export default class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.crashed) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-[#0A0E1A] px-8 text-center space-y-5">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-background-dark px-8 text-center space-y-5">
           <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center">
             <span className="material-symbols-outlined text-red-400 text-3xl">error</span>
           </div>
@@ -33,7 +33,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           </div>
           <button
             onClick={() => window.location.reload()}
-            className="px-6 py-3 rounded-xl bg-[#D4AF37] text-black text-sm font-bold uppercase tracking-wide"
+            className="px-6 py-3 rounded-xl bg-primary text-black text-sm font-bold uppercase tracking-wide"
           >
             Reload App
           </button>

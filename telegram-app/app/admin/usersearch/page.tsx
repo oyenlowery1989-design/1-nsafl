@@ -3,6 +3,7 @@ import { useState, Suspense } from 'react'
 import { useAdminToken } from '../hooks/useAdminToken'
 import { Icon } from '../components/ui'
 import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
+import { BRANDING } from '@/config/branding'
 
 type SearchUser = {
   telegram_id: number
@@ -41,18 +42,18 @@ function UserSearchContent() {
   return (
     <div className="space-y-4 max-w-2xl">
       <h2 className="text-lg font-bold text-white flex items-center gap-2">
-        <Icon name="person_search" className="text-[#D4AF37] text-xl" />
+        <Icon name="person_search" className="text-primary text-xl" />
         User Search
       </h2>
       <form onSubmit={handleSearch} className="flex gap-2">
         <input
           type="text" value={q} onChange={e => setQ(e.target.value)}
           placeholder="Telegram ID (numeric) or @username…"
-          className="flex-1 bg-[#111827] border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/50 placeholder-gray-600"
+          className="flex-1 bg-[#111827] border border-white/10 text-gray-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder-gray-600"
         />
         <button type="submit" disabled={searching || !q.trim()}
           className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-black disabled:opacity-40 transition"
-          style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #f0d060 100%)' }}>
+          style={{ background: `linear-gradient(135deg, ${BRANDING.colors.primary} 0%, #f0d060 100%)` }}>
           {searching ? <Icon name="progress_activity" className="text-sm animate-spin" /> : <Icon name="search" className="text-sm" />}
           Search
         </button>
@@ -75,13 +76,13 @@ function UserSearchContent() {
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {user.is_blocked && <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/20 font-bold">BLOCKED</span>}
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/20">{tier}</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">{tier}</span>
                 {user.favorite_team && <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/8 text-gray-400 border border-white/10">{user.favorite_team}</span>}
               </div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: `${PRIMARY_CUSTOM_ASSET_CODE} Balance`, value: nsafl.toLocaleString(), accent: 'text-[#D4AF37]' },
+                { label: `${PRIMARY_CUSTOM_ASSET_CODE} Balance`, value: nsafl.toLocaleString(), accent: 'text-primary' },
                 { label: 'XLM Balance',  value: Number(bal?.xlm_balance ?? 0).toFixed(2) },
                 { label: 'Wins',         value: user.winCount },
                 { label: 'Referrals',    value: user.referralCount },

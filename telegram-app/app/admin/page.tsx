@@ -33,7 +33,7 @@ function AdminLoginContent() {
     <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
       <div className="bg-[#111827] border border-white/10 rounded-2xl p-8 w-full max-w-sm shadow-2xl space-y-5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#D4AF37] flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
             <Icon name="sports_football" className="text-base text-black" />
           </div>
           <div>
@@ -49,14 +49,14 @@ function AdminLoginContent() {
             onChange={e => setTokenInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSubmit()}
             placeholder="Enter token…"
-            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#D4AF37]/50 focus:ring-1 focus:ring-[#D4AF37]/30"
+            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
             autoFocus
           />
         </div>
         <div>
           <button
             onClick={handleSubmit}
-            className="w-full bg-[#D4AF37] text-black font-bold rounded-lg py-2.5 text-sm hover:bg-[#c9a42e] transition"
+            className="w-full bg-primary text-black font-bold rounded-lg py-2.5 text-sm hover:bg-[#c9a42e] transition"
           >
             Enter
           </button>

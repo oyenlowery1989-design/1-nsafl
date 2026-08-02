@@ -56,14 +56,14 @@ function SettingsContent() {
   return (
     <div className="space-y-5 max-w-3xl">
       <h2 className="text-lg font-bold text-white flex items-center gap-2">
-        <Icon name="settings" className="text-[#D4AF37] text-xl" />
+        <Icon name="settings" className="text-primary text-xl" />
         Settings & Configuration
       </h2>
 
       {/* Reward wallet config */}
       <div className="bg-[#0d1424] border border-white/8 rounded-xl p-5 space-y-4">
         <h3 className="text-sm font-semibold text-gray-200 flex items-center gap-2">
-          <Icon name="account_balance_wallet" className="text-sm text-[#D4AF37]" />
+          <Icon name="account_balance_wallet" className="text-sm text-primary" />
           Reward Wallet
         </h3>
         {loading ? <p className="text-sm text-gray-600">Loading…</p> : config ? (
@@ -91,10 +91,10 @@ function SettingsContent() {
       {/* Game config */}
       <div className="bg-[#0d1424] border border-white/8 rounded-xl p-5 space-y-4">
         <h3 className="text-sm font-semibold text-gray-200 flex items-center gap-2">
-          <Icon name="sports_esports" className="text-sm text-[#D4AF37]" />
+          <Icon name="sports_esports" className="text-sm text-primary" />
           Game Limits
         </h3>
-        <div className="bg-[#D4AF37]/5 border border-[#D4AF37]/20 rounded-lg px-3 py-2 text-xs text-[#D4AF37]">
+        <div className="bg-primary/5 border border-primary/20 rounded-lg px-3 py-2 text-xs text-primary">
           Tier 1 minimum: <strong>100 {PRIMARY_CUSTOM_ASSET_CODE}</strong> — only T1+ can receive prize payouts
         </div>
         <div className="space-y-2">
@@ -113,7 +113,7 @@ function SettingsContent() {
       {/* Env vars */}
       <div className="bg-[#0d1424] border border-white/8 rounded-xl p-5 space-y-3">
         <h3 className="text-sm font-semibold text-gray-200 flex items-center gap-2">
-          <Icon name="key" className="text-sm text-[#D4AF37]" />
+          <Icon name="key" className="text-sm text-primary" />
           Environment Variables
         </h3>
         <p className="text-xs text-gray-600">Variable names only — values are never exposed in the UI.</p>

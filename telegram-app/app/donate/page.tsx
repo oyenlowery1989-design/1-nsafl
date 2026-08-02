@@ -9,6 +9,7 @@ import { useWalletStore } from '@/hooks/useStore'
 import { ALL_CLUBS, AFL_CLUBS, WAFL_CLUBS } from '@/config/afl'
 import { AFL_PLAYERS } from '@/config/afl-players'
 import { PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
+import { BRANDING } from '@/config/branding'
 import { haptic } from '@/lib/telegram-ui'
 import { getTelegramInitData } from '@/lib/telegram'
 import { toast } from '@/components/Toast'
@@ -104,7 +105,7 @@ export default function DonatePage() {
   return (
     <WalletGuard>
       {/* Header */}
-      <header className="pt-3 pb-2 px-4 sticky top-0 z-10 bg-[#0A0E1A] border-b border-white/10">
+      <header className="pt-3 pb-2 px-4 sticky top-0 z-10 bg-background-dark border-b border-white/10">
         <div className="flex items-center gap-2">
           <button
             onClick={() => router.back()}
@@ -114,17 +115,17 @@ export default function DonatePage() {
           </button>
           <div>
             <h1 className="text-lg font-bold text-white tracking-tight">Support the Movement</h1>
-            <p className="text-xs text-[#D4AF37] font-medium">Donate {PRIMARY_CUSTOM_ASSET_LABEL} to AFL campaigns</p>
+            <p className="text-xs text-primary font-medium">Donate {PRIMARY_CUSTOM_ASSET_LABEL} to AFL campaigns</p>
           </div>
         </div>
       </header>
 
       <main className="px-4 py-4 space-y-4 pb-28">
         {/* Intro */}
-        <div className="glass-card p-4 rounded-xl" style={{ borderLeft: '3px solid #D4AF37' }}>
+        <div className="glass-card p-4 rounded-xl" style={{ borderLeft: `3px solid ${BRANDING.colors.primary}` }}>
           <p className="text-sm text-gray-300 leading-relaxed">
             Choose a general donation, back a specific team, or champion a player&apos;s return home.
-            Top donors get featured on the <span className="text-[#D4AF37] font-semibold">Top Supporters</span> board.
+            Top donors get featured on the <span className="text-primary font-semibold">Top Supporters</span> board.
           </p>
         </div>
 
@@ -141,11 +142,11 @@ export default function DonatePage() {
                 key={type}
                 onClick={() => { setDonationType(donationType === type ? null : type); setSelectedClub(''); setSelectedPlayer(''); setCustomPlayer('') }}
                 className={`glass-card p-3 rounded-xl text-center transition-all ${
-                  donationType === type ? 'border border-[#D4AF37] bg-[#D4AF37]/10' : 'border border-white/10'
+                  donationType === type ? 'border border-primary bg-primary/10' : 'border border-white/10'
                 }`}
               >
-                <span className={`material-symbols-outlined text-lg ${donationType === type ? 'text-[#D4AF37]' : 'text-gray-400'}`}>{icon}</span>
-                <p className={`text-[10px] mt-1 font-semibold ${donationType === type ? 'text-[#D4AF37]' : 'text-gray-400'}`}>{label}</p>
+                <span className={`material-symbols-outlined text-lg ${donationType === type ? 'text-primary' : 'text-gray-400'}`}>{icon}</span>
+                <p className={`text-[10px] mt-1 font-semibold ${donationType === type ? 'text-primary' : 'text-gray-400'}`}>{label}</p>
               </button>
             ))}
           </div>
@@ -161,14 +162,14 @@ export default function DonatePage() {
                 <select
                   value={selectedClub}
                   onChange={(e) => setSelectedClub(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#D4AF37]/50 appearance-none"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-primary/50 appearance-none"
                 >
-                  <option value="" className="bg-[#0A0E1A]">Choose a club...</option>
+                  <option value="" className="bg-background-dark">Choose a club...</option>
                   <optgroup label="AFL">
-                    {AFL_CLUBS.map((c) => <option key={c.id} value={c.id} className="bg-[#0A0E1A]">{c.name}</option>)}
+                    {AFL_CLUBS.map((c) => <option key={c.id} value={c.id} className="bg-background-dark">{c.name}</option>)}
                   </optgroup>
                   <optgroup label="WAFL">
-                    {WAFL_CLUBS.map((c) => <option key={c.id} value={c.id} className="bg-[#0A0E1A]">{c.name}</option>)}
+                    {WAFL_CLUBS.map((c) => <option key={c.id} value={c.id} className="bg-background-dark">{c.name}</option>)}
                   </optgroup>
                 </select>
               </div>
@@ -181,17 +182,17 @@ export default function DonatePage() {
                 <select
                   value={selectedPlayer}
                   onChange={(e) => { setSelectedPlayer(e.target.value); setCustomPlayer('') }}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#D4AF37]/50 appearance-none"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-primary/50 appearance-none"
                 >
-                  <option value="" className="bg-[#0A0E1A]">Choose a player...</option>
-                  {allPlayers.map((p) => <option key={p.name} value={p.name} className="bg-[#0A0E1A]">{p.name}</option>)}
-                  <option value="__custom__" className="bg-[#0A0E1A]">✏️ Enter custom name...</option>
+                  <option value="" className="bg-background-dark">Choose a player...</option>
+                  {allPlayers.map((p) => <option key={p.name} value={p.name} className="bg-background-dark">{p.name}</option>)}
+                  <option value="__custom__" className="bg-background-dark">✏️ Enter custom name...</option>
                 </select>
                 {selectedPlayer === '__custom__' && (
                   <input
                     type="text" value={customPlayer} onChange={(e) => setCustomPlayer(e.target.value)}
                     placeholder="e.g. Patrick Ryder"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#D4AF37]/50"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-primary/50"
                   />
                 )}
               </div>
@@ -204,7 +205,7 @@ export default function DonatePage() {
               </label>
               <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2.5">
                 <span className="text-xs text-gray-300 font-mono flex-1 truncate">{truncatedWallet}</span>
-                <button onClick={handleCopy} className="text-[#D4AF37] flex-shrink-0">
+                <button onClick={handleCopy} className="text-primary flex-shrink-0">
                   <span className="material-symbols-outlined text-base">{copied ? 'check' : 'content_copy'}</span>
                 </button>
               </div>
@@ -216,11 +217,11 @@ export default function DonatePage() {
                 Memo (include when sending)
               </label>
               <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2.5">
-                <span className={`text-xs font-mono flex-1 ${memoReady ? 'text-[#D4AF37]' : 'text-gray-500'}`}>
+                <span className={`text-xs font-mono flex-1 ${memoReady ? 'text-primary' : 'text-gray-500'}`}>
                   {memoReady ? memo : '—'}
                 </span>
                 {memoReady && (
-                  <button onClick={handleCopyMemo} className="text-[#D4AF37] flex-shrink-0">
+                  <button onClick={handleCopyMemo} className="text-primary flex-shrink-0">
                     <span className="material-symbols-outlined text-base">{copiedMemo ? 'check' : 'content_copy'}</span>
                   </button>
                 )}
@@ -236,7 +237,7 @@ export default function DonatePage() {
               <input
                 type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00" min="0" step="any"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#D4AF37]/50"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-primary/50"
               />
             </div>
 
@@ -248,7 +249,7 @@ export default function DonatePage() {
               <input
                 type="text" value={txHash} onChange={(e) => setTxHash(e.target.value)}
                 placeholder="Paste your tx hash after sending..."
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#D4AF37]/50 font-mono text-[11px]"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-primary/50 font-mono text-[11px]"
               />
             </div>
 
@@ -256,7 +257,7 @@ export default function DonatePage() {
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              className="w-full py-3 rounded-xl font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 active:scale-[0.98] shadow-[0_4px_20px_rgba(212,175,55,0.3)]"
+              className="w-full py-3 rounded-xl font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-primary text-black hover:bg-primary/90 active:scale-[0.98] shadow-[0_4px_20px_rgba(212,175,55,0.3)]"
             >
               {submitting ? (
                 <span className="flex items-center justify-center gap-2">

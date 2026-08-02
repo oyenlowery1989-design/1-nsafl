@@ -75,7 +75,7 @@ function Podium({ entries }: { entries: LeaderboardEntry[] }) {
     return (
       <div className={`flex-1 flex flex-col items-center gap-1 ${isCenter ? '-mt-4' : 'mt-2'}`}>
         {isCenter && (
-          <span className="material-symbols-outlined text-[#D4AF37] text-base animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>
+          <span className="material-symbols-outlined text-primary text-base animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>
             crown
           </span>
         )}
@@ -104,11 +104,11 @@ function Podium({ entries }: { entries: LeaderboardEntry[] }) {
   };
 
   return (
-    <div className="glass-card px-4 pt-4 pb-0 rounded-xl border border-[#D4AF37]/10 overflow-hidden">
+    <div className="glass-card px-4 pt-4 pb-0 rounded-xl border border-primary/10 overflow-hidden">
       <p className="text-[10px] text-gray-500 uppercase tracking-widest text-center mb-3">Top Holders</p>
       <div className="flex items-end gap-2">
         <PodiumSlot entry={second} height="56px" emoji="🥈" labelColor="text-gray-300" />
-        <PodiumSlot entry={first}  height="80px" emoji="🥇" labelColor="text-[#D4AF37]" isCenter />
+        <PodiumSlot entry={first}  height="80px" emoji="🥇" labelColor="text-primary" isCenter />
         <PodiumSlot entry={third}  height="40px" emoji="🥉" labelColor="text-amber-600" />
       </div>
     </div>
@@ -130,25 +130,25 @@ function LeaderRow({
   const needed = isCurrentUser && nextEntry ? Math.max(0, Math.ceil(nextEntry.balance - myBal + 1)) : null;
 
   const rankColor =
-    entry.rank === 1 ? "text-[#D4AF37]" :
+    entry.rank === 1 ? "text-primary" :
     entry.rank === 2 ? "text-gray-300" :
     entry.rank === 3 ? "text-amber-600" :
-    isCurrentUser    ? "text-[#D4AF37]" : "text-gray-500";
+    isCurrentUser    ? "text-primary" : "text-gray-500";
 
   return (
     <div
       className={`px-3 py-2.5 rounded-xl flex items-center gap-2.5 relative overflow-hidden transition-colors ${
         isCurrentUser
-          ? "bg-[#D4AF37]/8 border border-[#D4AF37]/40 shadow-[0_0_16px_rgba(212,175,55,0.12)]"
+          ? "bg-primary/8 border border-primary/40 shadow-[0_0_16px_rgba(212,175,55,0.12)]"
           : "glass-card border border-transparent"
       }`}
     >
-      {isCurrentUser && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#D4AF37] rounded-l-xl" />}
+      {isCurrentUser && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-primary rounded-l-xl" />}
 
       {/* Rank */}
       <div className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs flex-shrink-0 border ${
         entry.rank <= 3
-          ? entry.rank === 1 ? "bg-[#D4AF37]/20 border-[#D4AF37]/40" :
+          ? entry.rank === 1 ? "bg-primary/20 border-primary/40" :
             entry.rank === 2 ? "bg-gray-400/10 border-gray-400/25" :
             "bg-amber-700/20 border-amber-700/35"
           : "bg-white/4 border-white/8"
@@ -166,7 +166,7 @@ function LeaderRow({
             {entry.displayName}
           </span>
           {isCurrentUser && (
-            <span className="text-[8px] font-black text-[#D4AF37] border border-[#D4AF37]/35 rounded px-1 py-px flex-shrink-0">
+            <span className="text-[8px] font-black text-primary border border-primary/35 rounded px-1 py-px flex-shrink-0">
               YOU
             </span>
           )}
@@ -198,7 +198,7 @@ function LeaderRow({
         </span>
         <p className="text-[8px] text-gray-600">{PRIMARY_CUSTOM_ASSET_LABEL}</p>
         {isCurrentUser && needed != null && needed > 0 && (
-          <p className="text-[8px] text-[#D4AF37]/70 font-semibold">+{formatBalance(needed)} → #{entry.rank - 1}</p>
+          <p className="text-[8px] text-primary/70 font-semibold">+{formatBalance(needed)} → #{entry.rank - 1}</p>
         )}
       </div>
     </div>
@@ -274,7 +274,7 @@ export default function LeaderboardPage() {
   return (
     <WalletGuard>
       {/* ── Header ──────────────────────────────────────────────────── */}
-      <header className="pt-3 pb-2 px-4 sticky top-0 z-10 bg-[#0A0E1A] border-b border-white/10">
+      <header className="pt-3 pb-2 px-4 sticky top-0 z-10 bg-background-dark border-b border-white/10">
         <div className="flex items-center gap-2">
           <button
             onClick={() => router.back()}
@@ -284,7 +284,7 @@ export default function LeaderboardPage() {
           </button>
           <div className="flex-1">
             <h1 className="text-lg font-bold text-white tracking-tight">Leaderboard</h1>
-            <p className="text-xs text-[#D4AF37] font-medium">Top {PRIMARY_CUSTOM_ASSET_LABEL} Holders</p>
+            <p className="text-xs text-primary font-medium">Top {PRIMARY_CUSTOM_ASSET_LABEL} Holders</p>
           </div>
           {total > 0 && (
             <div className="text-right">
@@ -312,15 +312,15 @@ export default function LeaderboardPage() {
 
             {/* My rank hero — when ranked */}
             {myRank != null && (
-              <div className="rounded-2xl border border-[#D4AF37]/25 bg-gradient-to-br from-[#D4AF37]/8 to-transparent p-4">
+              <div className="rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/8 to-transparent p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <span className="material-symbols-outlined text-[#D4AF37] text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    <span className="material-symbols-outlined text-primary text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>
                       {myRank === 1 ? 'crown' : 'trending_up'}
                     </span>
                     <div>
                       <p className="text-sm font-bold text-white">
-                        You&apos;re ranked <span className="text-[#D4AF37]">#{myRank}</span>
+                        You&apos;re ranked <span className="text-primary">#{myRank}</span>
                       </p>
                       <p className="text-[10px] text-gray-400">
                         {myRank === 1
@@ -334,14 +334,14 @@ export default function LeaderboardPage() {
                   ) : neededToClimb != null && neededToClimb > 0 ? (
                     <div className="text-right">
                       <p className="text-[9px] text-gray-500 uppercase tracking-wide">To reach #{myRank - 1}</p>
-                      <p className="text-base font-black text-[#D4AF37]">+{formatBalance(neededToClimb)}</p>
+                      <p className="text-base font-black text-primary">+{formatBalance(neededToClimb)}</p>
                     </div>
                   ) : null}
                 </div>
 
                 <button
                   onClick={() => router.push('/buy')}
-                  className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#D4AF37] text-black font-bold text-sm active:scale-[0.98] transition shadow-[0_4px_20px_rgba(212,175,55,0.3)]"
+                  className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-black font-bold text-sm active:scale-[0.98] transition shadow-[0_4px_20px_rgba(212,175,55,0.3)]"
                 >
                   <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>shopping_cart</span>
                   {myRank === 1 ? `Buy more — Stay #1` : `Buy ${PRIMARY_CUSTOM_ASSET_LABEL} — Climb the Ranks`}
@@ -357,7 +357,7 @@ export default function LeaderboardPage() {
                   <p className="text-sm font-bold text-white">You&apos;re not ranked yet</p>
                   <p className="text-[10px] text-gray-400">Buy {PRIMARY_CUSTOM_ASSET_LABEL} to get on the board</p>
                 </div>
-                <button onClick={() => router.push('/buy')} className="text-[11px] font-bold text-[#D4AF37] flex items-center gap-0.5">
+                <button onClick={() => router.push('/buy')} className="text-[11px] font-bold text-primary flex items-center gap-0.5">
                   Buy <span className="material-symbols-outlined text-[13px]">arrow_forward</span>
                 </button>
               </div>
@@ -366,7 +366,7 @@ export default function LeaderboardPage() {
             {/* Full Rankings */}
             <section>
               <div className="flex items-center gap-1.5 mb-2">
-                <span className="material-symbols-outlined text-[#D4AF37] text-base">format_list_numbered</span>
+                <span className="material-symbols-outlined text-primary text-base">format_list_numbered</span>
                 <h3 className="text-sm font-bold text-white">Full Rankings</h3>
               </div>
               <div className="space-y-1.5" ref={myRowRef}>
@@ -408,7 +408,7 @@ export default function LeaderboardPage() {
                       </span>
                       <button
                         onClick={() => { navigator.clipboard.writeText(referralLink); setCopiedLink(true); setTimeout(() => setCopiedLink(false), 1500) }}
-                        className="flex-shrink-0 text-[#D4AF37]"
+                        className="flex-shrink-0 text-primary"
                       >
                         <span className="material-symbols-outlined text-[14px]">{copiedLink ? 'check' : 'content_copy'}</span>
                       </button>
@@ -450,7 +450,7 @@ export default function LeaderboardPage() {
         {/* Empty state */}
         {showContent && entries.length === 0 && !error && (
           <div className="flex flex-col items-center justify-center min-h-[40dvh] gap-3 text-center">
-            <span className="material-symbols-outlined text-[#D4AF37] text-5xl">emoji_events</span>
+            <span className="material-symbols-outlined text-primary text-5xl">emoji_events</span>
             <p className="text-white font-semibold">No holders yet</p>
             <p className="text-gray-400 text-sm">Be the first to hold {PRIMARY_CUSTOM_ASSET_LABEL} and claim the top spot!</p>
           </div>

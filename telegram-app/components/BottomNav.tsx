@@ -88,7 +88,7 @@ export default function BottomNav() {
   const ringSize = 48 + charge * 32
 
   return (
-    <nav className="fixed bottom-0 w-full bg-[#0A0E1A]/90 backdrop-blur-xl border-t border-white/10 pb-safe pt-2 px-4 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+    <nav className="fixed bottom-0 w-full bg-background-dark/90 backdrop-blur-xl border-t border-white/10 pb-safe pt-2 px-4 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
       <div className="flex justify-between items-center pb-2">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href
@@ -97,7 +97,7 @@ export default function BottomNav() {
               <div key={item.href} className="relative -top-5 flex flex-col items-center justify-center">
                 {/* expanding ring */}
                 <div
-                  className="absolute rounded-full border border-[#D4AF37] pointer-events-none"
+                  className="absolute rounded-full border border-primary pointer-events-none"
                   style={{
                     width: ringSize,
                     height: ringSize,
@@ -117,7 +117,7 @@ export default function BottomNav() {
                     boxShadow: `0 0 ${glowPx}px rgba(212,175,55,0.85)`,
                     willChange: 'transform',
                   }}
-                  className="w-12 h-12 bg-[#D4AF37] text-black rounded-full flex items-center justify-center border-4 border-[#0A0E1A] select-none"
+                  className="w-12 h-12 bg-primary text-black rounded-full flex items-center justify-center border-4 border-background-dark select-none"
                 >
                   <span
                     className="material-symbols-outlined text-2xl"
@@ -130,7 +130,7 @@ export default function BottomNav() {
                     sports_football
                   </span>
                 </button>
-                <span className="text-[8px] text-[#D4AF37]/60 font-semibold tracking-wide mt-1 select-none">
+                <span className="text-[8px] text-primary/60 font-semibold tracking-wide mt-1 select-none">
                   {charge > 0 ? 'release!' : 'hold to play'}
                 </span>
               </div>
@@ -141,7 +141,7 @@ export default function BottomNav() {
               key={item.href}
               href={item.href}
               className={`flex flex-col items-center space-y-0.5 transition ${
-                isActive ? 'text-[#D4AF37]' : 'text-gray-500 hover:text-[#D4AF37]'
+                isActive ? 'text-primary' : 'text-gray-500 hover:text-primary'
               }`}
             >
               <span className="material-symbols-outlined text-xl">{item.icon}</span>
@@ -157,7 +157,7 @@ export default function BottomNav() {
       {charge > 0 && (
         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/5">
           <div
-            className="h-full bg-[#D4AF37] transition-none"
+            className="h-full bg-primary transition-none"
             style={{ width: `${charge * 100}%` }}
           />
         </div>

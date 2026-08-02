@@ -5,6 +5,7 @@ import BottomNav from './BottomNav'
 import PageLoader, { useMinLoader } from './PageLoader'
 import NotificationDrawer from './NotificationDrawer'
 import { PRIMARY_CUSTOM_ASSET_CODE, PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
+import { BRANDING } from '@/config/branding'
 import { getTierForBalance, getNextTier } from '@/config/tiers'
 import { useWalletStore } from '@/hooks/useStore'
 import { getTelegramInitData, buildReferralLink, shareReferralLink } from '@/lib/telegram'
@@ -40,7 +41,7 @@ function WalletTierCard({ balance, address, xlmBalance }: { balance: string; add
   const toNext = nextTier ? Math.max(0, nextTier.minBalance - numericBalance) : 0
 
   return (
-    <div className="glass-card rounded-2xl p-3 relative overflow-hidden border" style={{ borderColor: `${currentTier.color}4D`, background: '#0A0E1A' }}>
+    <div className="glass-card rounded-2xl p-3 relative overflow-hidden border" style={{ borderColor: `${currentTier.color}4D`, background: BRANDING.colors.background }}>
       <div className="absolute -right-6 -top-6 w-28 h-28 rounded-full blur-3xl pointer-events-none" style={{ background: currentTier.glowColor }} />
       <div className="relative z-10 flex items-center gap-3">
         {/* Left — balance */}
@@ -212,15 +213,15 @@ export default function DashboardView({ address, balance }: Props) {
 
   return (
     <>
-      <header className="pt-3 pb-2 px-4 sticky top-0 z-30 bg-[#0A0E1A] border-b border-white/10">
+      <header className="pt-3 pb-2 px-4 sticky top-0 z-30 bg-background-dark border-b border-white/10">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 border border-[#D4AF37]/50 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[#D4AF37]">sports_football</span>
+            <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center">
+              <span className="material-symbols-outlined text-primary">sports_football</span>
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white tracking-tight">The Homecoming Hub</h1>
-              <p className="text-xs text-[#D4AF37] font-medium">{PRIMARY_CUSTOM_ASSET_LABEL} Dashboard</p>
+              <h1 className="text-xl font-bold text-white tracking-tight">{BRANDING.appName}</h1>
+              <p className="text-xs text-primary font-medium">{PRIMARY_CUSTOM_ASSET_LABEL} Dashboard</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -239,7 +240,7 @@ export default function DashboardView({ address, balance }: Props) {
           >
             <span className="material-symbols-outlined text-white">notifications</span>
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 min-w-[14px] h-[14px] bg-[#D4AF37] text-black text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 border border-[#0A0E1A]">
+              <span className="absolute top-1.5 right-1.5 min-w-[14px] h-[14px] bg-primary text-black text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 border border-background-dark">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
@@ -264,7 +265,7 @@ export default function DashboardView({ address, balance }: Props) {
         <div
           onClick={() => router.push('/game')}
           className="rounded-2xl cursor-pointer active:scale-[0.98] transition relative overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, #1a1400 0%, #2a1f00 50%, #0a0e1a 100%)', border: '1px solid #D4AF3766' }}
+          style={{ background: `linear-gradient(135deg, #1a1400 0%, #2a1f00 50%, ${BRANDING.colors.background} 100%)`, border: `1px solid ${BRANDING.colors.primary}66` }}
         >
           {/* glow */}
           <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full blur-3xl pointer-events-none" style={{ background: 'rgba(212,175,55,0.25)' }} />
@@ -272,22 +273,22 @@ export default function DashboardView({ address, balance }: Props) {
             <div className="flex items-start justify-between mb-3">
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full" style={{ background: '#D4AF3733', color: '#D4AF37' }}>🎰 Daily Game</span>
+                  <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full" style={{ background: `${BRANDING.colors.primary}33`, color: BRANDING.colors.primary }}>🎰 Daily Game</span>
                 </div>
                 <h3 className="text-lg font-bold text-white leading-tight">Lucky Draw</h3>
-                <p className="text-[11px] text-[#D4AF37]/80 font-medium">Spin the wheel — win real prizes</p>
+                <p className="text-[11px] text-primary/80 font-medium">Spin the wheel — win real prizes</p>
               </div>
-              <span className="material-symbols-outlined text-4xl" style={{ color: '#D4AF37', fontVariationSettings: "'FILL' 1" }}>casino</span>
+              <span className="material-symbols-outlined text-4xl" style={{ color: BRANDING.colors.primary, fontVariationSettings: "'FILL' 1" }}>casino</span>
             </div>
             {/* Prize pills */}
             <div className="flex flex-wrap gap-1.5 mb-3">
               {['5,000 wNSAFL', 'XLM', 'GOLD', 'SILVER', 'Free Spin'].map((prize) => (
-                <span key={prize} className="text-[9px] font-semibold px-2 py-0.5 rounded-full border" style={{ borderColor: '#D4AF3744', color: '#D4AF37', background: '#D4AF3711' }}>{prize}</span>
+                <span key={prize} className="text-[9px] font-semibold px-2 py-0.5 rounded-full border" style={{ borderColor: `${BRANDING.colors.primary}44`, color: BRANDING.colors.primary, background: `${BRANDING.colors.primary}11` }}>{prize}</span>
               ))}
             </div>
             <div className="flex items-center justify-between">
               <p className="text-[10px] text-gray-400">3 free spins/day · Bonus spins available</p>
-              <div className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold text-black" style={{ background: '#D4AF37' }}>
+              <div className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold text-black" style={{ background: BRANDING.colors.primary }}>
                 <span>Spin Now</span>
                 <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>arrow_forward</span>
               </div>
@@ -322,7 +323,7 @@ export default function DashboardView({ address, balance }: Props) {
           <section className="glass-card rounded-xl px-3 py-2.5">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center space-x-1.5">
-                <span className="material-symbols-outlined text-[#D4AF37] text-base">monitoring</span>
+                <span className="material-symbols-outlined text-primary text-base">monitoring</span>
                 <h3 className="text-sm font-bold text-white">Live Network</h3>
               </div>
               <div className={`flex items-center space-x-1 px-1.5 py-0.5 rounded text-[9px] font-semibold ${
@@ -336,7 +337,7 @@ export default function DashboardView({ address, balance }: Props) {
             </div>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { value: liveStats.holderCount.toLocaleString(), label: 'Holders', color: 'text-[#D4AF37]' },
+                { value: liveStats.holderCount.toLocaleString(), label: 'Holders', color: 'text-primary' },
                 { value: String(Math.round(parseFloat(liveStats.totalFunding)).toLocaleString()), label: 'Total Held', color: 'text-white' },
                 { value: liveStats.activeWallets.toLocaleString(),  label: 'Active', color: 'text-green-400' },
               ].map(({ value, label, color }) => (
@@ -402,7 +403,7 @@ export default function DashboardView({ address, balance }: Props) {
           <div
             className="w-full rounded-t-3xl overflow-hidden relative"
             style={{
-              background: 'linear-gradient(170deg, #0d0a0f 0%, #0A0E1A 60%)',
+              background: `linear-gradient(170deg, #0d0a0f 0%, ${BRANDING.colors.background} 60%)`,
               border: '1px solid rgba(232,25,44,0.45)',
               borderBottom: 'none',
               boxShadow: '0 -20px 80px rgba(232,25,44,0.20), 0 -4px 40px rgba(0,212,255,0.08)',
@@ -452,7 +453,7 @@ export default function DashboardView({ address, balance }: Props) {
                 { value: '2',  label: 'AFL Clubs',        icon: 'stadium' },
                 { value: '#1', label: 'Partner Rank',     icon: 'workspace_premium' },
               ].map(({ value, label, icon }) => (
-                <div key={label} className="flex flex-col items-center py-3 text-center" style={{ background: '#0A0E1A' }}>
+                <div key={label} className="flex flex-col items-center py-3 text-center" style={{ background: BRANDING.colors.background }}>
                   <span className="material-symbols-outlined text-lg mb-0.5" style={{ color: '#E8192C', fontVariationSettings: "'FILL' 1" }}>{icon}</span>
                   <p className="text-lg font-bold text-white leading-none">{value}</p>
                   <p className="text-[9px] text-gray-500 mt-0.5 leading-tight">{label}</p>

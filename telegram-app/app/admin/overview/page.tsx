@@ -163,7 +163,7 @@ function OverviewContent() {
 
       {loading ? (
         <div className="flex items-center gap-2 text-gray-500 py-12">
-          <svg className="animate-spin h-5 w-5 text-[#D4AF37]" viewBox="0 0 24 24" fill="none">
+          <svg className="animate-spin h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
           </svg>
@@ -222,21 +222,21 @@ function OverviewContent() {
                   <p className="text-xs font-semibold text-gray-300">Wins (7 days)</p>
                   <TrendBadge today={stats.sparklines.wins.today} yesterday={stats.sparklines.wins.yesterday} />
                 </div>
-                <p className="text-2xl font-bold text-[#D4AF37]">{stats.sparklines.wins.today} <span className="text-sm font-normal text-gray-500">today</span></p>
+                <p className="text-2xl font-bold text-primary">{stats.sparklines.wins.today} <span className="text-sm font-normal text-gray-500">today</span></p>
                 <Sparkline days={stats.sparklines.wins.days} labels={stats.sparklines.wins.labels} color="bg-yellow-500" />
               </div>
             </div>
           )}
 
           {/* Lucky Draw wins tile */}
-          <div className="rounded-xl p-4 border border-[#D4AF37]/20 bg-yellow-500/5 flex items-center justify-between gap-4">
+          <div className="rounded-xl p-4 border border-primary/20 bg-yellow-500/5 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center shrink-0">
-                <Icon name="casino" className="text-base text-[#D4AF37]" />
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Icon name="casino" className="text-base text-primary" />
               </div>
               <div>
                 <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Game Wins</p>
-                <p className="text-lg font-bold text-[#D4AF37] leading-tight">
+                <p className="text-lg font-bold text-primary leading-tight">
                   {winStats.total} <span className="text-sm font-normal text-gray-400">total asset wins</span>
                 </p>
                 {winStats.pending > 0
@@ -245,7 +245,7 @@ function OverviewContent() {
                 }
               </div>
             </div>
-            <Link href="/admin/wins" className="text-xs text-[#D4AF37] hover:text-yellow-300 border border-[#D4AF37]/30 rounded-lg px-3 py-1.5 hover:bg-[#D4AF37]/10 transition shrink-0 font-semibold">
+            <Link href="/admin/wins" className="text-xs text-primary hover:text-yellow-300 border border-primary/30 rounded-lg px-3 py-1.5 hover:bg-primary/10 transition shrink-0 font-semibold">
               View all →
             </Link>
           </div>
@@ -254,7 +254,7 @@ function OverviewContent() {
           {stats?.rewardAssets && stats.rewardAssets.some(a => a.balance !== null) && (
             <div className="bg-[#0d1424] border border-white/8 rounded-xl p-4">
               <p className="text-xs font-semibold text-gray-300 mb-3 flex items-center gap-2">
-                <Icon name="account_balance_wallet" className="text-sm text-[#D4AF37]" />
+                <Icon name="account_balance_wallet" className="text-sm text-primary" />
                 Reward Wallet Balances
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
@@ -274,7 +274,7 @@ function OverviewContent() {
                   <p className="text-[11px] text-gray-500 font-mono truncate flex-1">{stats.senderPublicKey.slice(0, 12)}&hellip;{stats.senderPublicKey.slice(-6)}</p>
                   <button
                     onClick={() => { navigator.clipboard.writeText(stats.senderPublicKey!); }}
-                    className="text-[11px] text-[#D4AF37] hover:text-yellow-300 border border-[#D4AF37]/30 rounded px-2 py-1 transition"
+                    className="text-[11px] text-primary hover:text-yellow-300 border border-primary/30 rounded px-2 py-1 transition"
                   >
                     Copy Address
                   </button>
@@ -304,7 +304,7 @@ function OverviewContent() {
                   <tr key={u.telegram_id} className="hover:bg-white/3 cursor-pointer" onClick={() => setSelectedUser(u)}>
                     <td className="px-3 py-2.5 text-sm text-gray-200">
                       <span className="font-medium text-white">{u.telegram_first_name ?? '—'}</span>
-                      {u.telegram_username && <span className="text-[#D4AF37] text-xs ml-1.5">@{u.telegram_username}</span>}
+                      {u.telegram_username && <span className="text-primary text-xs ml-1.5">@{u.telegram_username}</span>}
                     </td>
                     <td className="px-3 py-2.5 text-sm text-gray-200">{teamName(u.favorite_team)}</td>
                     <td className="px-3 py-2.5 text-sm text-gray-200"><span className="text-gray-500 text-xs">{ago(u.created_at)}</span></td>

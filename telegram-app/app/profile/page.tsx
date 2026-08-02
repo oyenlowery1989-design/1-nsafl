@@ -130,18 +130,18 @@ function TelegramAvatar({
         alt={name}
         width={size}
         height={size}
-        className="rounded-full object-cover border-2 border-[#D4AF37]/40"
+        className="rounded-full object-cover border-2 border-primary/40"
         style={{ width: size, height: size }}
       />
     );
   }
   return (
     <div
-      className="rounded-full bg-[#D4AF37]/20 border-2 border-[#D4AF37]/40 flex items-center justify-center"
+      className="rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center"
       style={{ width: size, height: size }}
     >
       <span
-        className="text-[#D4AF37] font-bold"
+        className="text-primary font-bold"
         style={{ fontSize: size * 0.38 }}
       >
         {initial}
@@ -522,7 +522,7 @@ export default function ProfilePage() {
   if (!showPage) {
     return (
       <WalletGuard>
-        <header className="pt-3 pb-2 px-4 sticky top-0 z-20 bg-[#0A0E1A] border-b border-white/10">
+        <header className="pt-3 pb-2 px-4 sticky top-0 z-20 bg-background-dark border-b border-white/10">
           <div className="flex items-center space-x-4">
             <button
               onClick={() => router.back()}
@@ -536,7 +536,7 @@ export default function ProfilePage() {
               <h1 className="text-2xl font-bold text-white tracking-tight">
                 Profile
               </h1>
-              <p className="text-sm text-[#D4AF37] font-medium">
+              <p className="text-sm text-primary font-medium">
                 Stellar Network
               </p>
             </div>
@@ -550,7 +550,7 @@ export default function ProfilePage() {
 
   return (
     <WalletGuard>
-      <header className="pt-3 pb-2 px-4 sticky top-0 z-20 bg-[#0A0E1A] border-b border-white/10">
+      <header className="pt-3 pb-2 px-4 sticky top-0 z-20 bg-background-dark border-b border-white/10">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <button
@@ -565,7 +565,7 @@ export default function ProfilePage() {
               <h1 className="text-lg font-bold text-white tracking-tight">
                 Profile
               </h1>
-              <p className="text-xs text-[#D4AF37] font-medium">
+              <p className="text-xs text-primary font-medium">
                 {tgUser?.username ? `@${tgUser.username}` : "Stellar Network"}
               </p>
             </div>
@@ -579,7 +579,7 @@ export default function ProfilePage() {
               aria-label="Refresh"
             >
               <span
-                className={`material-symbols-outlined text-[#D4AF37] text-base ${isRefreshing ? "animate-spin" : ""}`}
+                className={`material-symbols-outlined text-primary text-base ${isRefreshing ? "animate-spin" : ""}`}
                 style={isRefreshing ? { animationDuration: "0.8s" } : undefined}
               >
                 refresh
@@ -608,7 +608,7 @@ export default function ProfilePage() {
         {isRefreshing && (
           <div className="flex items-center justify-center py-1 space-x-2">
             <span
-              className="material-symbols-outlined text-[#D4AF37] text-base animate-spin"
+              className="material-symbols-outlined text-primary text-base animate-spin"
               style={{ animationDuration: "0.7s" }}
             >
               refresh
@@ -623,8 +623,8 @@ export default function ProfilePage() {
             ? ALL_CLUBS.find((c) => c.id === favoriteTeam)
             : null;
           return (
-            <div className="glass-card p-4 rounded-2xl border-t-2 border-t-[#D4AF37]/40 relative overflow-hidden">
-              <div className="absolute -top-8 -right-8 w-28 h-28 bg-[#D4AF37]/10 rounded-full blur-3xl" />
+            <div className="glass-card p-4 rounded-2xl border-t-2 border-t-primary/40 relative overflow-hidden">
+              <div className="absolute -top-8 -right-8 w-28 h-28 bg-primary/10 rounded-full blur-3xl" />
               <div className="flex items-start relative z-10">
                 {/* Left: Avatar + identity */}
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
@@ -635,8 +635,8 @@ export default function ProfilePage() {
                       size={48}
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded-full bg-[#D4AF37]/10 border-2 border-[#D4AF37]/20 flex items-center justify-center flex-shrink-0">
-                      <span className="material-symbols-outlined text-[#D4AF37] text-xl">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center flex-shrink-0">
+                      <span className="material-symbols-outlined text-primary text-xl">
                         person
                       </span>
                     </div>
@@ -660,7 +660,7 @@ export default function ProfilePage() {
                           )}
                         </div>
                         {tgUser.username && (
-                          <p className="text-xs text-[#D4AF37] font-medium">
+                          <p className="text-xs text-primary font-medium">
                             @{tgUser.username}
                           </p>
                         )}
@@ -684,7 +684,7 @@ export default function ProfilePage() {
                       <div className="flex flex-col items-center" style={{ minWidth: 44 }}>
                         <img src={club.logo} alt={club.name} width={36} height={36} className="object-contain" />
                         <p className="text-[8px] font-semibold text-gray-300 text-center mt-0.5 leading-tight" style={{ maxWidth: 44 }}>{club.shortName}</p>
-                        <span className="text-[7px] text-[#D4AF37] font-bold uppercase">AFL</span>
+                        <span className="text-[7px] text-primary font-bold uppercase">AFL</span>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center" style={{ minWidth: 44 }}>
@@ -727,7 +727,7 @@ export default function ProfilePage() {
                   ) : (
                     <button
                       onClick={() => { haptic.light(); router.push("/"); }}
-                      className="text-[9px] font-semibold text-[#D4AF37] underline"
+                      className="text-[9px] font-semibold text-primary underline"
                     >
                       Pick teams
                     </button>
@@ -740,14 +740,14 @@ export default function ProfilePage() {
 
         {/* ── Referrals (unified card) ───────────────────────────────────── */}
         {botUsername && (
-          <div className="glass-card rounded-2xl border border-[#D4AF37]/20 relative overflow-hidden">
-            <div className="absolute -top-6 -left-6 w-24 h-24 bg-[#D4AF37]/8 rounded-full blur-3xl pointer-events-none" />
+          <div className="glass-card rounded-2xl border border-primary/20 relative overflow-hidden">
+            <div className="absolute -top-6 -left-6 w-24 h-24 bg-primary/8 rounded-full blur-3xl pointer-events-none" />
             <div className="relative z-10 p-4 space-y-3">
               {/* Header */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center flex-shrink-0">
-                    <span className="material-symbols-outlined text-[#D4AF37] text-base">
+                  <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center flex-shrink-0">
+                    <span className="material-symbols-outlined text-primary text-base">
                       group_add
                     </span>
                   </div>
@@ -761,15 +761,15 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 {referralCount > 0 && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/20 text-primary border border-primary/30">
                     {referralCount} joined
                   </span>
                 )}
               </div>
 
               {/* Link row */}
-              <div className="flex items-center space-x-2 bg-black/30 px-3 py-2 rounded-xl border border-[#D4AF37]/15">
-                <span className="material-symbols-outlined text-[#D4AF37] text-[13px] flex-shrink-0">
+              <div className="flex items-center space-x-2 bg-black/30 px-3 py-2 rounded-xl border border-primary/15">
+                <span className="material-symbols-outlined text-primary text-[13px] flex-shrink-0">
                   link
                 </span>
                 <span className="text-[11px] font-mono text-gray-300 flex-1 truncate">
@@ -794,12 +794,12 @@ export default function ProfilePage() {
                 <button
                   onClick={shareReferralLinkHandler}
                   disabled={!referralLink}
-                  className="flex-1 flex items-center justify-center space-x-1.5 px-3 py-2 rounded-xl border border-[#D4AF37]/40 bg-[#D4AF37]/10 transition disabled:opacity-40"
+                  className="flex-1 flex items-center justify-center space-x-1.5 px-3 py-2 rounded-xl border border-primary/40 bg-primary/10 transition disabled:opacity-40"
                 >
-                  <span className="material-symbols-outlined text-[#D4AF37] text-sm">
+                  <span className="material-symbols-outlined text-primary text-sm">
                     share
                   </span>
-                  <span className="text-[11px] font-semibold text-[#D4AF37]">
+                  <span className="text-[11px] font-semibold text-primary">
                     Share
                   </span>
                 </button>
@@ -809,7 +809,7 @@ export default function ProfilePage() {
               {referralsLoading ? (
                 <div className="flex items-center justify-center py-3 space-x-2 border-t border-white/5 pt-3">
                   <span
-                    className="material-symbols-outlined text-[#D4AF37] text-base animate-spin"
+                    className="material-symbols-outlined text-primary text-base animate-spin"
                     style={{ animationDuration: "0.8s" }}
                   >
                     progress_activity
@@ -840,9 +840,9 @@ export default function ProfilePage() {
                     ].map(({ icon, label, desc }) => (
                       <div
                         key={icon}
-                        className="flex flex-col items-center py-2.5 px-1.5 rounded-xl bg-[#D4AF37]/5 border border-[#D4AF37]/15 text-center"
+                        className="flex flex-col items-center py-2.5 px-1.5 rounded-xl bg-primary/5 border border-primary/15 text-center"
                       >
-                        <span className="material-symbols-outlined text-[#D4AF37] text-lg mb-1">
+                        <span className="material-symbols-outlined text-primary text-lg mb-1">
                           {icon}
                         </span>
                         <p className="text-[10px] font-bold text-white leading-tight">
@@ -882,8 +882,8 @@ export default function ProfilePage() {
                           className="py-2 flex items-center justify-between"
                         >
                           <div className="flex items-center space-x-2 min-w-0 flex-1">
-                            <div className="w-7 h-7 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center flex-shrink-0">
-                              <span className="text-[#D4AF37] text-[11px] font-bold">
+                            <div className="w-7 h-7 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center flex-shrink-0">
+                              <span className="text-primary text-[11px] font-bold">
                                 {name[0]?.toUpperCase() ?? "?"}
                               </span>
                             </div>
@@ -892,7 +892,7 @@ export default function ProfilePage() {
                                 {name}
                               </p>
                               {handle && (
-                                <p className="text-[10px] text-[#D4AF37] truncate">
+                                <p className="text-[10px] text-primary truncate">
                                   {handle}
                                 </p>
                               )}
@@ -911,7 +911,7 @@ export default function ProfilePage() {
                         haptic.light();
                         setShowAllReferrals((v) => !v);
                       }}
-                      className="w-full text-center text-[10px] text-[#D4AF37] hover:underline py-1"
+                      className="w-full text-center text-[10px] text-primary hover:underline py-1"
                     >
                       {showAllReferrals
                         ? "Show less"
@@ -938,7 +938,7 @@ export default function ProfilePage() {
               </span>
               <button
                 onClick={copyAddress}
-                className="text-gray-400 hover:text-[#D4AF37] transition flex-shrink-0"
+                className="text-gray-400 hover:text-primary transition flex-shrink-0"
               >
                 <span className="material-symbols-outlined text-sm">
                   {copied ? "check" : "content_copy"}
@@ -948,11 +948,11 @@ export default function ProfilePage() {
 
             {/* Home domain — set by the account owner on Stellar */}
             {accountInfo?.homeDomain && (
-              <div className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-[#D4AF37]/5 border border-[#D4AF37]/15">
-                <span className="material-symbols-outlined text-[15px] text-[#D4AF37]">
+              <div className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/15">
+                <span className="material-symbols-outlined text-[15px] text-primary">
                   language
                 </span>
-                <span className="text-xs text-[#D4AF37] font-medium">
+                <span className="text-xs text-primary font-medium">
                   {accountInfo.homeDomain}
                 </span>
                 <span className="text-[10px] text-gray-500 ml-auto">
@@ -971,15 +971,15 @@ export default function ProfilePage() {
                 return (
                   <div
                     key={cfg.code}
-                    className={`flex items-center justify-between px-3 py-2.5 rounded-xl border ${isPrimary ? "bg-[#D4AF37]/5 border-[#D4AF37]/20" : "bg-white/5 border-white/10"}`}
+                    className={`flex items-center justify-between px-3 py-2.5 rounded-xl border ${isPrimary ? "bg-primary/5 border-primary/20" : "bg-white/5 border-white/10"}`}
                   >
                     <div className="flex items-center space-x-2">
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center ${isPrimary ? "bg-[#D4AF37]/20" : "bg-white/10"}`}>
-                        <span className={`material-symbols-outlined text-[14px] ${isPrimary ? "text-[#D4AF37]" : "text-gray-300"}`}>
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center ${isPrimary ? "bg-primary/20" : "bg-white/10"}`}>
+                        <span className={`material-symbols-outlined text-[14px] ${isPrimary ? "text-primary" : "text-gray-300"}`}>
                           {isPrimary ? "token" : "currency_exchange"}
                         </span>
                       </div>
-                      <span className={`text-xs font-semibold ${isPrimary ? "text-[#D4AF37]" : "text-gray-300"}`}>
+                      <span className={`text-xs font-semibold ${isPrimary ? "text-primary" : "text-gray-300"}`}>
                         {cfg.label}
                       </span>
                     </div>
@@ -991,7 +991,7 @@ export default function ProfilePage() {
               {/* Prize assets — balance shown if trustline active, otherwise "No trustline" */}
               <div className="pt-1 pb-0.5 flex items-center justify-between">
                 <p className="text-[9px] text-gray-600 uppercase tracking-widest font-semibold">Prize Assets</p>
-                <Link href="/trustlines" className="text-[9px] text-[#D4AF37]/60 hover:text-[#D4AF37] transition">Manage →</Link>
+                <Link href="/trustlines" className="text-[9px] text-primary/60 hover:text-primary transition">Manage →</Link>
               </div>
               {REWARD_ASSETS.filter(a => a.issuer).map(a => {
                 const status = trustlineStatuses[a.code];
@@ -1038,7 +1038,7 @@ export default function ProfilePage() {
         {/* ── Quick Stats Row ────────────────────────────────────────────── */}
         <div className="grid grid-cols-3 gap-3">
           <div className="glass-card p-3 rounded-xl text-center">
-            <span className="material-symbols-outlined text-[#D4AF37] text-lg">
+            <span className="material-symbols-outlined text-primary text-lg">
               receipt_long
             </span>
             <p className="text-lg font-bold text-white mt-0.5">
@@ -1072,12 +1072,12 @@ export default function ProfilePage() {
             onClick={() => toggleSection("donations")}
           >
             <div className="flex items-center space-x-2">
-              <span className="material-symbols-outlined text-[#D4AF37] text-base">
+              <span className="material-symbols-outlined text-primary text-base">
                 volunteer_activism
               </span>
               <h3 className="text-sm font-bold text-white">My Donations</h3>
               {totalDonated > 0 && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/20 text-primary border border-primary/30">
                   {totalDonated.toLocaleString(undefined, {
                     maximumFractionDigits: 2,
                   })}{" "}
@@ -1104,12 +1104,12 @@ export default function ProfilePage() {
                     haptic.light();
                     router.push("/donate");
                   }}
-                  className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/30 hover:bg-[#D4AF37]/20 transition"
+                  className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/20 transition"
                 >
-                  <span className="material-symbols-outlined text-[#D4AF37] text-[12px]">
+                  <span className="material-symbols-outlined text-primary text-[12px]">
                     favorite
                   </span>
-                  <span className="text-[10px] font-semibold text-[#D4AF37]">
+                  <span className="text-[10px] font-semibold text-primary">
                     Donate
                   </span>
                 </button>
@@ -1118,7 +1118,7 @@ export default function ProfilePage() {
               {donationsLoading ? (
                 <div className="flex items-center justify-center py-3 space-x-2">
                   <span
-                    className="material-symbols-outlined text-[#D4AF37] text-base animate-spin"
+                    className="material-symbols-outlined text-primary text-base animate-spin"
                     style={{ animationDuration: "0.8s" }}
                   >
                     progress_activity
@@ -1137,11 +1137,11 @@ export default function ProfilePage() {
               ) : (
                 <>
                   {/* Total donated */}
-                  <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-[#D4AF37]/8 border border-[#D4AF37]/20">
+                  <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-primary/8 border border-primary/20">
                     <span className="text-[11px] text-gray-400">
                       Total donated
                     </span>
-                    <span className="text-sm font-bold text-[#D4AF37]">
+                    <span className="text-sm font-bold text-primary">
                       {totalDonated.toLocaleString(undefined, {
                         maximumFractionDigits: 2,
                       })}{" "}
@@ -1179,7 +1179,7 @@ export default function ProfilePage() {
                           </div>
                         </div>
                         <div className="text-right flex-shrink-0 ml-2">
-                          <p className="text-xs font-bold text-[#D4AF37]">
+                          <p className="text-xs font-bold text-primary">
                             {d.amount} {d.asset_code}
                           </p>
                           {!d.verified && (
@@ -1197,7 +1197,7 @@ export default function ProfilePage() {
                         haptic.light();
                         setShowAllDonations((v) => !v);
                       }}
-                      className="w-full text-center text-[10px] text-[#D4AF37] hover:underline py-1"
+                      className="w-full text-center text-[10px] text-primary hover:underline py-1"
                     >
                       {showAllDonations
                         ? "Show less"
@@ -1218,7 +1218,7 @@ export default function ProfilePage() {
             onClick={() => toggleSection("identity")}
           >
             <div className="flex items-center space-x-2">
-              <span className="material-symbols-outlined text-[#D4AF37] text-base">
+              <span className="material-symbols-outlined text-primary text-base">
                 shield_person
               </span>
               <h3 className="text-sm font-bold text-white">Public Identity</h3>
@@ -1276,19 +1276,19 @@ export default function ProfilePage() {
                       onClick={() => handleDisplayPreference(value)}
                       className={`flex flex-col items-center p-2.5 rounded-xl border transition text-center ${
                         active
-                          ? "bg-[#D4AF37]/15 border-[#D4AF37]/50"
+                          ? "bg-primary/15 border-primary/50"
                           : unavailable
                             ? "bg-white/2 border-white/5 opacity-40 cursor-not-allowed"
                             : "bg-white/5 border-white/10 hover:bg-white/10"
                       }`}
                     >
                       <span
-                        className={`material-symbols-outlined text-lg ${active ? "text-[#D4AF37]" : "text-gray-400"}`}
+                        className={`material-symbols-outlined text-lg ${active ? "text-primary" : "text-gray-400"}`}
                       >
                         {icon}
                       </span>
                       <span
-                        className={`text-[10px] font-semibold mt-0.5 ${active ? "text-[#D4AF37]" : "text-gray-300"}`}
+                        className={`text-[10px] font-semibold mt-0.5 ${active ? "text-primary" : "text-gray-300"}`}
                       >
                         {label}
                       </span>
@@ -1296,7 +1296,7 @@ export default function ProfilePage() {
                         {preview}
                       </span>
                       {active && (
-                        <span className="material-symbols-outlined text-[#D4AF37] text-xs mt-0.5">
+                        <span className="material-symbols-outlined text-primary text-xs mt-0.5">
                           check_circle
                         </span>
                       )}
@@ -1312,7 +1312,7 @@ export default function ProfilePage() {
         <div className="space-y-2">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center space-x-1.5">
-              <span className="material-symbols-outlined text-[#D4AF37] text-base">
+              <span className="material-symbols-outlined text-primary text-base">
                 receipt_long
               </span>
               <h3 className="text-sm font-bold text-white">Transactions</h3>
@@ -1324,7 +1324,7 @@ export default function ProfilePage() {
               onClick={() => setHideSpam((v) => !v)}
               className={`flex items-center space-x-1 text-[10px] font-semibold px-2.5 py-1 rounded-full border transition ${
                 hideSpam
-                  ? "bg-[#D4AF37]/10 border-[#D4AF37]/30 text-[#D4AF37]"
+                  ? "bg-primary/10 border-primary/30 text-primary"
                   : "bg-white/5 border-white/10 text-gray-400"
               }`}
             >
@@ -1338,7 +1338,7 @@ export default function ProfilePage() {
           {loading ? (
             <div className="glass-card p-6 rounded-xl flex flex-col items-center justify-center space-y-2">
               <span
-                className="material-symbols-outlined text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.5)]"
+                className="material-symbols-outlined text-primary drop-shadow-[0_0_8px_rgba(212,175,55,0.5)]"
                 style={{
                   fontSize: 32,
                   fontVariationSettings: "'FILL' 1",
@@ -1360,7 +1360,7 @@ export default function ProfilePage() {
               {hideSpam && spamCount > 0 && (
                 <button
                   onClick={() => setHideSpam(false)}
-                  className="text-[#D4AF37] text-[10px] underline"
+                  className="text-primary text-[10px] underline"
                 >
                   Show {spamCount} filtered transaction
                   {spamCount > 1 ? "s" : ""}
@@ -1422,7 +1422,7 @@ export default function ProfilePage() {
                         <div className="flex items-center space-x-1.5 mt-px">
                           {counterpartyLabel && (
                             <span
-                              className={`text-[9px] font-mono ${isNamed ? "text-[#D4AF37] font-semibold" : "text-gray-500"}`}
+                              className={`text-[9px] font-mono ${isNamed ? "text-primary font-semibold" : "text-gray-500"}`}
                             >
                               {counterpartyLabel}
                             </span>
@@ -1460,7 +1460,7 @@ export default function ProfilePage() {
                         className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 transition flex-shrink-0"
                         aria-label="View on Stellar Expert"
                       >
-                        <span className="material-symbols-outlined text-gray-500 hover:text-[#D4AF37] text-[13px] transition">
+                        <span className="material-symbols-outlined text-gray-500 hover:text-primary text-[13px] transition">
                           open_in_new
                         </span>
                       </button>
@@ -1480,7 +1480,7 @@ export default function ProfilePage() {
             >
               {loadingMore ? (
                 <>
-                  <span className="material-symbols-outlined text-[#D4AF37] text-sm animate-spin">
+                  <span className="material-symbols-outlined text-primary text-sm animate-spin">
                     progress_activity
                   </span>
                   <span>Loading…</span>
@@ -1507,7 +1507,7 @@ export default function ProfilePage() {
 
       {/* ── Full-screen team change overlay ─────────────────────── */}
       {changingTeam && (
-        <div className="fixed inset-0 z-[100] bg-[#0A0E1A] overflow-y-auto">
+        <div className="fixed inset-0 z-[100] bg-background-dark overflow-y-auto">
           <button
             onClick={() => setChangingTeam(false)}
             className="absolute top-4 right-4 z-10 w-9 h-9 rounded-xl glass-card flex items-center justify-center border border-white/10 hover:bg-white/10 transition"

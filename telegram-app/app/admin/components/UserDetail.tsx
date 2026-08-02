@@ -192,12 +192,12 @@ export function UserDetail({ u, data, token, onBack, onAction, onDeleteAccess, d
         <div className="flex items-center gap-3 flex-1 min-w-0">
           {u.telegram_photo_url
             ? <img src={u.telegram_photo_url} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
-            : <div className="w-8 h-8 rounded-full bg-[#D4AF37]/20 flex items-center justify-center text-[#D4AF37] font-bold text-sm shrink-0">{(u.telegram_first_name ?? '?')[0]}</div>
+            : <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm shrink-0">{(u.telegram_first_name ?? '?')[0]}</div>
           }
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-white font-semibold text-sm">{u.telegram_first_name ?? '—'}</span>
-              {u.telegram_username && <span className="text-[#D4AF37] text-sm">@{u.telegram_username}</span>}
+              {u.telegram_username && <span className="text-primary text-sm">@{u.telegram_username}</span>}
               <Badge color={u.is_blocked ? 'red' : 'green'}>{u.is_blocked ? 'Blocked' : 'Active'}</Badge>
             </div>
             <span className="text-gray-600 text-xs font-mono">ID {u.telegram_id}</span>
@@ -246,12 +246,12 @@ export function UserDetail({ u, data, token, onBack, onAction, onDeleteAccess, d
           <div className="flex items-start gap-5">
             {u.telegram_photo_url
               ? <img src={u.telegram_photo_url} className="w-16 h-16 rounded-2xl object-cover shrink-0" alt="" />
-              : <div className="w-16 h-16 rounded-2xl bg-[#D4AF37]/15 flex items-center justify-center text-[#D4AF37] font-bold text-2xl shrink-0">{(u.telegram_first_name ?? '?')[0]}</div>
+              : <div className="w-16 h-16 rounded-2xl bg-primary/15 flex items-center justify-center text-primary font-bold text-2xl shrink-0">{(u.telegram_first_name ?? '?')[0]}</div>
             }
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1">
                 <h1 className="text-xl font-bold text-white">{u.telegram_first_name ?? '—'}</h1>
-                {u.telegram_username && <span className="text-[#D4AF37]">@{u.telegram_username}</span>}
+                {u.telegram_username && <span className="text-primary">@{u.telegram_username}</span>}
                 <Badge color={u.is_blocked ? 'red' : 'green'}>{u.is_blocked ? 'Blocked' : 'Active'}</Badge>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
@@ -275,17 +275,17 @@ export function UserDetail({ u, data, token, onBack, onAction, onDeleteAccess, d
                   {editingTeam ? (
                     <div className="flex items-center gap-1.5">
                       <select value={teamDraft} onChange={e => setTeamDraft(e.target.value)}
-                        className="bg-black/40 border border-white/15 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[#D4AF37]/50 flex-1 min-w-0">
+                        className="bg-black/40 border border-white/15 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-primary/50 flex-1 min-w-0">
                         <option value="">— None —</option>
                         {ALL_CLUBS.map(c => <option key={c.id} value={c.id}>{c.name} ({c.league})</option>)}
                       </select>
-                      <button onClick={saveTeam} disabled={editSaving} className="text-xs bg-[#D4AF37] text-black px-2 py-1 rounded font-bold disabled:opacity-50">Save</button>
+                      <button onClick={saveTeam} disabled={editSaving} className="text-xs bg-primary text-black px-2 py-1 rounded font-bold disabled:opacity-50">Save</button>
                       <button onClick={() => { setEditingTeam(false); setTeamDraft(u.favorite_team ?? '') }} className="text-xs bg-white/10 text-gray-400 px-2 py-1 rounded">✕</button>
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm text-gray-200">{teamName(u.favorite_team)}</span>
-                      <button onClick={() => setEditingTeam(true)} className="text-[10px] text-gray-500 hover:text-[#D4AF37] border border-white/10 rounded px-1.5 py-0.5 transition">Edit</button>
+                      <button onClick={() => setEditingTeam(true)} className="text-[10px] text-gray-500 hover:text-primary border border-white/10 rounded px-1.5 py-0.5 transition">Edit</button>
                     </div>
                   )}
                 </div>
@@ -295,18 +295,18 @@ export function UserDetail({ u, data, token, onBack, onAction, onDeleteAccess, d
                   {editingPref ? (
                     <div className="flex items-center gap-1.5">
                       <select value={prefDraft} onChange={e => setPrefDraft(e.target.value)}
-                        className="bg-black/40 border border-white/15 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[#D4AF37]/50">
+                        className="bg-black/40 border border-white/15 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-primary/50">
                         <option value="address">address</option>
                         <option value="name">name</option>
                         <option value="username">username</option>
                       </select>
-                      <button onClick={savePref} disabled={editSaving} className="text-xs bg-[#D4AF37] text-black px-2 py-1 rounded font-bold disabled:opacity-50">Save</button>
+                      <button onClick={savePref} disabled={editSaving} className="text-xs bg-primary text-black px-2 py-1 rounded font-bold disabled:opacity-50">Save</button>
                       <button onClick={() => { setEditingPref(false); setPrefDraft(u.display_preference) }} className="text-xs bg-white/10 text-gray-400 px-2 py-1 rounded">✕</button>
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm text-gray-200">{u.display_preference}</span>
-                      <button onClick={() => setEditingPref(true)} className="text-[10px] text-gray-500 hover:text-[#D4AF37] border border-white/10 rounded px-1.5 py-0.5 transition">Edit</button>
+                      <button onClick={() => setEditingPref(true)} className="text-[10px] text-gray-500 hover:text-primary border border-white/10 rounded px-1.5 py-0.5 transition">Edit</button>
                     </div>
                   )}
                 </div>
@@ -319,14 +319,14 @@ export function UserDetail({ u, data, token, onBack, onAction, onDeleteAccess, d
         <div className="bg-[#111827] border border-white/8 rounded-2xl p-5 flex items-center justify-between gap-4">
           <div>
             <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Bonus Balls 🏈</p>
-            <p className="text-3xl font-bold text-[#D4AF37] mt-1">{bonusBalls}</p>
+            <p className="text-3xl font-bold text-primary mt-1">{bonusBalls}</p>
             <p className="text-[11px] text-gray-500 mt-0.5">Admin-granted + wheel prize wins</p>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={revokeBonusBall} disabled={grantingBall || bonusBalls <= 0}
               className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 disabled:opacity-30 text-lg font-bold transition flex items-center justify-center">−</button>
             <button onClick={grantBonusBall} disabled={grantingBall}
-              className="px-4 py-2 rounded-lg bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/25 disabled:opacity-50 text-sm font-semibold transition">
+              className="px-4 py-2 rounded-lg bg-primary/15 border border-primary/30 text-primary hover:bg-primary/25 disabled:opacity-50 text-sm font-semibold transition">
               {grantingBall ? 'Saving…' : '+1 Ball'}
             </button>
           </div>
@@ -489,7 +489,7 @@ export function UserDetail({ u, data, token, onBack, onAction, onDeleteAccess, d
                       <Td><span className="font-bold text-yellow-400">{num(d.amount)}</span></Td>
                       <Td><span className="text-gray-300">{d.asset_code}</span></Td>
                       <Td><DonationTypeBadge type={d.donation_type} /></Td>
-                      <Td>{d.donation_target ? <span className="font-bold text-[#D4AF37] text-sm">{d.donation_target}</span> : <span className="text-gray-500 text-sm italic">General</span>}</Td>
+                      <Td>{d.donation_target ? <span className="font-bold text-primary text-sm">{d.donation_target}</span> : <span className="text-gray-500 text-sm italic">General</span>}</Td>
                       <Td mono><span className="text-xs text-gray-500">{d.stellar_tx_hash ? `${d.stellar_tx_hash.slice(0, 20)}…` : '—'}</span></Td>
                       <Td><Badge color={d.verified ? 'green' : 'yellow'}>{d.verified ? 'Verified' : 'Pending'}</Badge></Td>
                       <Td><span className="text-gray-500 text-xs">{dt(d.created_at)}</span></Td>

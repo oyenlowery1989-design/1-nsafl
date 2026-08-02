@@ -7,6 +7,7 @@ import PageLoader, { useMinLoader } from '@/components/PageLoader'
 import { useWalletStore } from '@/hooks/useStore'
 import { getTierForBalance, getNextTier, TIERS, type Tier } from '@/config/tiers'
 import { PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
+import { BRANDING } from '@/config/branding'
 
 function getTierStatus(tier: Tier, currentTier: Tier, nextTier: Tier | null): 'current' | 'past' | 'next' | 'locked' {
   if (tier.id === currentTier.id) return 'current'
@@ -34,7 +35,7 @@ function TierCard({ tier, status, balance, nextTier, progressPct, onBuy }: {
     <div
       className={`rounded-xl p-3 relative overflow-hidden${isLocked ? ' opacity-40' : ''}`}
       style={{
-        background: isCurrent ? `linear-gradient(135deg, ${tier.color}18, #0A0E1A)` : 'rgba(255,255,255,0.02)',
+        background: isCurrent ? `linear-gradient(135deg, ${tier.color}18, ${BRANDING.colors.background})` : 'rgba(255,255,255,0.02)',
         border: isCurrent ? `1px solid ${tier.color}66` : isNext ? '1px solid rgba(245,158,11,0.3)' : '1px solid rgba(255,255,255,0.06)',
         boxShadow: isCurrent ? `0 0 20px ${tier.color}22` : 'none',
       }}
@@ -142,7 +143,7 @@ export default function RewardsPage() {
 
   return (
     <WalletGuard>
-      <header className="pt-3 pb-2 px-4 sticky top-0 z-20 bg-[#0A0E1A] border-b border-white/10">
+      <header className="pt-3 pb-2 px-4 sticky top-0 z-20 bg-background-dark border-b border-white/10">
         <div className="flex items-center gap-3">
           <button onClick={() => router.back()}
             className="w-8 h-8 rounded-lg glass-card flex items-center justify-center hover:bg-white/10 transition flex-shrink-0">
@@ -150,7 +151,7 @@ export default function RewardsPage() {
           </button>
           <div>
             <h1 className="text-lg font-bold text-white leading-tight">Rewards</h1>
-            <p className="text-[10px] text-[#D4AF37]">Exchange Shares &amp; Tier Roadmap</p>
+            <p className="text-[10px] text-primary">Exchange Shares &amp; Tier Roadmap</p>
           </div>
         </div>
       </header>
@@ -177,21 +178,21 @@ export default function RewardsPage() {
         </div>
 
         {/* Donate CTA — compact */}
-        <div className="rounded-xl border border-[#D4AF37]/25 bg-[#D4AF37]/5 px-3 py-3">
+        <div className="rounded-xl border border-primary/25 bg-primary/5 px-3 py-3">
           <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-[#D4AF37] text-xl flex-shrink-0 mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>volunteer_activism</span>
+            <span className="material-symbols-outlined text-primary text-xl flex-shrink-0 mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>volunteer_activism</span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-white leading-tight mb-0.5">Support the Movement</p>
               <p className="text-[10px] text-gray-400 leading-snug">Donate {PRIMARY_CUSTOM_ASSET_LABEL} to AFL homecoming campaigns. Top donors featured on the board.</p>
               <div className="flex gap-1.5 mt-2">
                 {['AFL General', 'A Team', 'A Player'].map((label) => (
-                  <span key={label} className="text-[9px] px-2 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(212,175,55,0.15)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.25)' }}>{label}</span>
+                  <span key={label} className="text-[9px] px-2 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(212,175,55,0.15)', color: BRANDING.colors.primary, border: '1px solid rgba(212,175,55,0.25)' }}>{label}</span>
                 ))}
               </div>
             </div>
           </div>
           <button onClick={() => router.push('/donate')}
-            className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#D4AF37] text-black text-xs font-bold active:scale-[0.98] transition">
+            className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-primary text-black text-xs font-bold active:scale-[0.98] transition">
             <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>volunteer_activism</span>
             Donate Now
           </button>

@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { getTelegramInitData } from '@/lib/telegram'
+import { BRANDING } from '@/config/branding'
 
 interface NotificationItem {
   id: string
@@ -108,7 +109,7 @@ export default function NotificationDrawer({ open, onClose }: Props) {
       <div
         className="fixed top-[72px] left-0 right-0 z-50 mx-4 rounded-2xl shadow-2xl overflow-hidden"
         style={{
-          background: '#0A0E1A',
+          background: BRANDING.colors.background,
           border: '1px solid rgba(255,255,255,0.1)',
           animation: 'notifSlideDown 0.22s cubic-bezier(0.16,1,0.3,1) both',
         }}
@@ -132,7 +133,7 @@ export default function NotificationDrawer({ open, onClose }: Props) {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 space-y-3">
               <span
-                className="material-symbols-outlined text-[#D4AF37]"
+                className="material-symbols-outlined text-primary"
                 style={{ fontSize: 40, animation: 'spin 1.2s linear infinite' }}
               >
                 sports_football
@@ -142,7 +143,7 @@ export default function NotificationDrawer({ open, onClose }: Props) {
           ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 space-y-3">
               <span
-                className="material-symbols-outlined text-[#D4AF37]/40"
+                className="material-symbols-outlined text-primary/40"
                 style={{ fontSize: 44 }}
               >
                 sports_football
@@ -156,7 +157,7 @@ export default function NotificationDrawer({ open, onClose }: Props) {
                   {/* Unread dot */}
                   <div className="mt-1.5 shrink-0">
                     {!n.read ? (
-                      <span className="block w-2 h-2 rounded-full bg-[#D4AF37]" />
+                      <span className="block w-2 h-2 rounded-full bg-primary" />
                     ) : (
                       <span className="block w-2 h-2 rounded-full bg-transparent" />
                     )}
@@ -186,7 +187,7 @@ export default function NotificationDrawer({ open, onClose }: Props) {
             aria-label={telegramAlertsOptIn ? 'Disable Telegram alerts' : 'Enable Telegram alerts'}
             className="relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none"
             style={{
-              background: telegramAlertsOptIn ? '#D4AF37' : 'rgba(255,255,255,0.1)',
+              background: telegramAlertsOptIn ? BRANDING.colors.primary : 'rgba(255,255,255,0.1)',
             }}
           >
             <span

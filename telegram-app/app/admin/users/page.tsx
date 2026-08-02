@@ -24,7 +24,7 @@ const TIER_COLORS: Record<string, string> = {
   T1: 'text-blue-400',
   T2: 'text-green-400',
   T3: 'text-purple-400',
-  T4: 'text-[#D4AF37]',
+  T4: 'text-primary',
 }
 
 function primaryBal(u: User): number {
@@ -300,7 +300,7 @@ function UsersPageInner() {
       {/* Header */}
       <header className="bg-[#0d1424] border-b border-white/8 px-6 py-4 flex items-center justify-between gap-4 sticky top-0 z-20">
         <div className="flex items-center gap-3">
-          <Icon name="group" className="text-xl text-[#D4AF37]" />
+          <Icon name="group" className="text-xl text-primary" />
           <h1 className="text-lg font-bold text-white">Users</h1>
           {data && <span className="bg-white/8 text-gray-400 text-xs font-semibold px-2.5 py-0.5 rounded-full">{data.users.length}</span>}
         </div>
@@ -327,7 +327,7 @@ function UsersPageInner() {
           <StatTile label="T1 (100-500)" value={tierBreakdown.T1} accent="text-blue-400" />
           <StatTile label="T2 (501-1k)" value={tierBreakdown.T2} accent="text-green-400" />
           <StatTile label="T3 (1k-2.5k)" value={tierBreakdown.T3} accent="text-purple-400" />
-          <StatTile label="T4 (2.5k+)" value={tierBreakdown.T4} accent="text-[#D4AF37]" />
+          <StatTile label="T4 (2.5k+)" value={tierBreakdown.T4} accent="text-primary" />
         </div>
 
         {/* Filters */}
@@ -340,7 +340,7 @@ function UsersPageInner() {
               placeholder="Search name, username, ID, or address..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full bg-[#111827] border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#D4AF37]/40 transition"
+              className="w-full bg-[#111827] border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-primary/40 transition"
             />
           </div>
 
@@ -348,7 +348,7 @@ function UsersPageInner() {
           <select
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value as StatusFilter)}
-            className="bg-[#111827] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-[#D4AF37]/40"
+            className="bg-[#111827] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-primary/40"
           >
             <option value="all">All Status</option>
             <option value="active">Active</option>
@@ -359,7 +359,7 @@ function UsersPageInner() {
           <select
             value={teamFilter}
             onChange={e => setTeamFilter(e.target.value)}
-            className="bg-[#111827] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-[#D4AF37]/40"
+            className="bg-[#111827] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-primary/40"
           >
             <option value="">All Teams</option>
             {teamsInUse.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -371,7 +371,7 @@ function UsersPageInner() {
               <button
                 key={key}
                 onClick={() => toggleSort(key)}
-                className={`px-3 py-2 text-xs font-semibold transition ${sortKey === key ? 'bg-[#D4AF37]/15 text-[#D4AF37]' : 'text-gray-500 hover:text-gray-300'}`}
+                className={`px-3 py-2 text-xs font-semibold transition ${sortKey === key ? 'bg-primary/15 text-primary' : 'text-gray-500 hover:text-gray-300'}`}
               >
                 {key === 'balance' ? PRIMARY_CUSTOM_ASSET_CODE : key === 'joined' ? 'Joined' : 'Wins'}
                 {sortKey === key && <span className="ml-1">{sortDir === 'desc' ? '\u2193' : '\u2191'}</span>}
@@ -423,7 +423,7 @@ function UsersPageInner() {
                         <div className="flex items-center gap-2">
                           {u.telegram_photo_url
                             ? <img src={u.telegram_photo_url} className="w-7 h-7 rounded-full object-cover shrink-0" alt="" />
-                            : <div className="w-7 h-7 rounded-full bg-[#D4AF37]/15 flex items-center justify-center text-[#D4AF37] font-bold text-xs shrink-0">{(u.telegram_first_name ?? '?')[0]}</div>
+                            : <div className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center text-primary font-bold text-xs shrink-0">{(u.telegram_first_name ?? '?')[0]}</div>
                           }
                           <div className="min-w-0">
                             <span className="text-sm font-medium text-white block truncate max-w-[140px]">{u.telegram_first_name ?? '—'}</span>
@@ -431,7 +431,7 @@ function UsersPageInner() {
                           </div>
                         </div>
                       </Td>
-                      <Td>{u.telegram_username ? <span className="text-[#D4AF37] text-xs">@{u.telegram_username}</span> : <span className="text-gray-600 text-xs">—</span>}</Td>
+                      <Td>{u.telegram_username ? <span className="text-primary text-xs">@{u.telegram_username}</span> : <span className="text-gray-600 text-xs">—</span>}</Td>
                       <Td><Badge color={u.is_blocked ? 'red' : 'green'}>{u.is_blocked ? 'Blocked' : 'Active'}</Badge></Td>
                       <Td><span className="text-gray-400 text-xs">{teamName(u.favorite_team)}</span></Td>
                       <Td mono>{addr ? <span className="text-xs text-gray-500">{shortAddr(addr)}</span> : <span className="text-gray-600 text-xs">—</span>}</Td>

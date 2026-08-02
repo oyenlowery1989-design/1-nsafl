@@ -23,7 +23,7 @@ function TrustlinePageInner() {
       .finally(() => setLoading(false))
   }, [token])
 
-  if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin h-8 w-8 border-2 border-[#D4AF37] border-t-transparent rounded-full" /></div>
+  if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>
   if (error) return <div className="text-red-400 text-center py-20">{error}</div>
   if (!data) return null
 
@@ -32,7 +32,7 @@ function TrustlinePageInner() {
   return (
     <div className="space-y-4 p-4 sm:p-6 min-h-screen bg-[#0a0f1e]">
       <div className="flex items-center gap-2 mb-2">
-        <Icon name="link" className="text-xl text-[#D4AF37]" />
+        <Icon name="link" className="text-xl text-primary" />
         <h1 className="text-lg font-bold text-white">Trustline Submissions</h1>
       </div>
 
@@ -72,14 +72,14 @@ function TrustlinePageInner() {
                               href={`https://stellar.expert/explorer/public/tx/${s.tx_hash}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-xs text-[#D4AF37] hover:underline"
+                              className="text-xs text-primary hover:underline"
                               title={s.tx_hash}
                             >{s.tx_hash.slice(0, 8)}...{s.tx_hash.slice(-8)}</a>
                           : <span className="text-gray-600">—</span>}
                       </Td>
                       <Td mono>
                         {walletAddr
-                          ? <span className="text-xs text-[#D4AF37]" title={walletAddr}>{walletAddr.slice(0, 6)}...{walletAddr.slice(-6)}</span>
+                          ? <span className="text-xs text-primary" title={walletAddr}>{walletAddr.slice(0, 6)}...{walletAddr.slice(-6)}</span>
                           : <span className="text-xs text-gray-400 bg-black/30 px-2 py-0.5 rounded" title={s.xdr}>{s.xdr.slice(0, 20)}...</span>
                         }
                       </Td>
@@ -98,7 +98,7 @@ function TrustlinePageInner() {
 
 export default function TrustlinePage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh] bg-[#0a0f1e]"><div className="animate-spin h-8 w-8 border-2 border-[#D4AF37] border-t-transparent rounded-full" /></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh] bg-[#0a0f1e]"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>}>
       <TrustlinePageInner />
     </Suspense>
   )
