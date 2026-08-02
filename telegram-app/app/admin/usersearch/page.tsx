@@ -2,6 +2,7 @@
 import { useState, Suspense } from 'react'
 import { useAdminToken } from '../hooks/useAdminToken'
 import { Icon } from '../components/ui'
+import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
 
 type SearchUser = {
   telegram_id: number
@@ -80,7 +81,7 @@ function UserSearchContent() {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: 'NSAFL Balance', value: nsafl.toLocaleString(), accent: 'text-[#D4AF37]' },
+                { label: `${PRIMARY_CUSTOM_ASSET_CODE} Balance`, value: nsafl.toLocaleString(), accent: 'text-[#D4AF37]' },
                 { label: 'XLM Balance',  value: Number(bal?.xlm_balance ?? 0).toFixed(2) },
                 { label: 'Wins',         value: user.winCount },
                 { label: 'Referrals',    value: user.referralCount },

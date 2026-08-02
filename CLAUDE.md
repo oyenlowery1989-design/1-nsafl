@@ -189,6 +189,24 @@ SHOWN_ASSETS                = XLM,NSAFL:GAJVAQ5DCOJVZ6AL3P4QVDTGMOHRVHG6WJ6252SO
 
 ---
 
+## 🧬 Cloning This Base
+
+To fork this app for a new token/brand, edit only these per-clone points — nothing else:
+
+- **`telegram-app/config/branding.ts`** — `BRANDING` object: app name, short name, domain, bot username, colors, team-selection mode, and all display copy (onboarding slides, referral share text, admin broadcast templates, buy/reward memos, prize notification title). This is the single source of truth for brand copy; everything else imports from it or from `lib/constants.ts`.
+- **`.env` / Vercel env vars** — `NEXT_PUBLIC_PRIMARY_ASSET_CODE`, `NEXT_PUBLIC_PRIMARY_ASSET_ISSUER`, `NEXT_PUBLIC_SHOWN_ASSETS`, `NEXT_PUBLIC_BOT_USERNAME`, `TELEGRAM_BOT_TOKEN`, Supabase keys, `NEXT_PUBLIC_DIRECT_BUY_XLM_ADDRESS`, `REWARD_SENDER_SECRET`, `REWARD_MEMO` (optional override).
+- **`config/tiers.ts`** — tier thresholds, labels, and reward percentages.
+- **`config/afl.ts`** — club/team list; swap for whatever team-selection domain the new app needs (or set `BRANDING.teamSelection = 'off'` if the app has no team-selection step).
+- **`public/` assets** — logos, icons, favicon.
+- **The two brand hex codes** — `#0A0E1A` (background) and `#D4AF37` (gold) are defined once as CSS variables in `app/globals.css` `@theme`, but are also repeated inline as Tailwind arbitrary values (`bg-[#0A0E1A]`, `text-[#D4AF37]`, etc.) across dozens of components — a full CSS-variable migration was judged not worth it (hundreds of call sites, zero logic value). To rebrand colors, grep-replace both hex strings project-wide.
+- **Reward assets** (`wNSAFL`-style wrapped tokens used in the Games Hub) are per-clone DATA, not branding copy — edit `lib/rewardAssets.ts` (asset list + Lobstr deeplinks) and `lib/gamePool.ts` `PRIZE_TABLES`, plus the three client-side prize display arrays in `components/SlotMachine.tsx`, `components/ScratchCard.tsx`, and `app/game/page.tsx` — these four must stay index-aligned with each other. Grep for `w<ASSET>` to find every label.
+- **Supabase project + migrations** — new Supabase project, run migrations 001+ in order, update `NEXT_PUBLIC_SUPABASE_URL` / keys.
+- **BotFather setup** — new bot via `/newbot`, `/newapp` to attach the Mini App URL, then set `TELEGRAM_BOT_TOKEN` to match.
+
+Everything else (API routes, components, hooks, page structure) is brand-agnostic and should not need touching.
+
+---
+
 ## 🗄️ Supabase Schema Notes
 
 - `wallets` has NO `telegram_id` column — join path: `users(telegram_id) → wallets(user_id) → wallet_balances(wallet_id)`

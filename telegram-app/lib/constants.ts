@@ -19,11 +19,11 @@ export const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 //   "CODE"             → issuer falls back to NEXT_PUBLIC_REWARD_ASSET_ISSUER
 //                        then NEXT_PUBLIC_PRIMARY_ASSET_ISSUER
 // This lets you write just code names when all assets share one issuer, e.g.:
-//   XLM,NSAFL,wNSAFL,wXLM,wXRP,wUSDC,wUSDT,wDAI
+//   XLM,<PRIMARY>,w<PRIMARY>,wXLM,wXRP,wUSDC,wUSDT,wDAI
 export interface AssetConfig {
   code: string
   issuer: string | null  // null = native XLM
-  label: string          // display label e.g. "$NSAFL" or "XLM"
+  label: string          // display label e.g. "$<CODE>" or "XLM"
 }
 
 const DEFAULT_ISSUER =

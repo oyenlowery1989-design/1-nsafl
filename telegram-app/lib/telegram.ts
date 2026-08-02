@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { BRANDING } from "@/config/branding";
 
 export interface TelegramUser {
   id: number;
@@ -79,8 +80,7 @@ export function getTelegramUser(): TelegramUser | null {
   return user ?? null;
 }
 
-const REFERRAL_SHARE_TEXT =
-  "🔥 I've been spinning the Lucky Draw on the NSAFL Homecoming Hub and the wins are real!\n\nSo far I've won:\n🏆 200 wXLM (x2)\n🏆 25 wXRP\n🏆 100 wUSDC\n🏆 2500 wNSAFL\n\nIt's actually fun and you really can win rewards from the wheel.\n\nIf you want to try your luck, use my link to join 👇\n\n🏉 Join the NSAFL Homecoming Hub — support AFL homecoming campaigns on the Stellar blockchain, climb the leaderboard, spin the Lucky Draw, and earn rewards.\n\nGive it a try and see what you win 😎👇";
+const REFERRAL_SHARE_TEXT = BRANDING.copy.referralShareText;
 
 export function buildReferralLink(
   tgId: number | string | null | undefined,

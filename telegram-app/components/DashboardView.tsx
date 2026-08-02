@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import BottomNav from './BottomNav'
 import PageLoader, { useMinLoader } from './PageLoader'
 import NotificationDrawer from './NotificationDrawer'
-import { PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
+import { PRIMARY_CUSTOM_ASSET_CODE, PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
 import { getTierForBalance, getNextTier } from '@/config/tiers'
 import { useWalletStore } from '@/hooks/useStore'
 import { getTelegramInitData, buildReferralLink, shareReferralLink } from '@/lib/telegram'
@@ -441,7 +441,7 @@ export default function DashboardView({ address, balance }: Props) {
               </div>
               <h2 className="text-2xl font-bold text-white tracking-tight">WhipLash347</h2>
               <p className="text-[12px] text-gray-400 mt-1 text-center leading-snug">
-                The force co-building NSAFL — powering the<br/>Homecoming Hub with vision &amp; fire.
+                The force co-building {PRIMARY_CUSTOM_ASSET_CODE} — powering the<br/>Homecoming Hub with vision &amp; fire.
               </p>
             </div>
 

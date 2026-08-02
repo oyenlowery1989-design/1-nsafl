@@ -4,10 +4,11 @@ import "./globals.css";
 import TelegramGuard from "@/components/guards/TelegramGuard";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ToastContainer } from "@/components/Toast";
+import { PRIMARY_CUSTOM_ASSET_CODE } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "The Homecoming Hub",
-  description: "NSAFL — The Homecoming Hub Telegram Mini App",
+  description: `${PRIMARY_CUSTOM_ASSET_CODE} — The Homecoming Hub Telegram Mini App`,
 };
 
 export default function RootLayout({

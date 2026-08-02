@@ -5,9 +5,11 @@ import { verifyAdminToken } from '@/app/api/admin/route'
 import { REWARD_ASSETS } from '@/lib/rewardAssets'
 import { sendPrizePayment, REWARD_SENDER_SECRET, parseHorizonError, notifyPrizeSent } from '@/lib/stellar-payment'
 import { Keypair } from 'stellar-sdk'
+import { BRANDING } from '@/config/branding'
+import { PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
 
 const HORIZON_URL = process.env.NEXT_PUBLIC_HORIZON_URL ?? 'https://horizon.stellar.org'
-const REWARD_MEMO = (process.env.REWARD_MEMO ?? 'NSAFL Lucky Draw Prize').slice(0, 28)
+const REWARD_MEMO = (process.env.REWARD_MEMO ?? BRANDING.copy.rewardMemo).slice(0, 28)
 
 /** GET — config diagnostic (admin only) */
 export async function GET(req: NextRequest) {
@@ -52,7 +54,7 @@ export async function POST(req: NextRequest) {
   if (win.payout_status === 'paid' || win.payout_status === 'paying') return fail('Already paid or in flight', 'ALREADY_PAID', 409)
   if (!win.amount || win.amount <= 0) return fail('Invalid prize amount', 'BAD_REQUEST')
 
-  // ── Tier 1 check — must hold ≥100 NSAFL to receive rewards ──────────────────
+  // ── Tier 1 check — must hold ≥100 tokens to receive rewards ──────────────────
   const { data: userRow } = await (supabase as any)
     .from('users')
     .select('id')
@@ -79,7 +81,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            error: `User holds ${nsaflBal} $NSAFL — Tier 1 requires 100. Only active holders can receive rewards.`,
+            error: `User holds ${nsaflBal} ${PRIMARY_CUSTOM_ASSET_LABEL} — Tier 1 requires 100. Only active holders can receive rewards.`,
             code: 'TIER_REQUIRED',
             nsaflBalance: nsaflBal,
             telegram_id: win.telegram_id,

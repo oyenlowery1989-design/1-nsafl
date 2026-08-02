@@ -1,4 +1,6 @@
 import { NextRequest } from 'next/server'
+import { BRANDING } from '@/config/branding'
+import { PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ''
 const BOT_USERNAME = process.env.NEXT_PUBLIC_BOT_USERNAME ?? 'NSAFL_bot'
@@ -54,13 +56,13 @@ export async function POST(req: NextRequest) {
       : APP_URL
 
     const welcomeText = isRef
-      ? `👋 G'day ${firstName}!\n\nYou've been invited to <b>NSAFL Homecoming Hub</b> 🏉\n\nJoin the movement, connect your Stellar wallet, and track your favourite AFL teams.\n\nTap below to open the app — your referral is already saved.`
-      : `👋 G'day ${firstName}!\n\nWelcome to <b>NSAFL Homecoming Hub</b> 🏉\n\nConnect your Stellar wallet, hold <b>$NSAFL</b> tokens, and support the AFL homecoming movement.\n\nTap below to open the app.`
+      ? `👋 G'day ${firstName}!\n\nYou've been invited to <b>${BRANDING.appName}</b> 🏉\n\nJoin the movement, connect your Stellar wallet, and track your favourite AFL teams.\n\nTap below to open the app — your referral is already saved.`
+      : `👋 G'day ${firstName}!\n\nWelcome to <b>${BRANDING.appName}</b> 🏉\n\nConnect your Stellar wallet, hold <b>${PRIMARY_CUSTOM_ASSET_LABEL}</b> tokens, and support the AFL homecoming movement.\n\nTap below to open the app.`
 
     await sendMessage(chatId, welcomeText, {
       inline_keyboard: [[
         {
-          text: '🏉 Open NSAFL App',
+          text: `🏉 Open ${BRANDING.shortName} App`,
           url: appLink,
         },
       ]],

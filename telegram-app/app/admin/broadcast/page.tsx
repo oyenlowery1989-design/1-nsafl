@@ -2,25 +2,9 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useAdminToken } from '../hooks/useAdminToken'
 import { Icon } from '../components/ui'
+import { BRANDING } from '@/config/branding'
 
-const TEMPLATES = [
-  {
-    label: '🏆 Win Announcement',
-    message: '<b>🏆 Congratulations to our latest prize winner!</b>\n\nAnother lucky <b>$NSAFL</b> holder just won a prize from our games hub. Play Lucky Draw, Slot Machine, or Scratch Card daily for your chance to win!\n\n👉 Open the app to play now.',
-  },
-  {
-    label: '🔧 Maintenance Notice',
-    message: '<b>🔧 Scheduled Maintenance</b>\n\nThe NSAFL app will be briefly unavailable for maintenance. Thank you for your patience — we\'ll be back shortly!\n\nFollow our community for updates.',
-  },
-  {
-    label: '🎁 Promo / Campaign',
-    message: '<b>🎁 Special Promotion!</b>\n\nFor a limited time, bonus prizes are available in our games hub. Make sure your wallet is connected and trustlines are set up to claim any winnings.\n\n👉 Open the app to participate!',
-  },
-  {
-    label: '📢 General Update',
-    message: '<b>📢 NSAFL Update</b>\n\n',
-  },
-]
+const TEMPLATES = BRANDING.copy.broadcastTemplates
 
 function BroadcastContent() {
   const token = useAdminToken() ?? ''

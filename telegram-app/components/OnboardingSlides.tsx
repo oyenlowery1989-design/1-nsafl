@@ -1,30 +1,12 @@
 'use client'
 import { useState, useRef } from 'react'
+import { BRANDING } from '@/config/branding'
 
 interface Props {
   onDone: () => void
 }
 
-const SLIDES = [
-  {
-    icon: 'sports_football',
-    title: 'Welcome to The Homecoming Hub',
-    body: 'The home of $NSAFL — supporting AFL & WAFL players on their journey home.',
-    showTiers: false,
-  },
-  {
-    icon: 'account_balance_wallet',
-    title: 'Connect Your Stellar Wallet',
-    body: 'Hold $NSAFL tokens to earn rewards, climb tiers, and back your team\'s homecoming campaign.',
-    showTiers: true,
-  },
-  {
-    icon: 'shield',
-    title: 'Pick Your Club',
-    body: 'Pledge allegiance to an AFL or WAFL club. Your team identity lives on the blockchain.',
-    showTiers: false,
-  },
-]
+const SLIDES = BRANDING.copy.onboardingSlides
 
 const TIERS = [
   { label: 'Pre-Tier', range: '0–99', color: 'text-gray-400', border: 'border-gray-600' },

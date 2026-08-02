@@ -12,7 +12,7 @@ const TIER_BUCKET_2_MIN = TIERS[1].minBalance                  // tier-1 start
 const TIER_BUCKET_3_MIN = TIERS[5].minBalance                  // tier-5 start
 const TIER_BUCKET_4_MIN = TIERS[TIERS.length - 1].minBalance   // top tier start
 
-// Sum all XLM received from NSAFL/XLM DEX trades (paginated)
+// Sum all XLM received from primary-token/XLM DEX trades (paginated)
 async function fetchXlmRaisedFromTrades(): Promise<number> {
   if (!ASSET_ISSUER) return 0
   let total = 0

@@ -3,6 +3,7 @@
  * Used by admin notify flow AND the player "Claim via Bot" self-notification.
  */
 import { REWARD_ASSETS } from '@/lib/rewardAssets'
+import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
 
 /**
  * Build the trustline-setup message sent to a player via the bot.
@@ -20,6 +21,6 @@ export function buildTrustlineMessage(html: boolean, prize?: string, winCode?: s
   const codeSection   = winCode ? (html ? `\nWin Code: <code>${winCode}</code>` : `\nWin Code: ${winCode}`) : ''
 
   return html
-    ? `🏆 <b>NSAFL Lucky Draw Prize Ready!</b>${prizeSection}${codeSection}\n\nTo receive prizes, your wallet needs trustlines for all reward assets. Please add them in LOBSTR:\n\n${lines}\n\nOnce all trustlines are added, contact the admin and we'll resend your reward.`
-    : `🏆 NSAFL Lucky Draw Prize Ready!${prizeSection}${codeSection}\n\nTo receive prizes, your wallet needs trustlines for all reward assets. Please add them in LOBSTR:\n\n${lines}\n\nOnce all trustlines are added, contact the admin and we'll resend your reward.`
+    ? `🏆 <b>${PRIMARY_CUSTOM_ASSET_CODE} Lucky Draw Prize Ready!</b>${prizeSection}${codeSection}\n\nTo receive prizes, your wallet needs trustlines for all reward assets. Please add them in LOBSTR:\n\n${lines}\n\nOnce all trustlines are added, contact the admin and we'll resend your reward.`
+    : `🏆 ${PRIMARY_CUSTOM_ASSET_CODE} Lucky Draw Prize Ready!${prizeSection}${codeSection}\n\nTo receive prizes, your wallet needs trustlines for all reward assets. Please add them in LOBSTR:\n\n${lines}\n\nOnce all trustlines are added, contact the admin and we'll resend your reward.`
 }

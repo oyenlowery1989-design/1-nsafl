@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { getTelegramInitData } from '@/lib/telegram'
+import { BRANDING } from '@/config/branding'
 
 interface Props {
   referrerId: number
@@ -58,7 +59,7 @@ export default function ReferralWelcomeScreen({ referrerId, onContinue }: Props)
         {displayName}
       </h1>
       <p className="text-sm text-gray-400 max-w-[260px] leading-relaxed mb-10">
-        Welcome to the NSAFL Homecoming Hub — the home of Australian football on Stellar.
+        Welcome to the {BRANDING.appName} — the home of Australian football on Stellar.
       </p>
 
       {/* CTA */}

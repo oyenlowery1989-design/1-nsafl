@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useAdminToken } from '@/app/admin/hooks/useAdminToken'
 import { REWARD_ASSETS, prizeToAsset } from '@/lib/rewardAssets'
 import { buildTrustlineMessage } from '@/lib/messages'
+import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface WinRow {
@@ -268,7 +269,7 @@ function WinsPageInner() {
           return
         }
         if (json?.code === 'TIER_REQUIRED') {
-          setSendError(p => ({ ...p, [id]: json?.error ?? 'User does not meet Tier 1 (100 NSAFL) requirement.' }))
+          setSendError(p => ({ ...p, [id]: json?.error ?? `User does not meet Tier 1 (100 ${PRIMARY_CUSTOM_ASSET_CODE}) requirement.` }))
           return
         }
         throw new Error(json?.error ?? `HTTP ${res.status}`)
@@ -1006,7 +1007,7 @@ function SecretKeyChecker({ token }: { token: string }) {
               {result.balance && (
                 <div className="px-4 py-3 grid grid-cols-2 gap-x-6 gap-y-1.5">
                   <p className="text-[10px] text-gray-500 uppercase tracking-widest col-span-2 mb-0.5">Balance</p>
-                  <KeyVal label="NSAFL" value={result.balance.nsafl != null ? Number(result.balance.nsafl).toLocaleString() : '—'} accent="text-[#D4AF37]" />
+                  <KeyVal label={PRIMARY_CUSTOM_ASSET_CODE} value={result.balance.nsafl != null ? Number(result.balance.nsafl).toLocaleString() : '—'} accent="text-[#D4AF37]" />
                   <KeyVal label="XLM" value={result.balance.xlm != null ? Number(result.balance.xlm).toLocaleString() : '—'} />
                   {result.balance.lastSynced && (
                     <KeyVal label="Last Synced" value={new Date(result.balance.lastSynced).toLocaleString()} />
