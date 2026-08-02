@@ -373,7 +373,7 @@ npm run lint       # eslint
 ### Supabase Types
 
 - Each table in generated types MUST have `Relationships: []`
-- Use `(supabase as any)` for `funding_config` and `afl_bets` tables until types are regenerated
+- `(supabase as any)` casts are widespread (~32 files) pending a types regen — see the note under "Supabase Schema Notes" above, not specific to any one table
 - Server client in `supabase-server.ts` exports both `createServerSupabaseClient` and `createServiceClient`
 
 ### Design
