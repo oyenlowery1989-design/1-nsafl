@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useTelegramBack } from "@/hooks/useTelegramBack";
 import BottomNav from "@/components/BottomNav";
 import WalletGuard from "@/components/WalletGuard";
+import Header from "@/components/Header";
+import TierBadge from "@/components/TierBadge";
 import PageLoader, { useMinLoader } from "@/components/PageLoader";
 import { useWalletStore } from "@/hooks/useStore";
 import { ALL_CLUBS } from "@/config/afl";
@@ -23,18 +25,6 @@ function formatBalance(n: number): string {
 function truncateAddress(addr: string): string {
   if (addr.length <= 12) return addr;
   return `${addr.slice(0, 4)}…${addr.slice(-4)}`;
-}
-
-function TierPill({ tierId }: { tierId: string }) {
-  const tier = TIERS.find((t) => t.id === tierId) ?? TIERS[0];
-  return (
-    <span
-      className="text-[9px] font-bold px-1.5 py-0.5 rounded-full border"
-      style={{ color: tier.color, borderColor: `${tier.color}40`, background: `${tier.color}15` }}
-    >
-      {tier.label}
-    </span>
-  );
 }
 
 function TeamLogo({ teamId, size = 20 }: { teamId: string | null; size?: number }) {
@@ -84,7 +74,7 @@ function Podium({ entries }: { entries: LeaderboardEntry[] }) {
         <p className={`text-[10px] font-bold truncate w-full text-center px-1 ${labelColor}`}>
           {entry.displayName}
         </p>
-        <TierPill tierId={entry.tierId} />
+        <TierBadge tier={TIERS.find((t) => t.id === entry.tierId) ?? TIERS[0]} />
         <p className={`text-[11px] font-black ${labelColor}`}>{formatBalance(entry.balance)}</p>
         {/* Bar */}
         <div
@@ -178,7 +168,7 @@ function LeaderRow({
           )}
         </div>
         <div className="flex items-center gap-1.5 mt-0.5">
-          <TierPill tierId={entry.tierId} />
+          <TierBadge tier={TIERS.find((t) => t.id === entry.tierId) ?? TIERS[0]} />
           <button
             onClick={() => onCopy(entry.stellarAddress)}
             className="flex items-center gap-0.5 rounded px-1 py-0.5 active:bg-white/10 transition-colors"
@@ -275,26 +265,20 @@ export default function LeaderboardPage() {
   return (
     <WalletGuard>
       {/* ── Header ──────────────────────────────────────────────────── */}
-      <header className="pt-3 pb-2 px-4 sticky top-0 z-10 bg-background-dark border-b border-white/10">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => router.back()}
-            className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 transition-colors"
-          >
-            <span className="material-symbols-outlined text-white text-base">arrow_back</span>
-          </button>
-          <div className="flex-1">
-            <h1 className="text-lg font-bold text-white tracking-tight">Leaderboard</h1>
-            <p className="text-xs text-primary font-medium">Top {PRIMARY_CUSTOM_ASSET_LABEL} Holders</p>
-          </div>
-          {total > 0 && (
+      <Header
+        title="Leaderboard"
+        subtitle={`Top ${PRIMARY_CUSTOM_ASSET_LABEL} Holders`}
+        onBack={() => router.back()}
+        backStyle="plain"
+        right={
+          total > 0 ? (
             <div className="text-right">
               <p className="text-[10px] text-gray-500 font-mono">{total} holders</p>
               <p className="text-[9px] text-green-400 font-mono">{inAppCount} in the Hub</p>
             </div>
-          )}
-        </div>
-      </header>
+          ) : undefined
+        }
+      />
 
       {/* Partner club sponsor strip */}
       {PARTNER_CLUB.enabled && (

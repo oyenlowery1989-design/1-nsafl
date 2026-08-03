@@ -12,6 +12,7 @@ import { isValidStellarAddress, hasPrimaryAssetTrustline } from '@/lib/stellar'
 import { getTelegramInitData } from '@/lib/telegram'
 import { haptic } from '@/lib/telegram-ui'
 import { BRANDING } from '@/config/branding'
+import Header from '@/components/Header'
 
 type Phase = 'referral-welcome' | 'onboarding' | 'gate' | 'connecting' | 'no-trustline' | 'celebration' | 'team-select' | 'dashboard'
 
@@ -196,17 +197,7 @@ export default function HomePage() {
 
   return (
     <>
-      <header className="pt-3 pb-2 px-4 sticky top-0 z-10 bg-background-dark border-b border-white/10">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center">
-            <span className="material-symbols-outlined text-primary">sports_football</span>
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">{BRANDING.appName}</h1>
-            <p className="text-xs text-primary font-medium">Dashboard</p>
-          </div>
-        </div>
-      </header>
+      <Header title={BRANDING.appName} subtitle="Dashboard" icon="sports_football" />
       <main className="px-6 py-6 space-y-8 pb-32">
         <div className="glass-card rounded-2xl p-6 relative overflow-hidden border border-primary/30">
           <div className="absolute -right-4 -top-4 w-32 h-32 bg-primary/10 rounded-full blur-2xl" />
