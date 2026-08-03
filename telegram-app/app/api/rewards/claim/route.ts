@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { validateTelegramInitData } from '@/lib/telegram'
 import { createServiceClient } from '@/lib/supabase-server'
 import { ok, fail } from '@/lib/api-response'
@@ -115,7 +115,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (payment.code === 'NO_TRUST') {
-    return fail(payment.error ?? 'Missing trustline', 'NO_TRUST', 502)
+    return NextResponse.json(
+      { success: false, error: payment.error ?? 'Missing trustline', code: 'NO_TRUST', lobstrDeeplink: payment.lobstrDeeplink },
+      { status: 502 },
+    )
   }
   return fail(payment.error ?? 'Payment failed', payment.code ?? 'HORIZON_ERROR', 502)
 }
