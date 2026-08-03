@@ -15,7 +15,7 @@ import {
   BASE_FEE,
   Horizon,
 } from 'stellar-sdk'
-import { prizeToAsset } from '@/lib/rewardAssets'
+import { prizeToAsset, REWARD_ASSETS } from '@/lib/rewardAssets'
 import { BRANDING } from '@/config/branding'
 
 const HORIZON_URL = process.env.NEXT_PUBLIC_HORIZON_URL ?? 'https://horizon.stellar.org'
@@ -193,7 +193,7 @@ export async function sendTierClaimPayment(
     return { sent: false, error: 'Claim has no non-zero reward amounts', code: 'NOT_SENDABLE' }
   }
 
-  const assets = legs.map((leg) => ({ leg, asset: prizeToAsset(`${leg.amount} ${leg.code}`) }))
+  const assets = legs.map((leg) => ({ leg, asset: REWARD_ASSETS.find((a) => a.code === leg.code) ?? null }))
   const missing = assets.find((a) => !a.asset || !a.asset.issuer)
   if (missing) {
     return { sent: false, error: `Issuer not configured for ${missing.leg.code}`, code: 'CONFIG_ERROR' }
