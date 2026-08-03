@@ -547,6 +547,5 @@ npm run lint       # eslint
 - Clubs page — voting / funding mechanism
 - Rewards page — actual claim flow (not just display)
 - Stats page — live charts with Supabase Realtime
-- TypeScript: regenerate Supabase types to remove `(supabase as any)` casts
-- Add `Header.tsx`, `TierBadge.tsx`, `Toast.tsx` components
+- Add `Header.tsx`, `TierBadge.tsx` components
 - Unit tests for `stellar.ts` validation and tier logic
