@@ -547,4 +547,4 @@ npm run lint       # eslint
 - Clubs page — voting / funding mechanism
 - Rewards page — actual claim flow (not just display)
 - Stats page — live charts with Supabase Realtime
-- Add `Header.tsx`, `TierBadge.tsx` components
+- `Header.tsx`/`TierBadge.tsx` exist and are wired into dashboard + leaderboard; profile/rewards/stats are LOCKED (do not migrate without explicit instruction), buy/donate/clubs still use inline header markup — adopt incrementally if touched for other reasons
