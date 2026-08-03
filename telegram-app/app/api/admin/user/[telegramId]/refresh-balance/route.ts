@@ -32,9 +32,9 @@ export async function POST(req: NextRequest, ctx: Ctx) {
   const xlm = parseFloat(assets['XLM'] ?? '0')
 
   await supabase.from('wallet_balances').upsert(
-    { wallet_id: wallet.id, nsafl_balance: nsafl, xlm_balance: xlm, last_synced_at: new Date().toISOString() },
+    { wallet_id: wallet.id, primary_asset_balance: nsafl, xlm_balance: xlm, last_synced_at: new Date().toISOString() },
     { onConflict: 'wallet_id' }
   )
 
-  return ok({ telegramId, nsafl_balance: nsafl, xlm_balance: xlm })
+  return ok({ telegramId, primary_asset_balance: nsafl, xlm_balance: xlm })
 }

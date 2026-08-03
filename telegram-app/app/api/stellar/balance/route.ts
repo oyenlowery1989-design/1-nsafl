@@ -59,7 +59,7 @@ async function syncBalance(address: string, assets: Record<string, string>) {
     .upsert(
       {
         wallet_id: wallet.id,
-        nsafl_balance: tokenBal,
+        primary_asset_balance: tokenBal,
         xlm_balance: xlmBal,
         last_synced_at: new Date().toISOString(),
       },

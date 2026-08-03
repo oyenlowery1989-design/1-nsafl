@@ -29,7 +29,7 @@ const TIER_COLORS: Record<string, string> = {
 
 function primaryBal(u: User): number {
   const w = u.wallets.find(w => w.is_primary) ?? u.wallets[0]
-  return Number(w?.wallet_balances[0]?.nsafl_balance ?? 0)
+  return Number(w?.wallet_balances[0]?.primary_asset_balance ?? 0)
 }
 
 function xlmBal(u: User): number {
@@ -178,11 +178,11 @@ function UsersPageInner() {
   function exportCsv() {
     const rows = filteredUsers.map(u => {
       const w = u.wallets.find(w => w.is_primary) ?? u.wallets[0]
-      const bal = Number(w?.wallet_balances[0]?.nsafl_balance ?? 0)
+      const bal = Number(w?.wallet_balances[0]?.primary_asset_balance ?? 0)
       const tier = getTier(bal)
       return [u.telegram_id, u.telegram_first_name ?? '', u.telegram_username ?? '', w?.stellar_address ?? '', bal, tier, u.favorite_team ?? '', u.created_at].join(',')
     })
-    const csv = ['id,name,username,wallet,nsafl_balance,tier,team,joined', ...rows].join('\n')
+    const csv = ['id,name,username,wallet,primary_asset_balance,tier,team,joined', ...rows].join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')

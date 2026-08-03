@@ -749,7 +749,7 @@ export type Database = {
           balance_week_ago: number | null
           id: string
           last_synced_at: string | null
-          nsafl_balance: number | null
+          primary_asset_balance: number | null
           updated_at: string | null
           wallet_id: string
           xlm_balance: number | null
@@ -758,7 +758,7 @@ export type Database = {
           balance_week_ago?: number | null
           id?: string
           last_synced_at?: string | null
-          nsafl_balance?: number | null
+          primary_asset_balance?: number | null
           updated_at?: string | null
           wallet_id: string
           xlm_balance?: number | null
@@ -767,7 +767,7 @@ export type Database = {
           balance_week_ago?: number | null
           id?: string
           last_synced_at?: string | null
-          nsafl_balance?: number | null
+          primary_asset_balance?: number | null
           updated_at?: string | null
           wallet_id?: string
           xlm_balance?: number | null

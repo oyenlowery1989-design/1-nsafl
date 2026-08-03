@@ -72,11 +72,11 @@ export async function POST(req: NextRequest) {
     if (walletRow) {
       const { data: balRow } = await supabase
         .from('wallet_balances')
-        .select('nsafl_balance')
+        .select('primary_asset_balance')
         .eq('wallet_id', walletRow.id)
         .single()
 
-      const nsaflBal = Number(balRow?.nsafl_balance ?? 0)
+      const nsaflBal = Number(balRow?.primary_asset_balance ?? 0)
       if (nsaflBal < 100) {
         return NextResponse.json(
           {

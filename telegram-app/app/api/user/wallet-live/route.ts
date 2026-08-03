@@ -47,16 +47,16 @@ export async function GET(req: NextRequest) {
 
   const { data: balanceRow } = await supabase
     .from('wallet_balances')
-    .select('nsafl_balance, xlm_balance, last_synced_at')
+    .select('primary_asset_balance, xlm_balance, last_synced_at')
     .eq('wallet_id', walletId)
     .maybeSingle()
 
-  const b = balanceRow as { nsafl_balance: number; xlm_balance: number; last_synced_at: string } | null
+  const b = balanceRow as { primary_asset_balance: number; xlm_balance: number; last_synced_at: string } | null
 
   return ok({
     walletId,
     stellarAddress,
-    tokenBalance: b?.nsafl_balance != null ? String(b.nsafl_balance) : '0.00',
+    tokenBalance: b?.primary_asset_balance != null ? String(b.primary_asset_balance) : '0.00',
     xlmBalance: b?.xlm_balance != null ? String(b.xlm_balance) : '0.00',
     lastSyncedAt: b?.last_synced_at ?? null,
   })

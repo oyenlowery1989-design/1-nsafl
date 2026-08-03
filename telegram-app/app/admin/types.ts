@@ -1,7 +1,7 @@
 // ── Admin shared types ────────────────────────────────────────────────────────
 
 export interface WalletBalance {
-  nsafl_balance: number
+  primary_asset_balance: number
   xlm_balance: number
   balance_week_ago: number
   last_synced_at: string

@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
         referred_by, bonus_balls, bonus_spins, created_at, updated_at,
         wallets (
           id, stellar_address, label, is_primary, created_at, last_connected_at,
-          wallet_balances ( nsafl_balance, xlm_balance, balance_week_ago, last_synced_at )
+          wallet_balances ( primary_asset_balance, xlm_balance, balance_week_ago, last_synced_at )
         )
       `)
       .order('created_at', { ascending: false }),
@@ -91,7 +91,7 @@ export async function GET(req: NextRequest) {
       .limit(50),
 
     // Aggregate totals directly — avoids relying on nested JS aggregation
-    supabase.from('wallet_balances').select('nsafl_balance, xlm_balance'),
+    supabase.from('wallet_balances').select('primary_asset_balance, xlm_balance'),
 
   ])
 
@@ -124,7 +124,7 @@ export async function GET(req: NextRequest) {
     }
   }).sort((a, b) => b.referral_count - a.referral_count)
 
-  const totalNsafl = (allBalances ?? []).reduce((s, b) => s + Number(b.nsafl_balance ?? 0), 0)
+  const totalNsafl = (allBalances ?? []).reduce((s, b) => s + Number(b.primary_asset_balance ?? 0), 0)
   const totalXlm   = (allBalances ?? []).reduce((s, b) => s + Number(b.xlm_balance ?? 0), 0)
 
   return ok({

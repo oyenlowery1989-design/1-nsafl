@@ -52,7 +52,7 @@ created_at      timestamptz
 ```sql
 id              uuid PRIMARY KEY
 wallet_id       uuid REFERENCES wallets(id) ON DELETE CASCADE
-nsafl_balance   numeric(20,7) default 0
+primary_asset_balance   numeric(20,7) default 0
 xlm_balance     numeric(20,7) default 0
 balance_week_ago numeric(20,7) default 0
 last_synced_at  timestamptz
@@ -147,7 +147,7 @@ const { data: wallet } = await supabase
 // 3. Upsert cached balance
 await supabase
   .from('wallet_balances')
-  .upsert({ wallet_id: wallet.id, nsafl_balance, xlm_balance, last_synced_at: new Date().toISOString() },
+  .upsert({ wallet_id: wallet.id, primary_asset_balance, xlm_balance, last_synced_at: new Date().toISOString() },
     { onConflict: 'wallet_id' })
 ```
 
@@ -161,7 +161,7 @@ const channel = supabase
     table: 'wallet_balances',
     filter: `wallet_id=eq.${walletId}`,
   }, (payload) => {
-    setNsaflBalance(payload.new.nsafl_balance)
+    setNsaflBalance(payload.new.primary_asset_balance)
     setXlmBalance(payload.new.xlm_balance)
   })
   .subscribe()

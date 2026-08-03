@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
   // Fetch balances from Horizon in parallel (cap at 8 concurrent)
   const CONCURRENCY = 8
-  const results: { wallet_id: string; nsafl_balance: number; xlm_balance: number }[] = []
+  const results: { wallet_id: string; primary_asset_balance: number; xlm_balance: number }[] = []
 
   for (let i = 0; i < missing.length; i += CONCURRENCY) {
     const batch = missing.slice(i, i + CONCURRENCY)
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
         const assets = await fetchAllShownBalances(w.stellar_address)
         const nsafl = parseFloat(assets[PRIMARY_CUSTOM_ASSET_CODE] ?? '0')
         const xlm = parseFloat(assets['XLM'] ?? '0')
-        return { wallet_id: w.id, nsafl_balance: nsafl, xlm_balance: xlm }
+        return { wallet_id: w.id, primary_asset_balance: nsafl, xlm_balance: xlm }
       })
     )
     for (const r of settled) {

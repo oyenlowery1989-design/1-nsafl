@@ -15,7 +15,7 @@ type SearchUser = {
   bonus_spins: number | null
   winCount: number
   referralCount: number
-  wallets: { stellar_address: string; is_primary: boolean; wallet_balances: { nsafl_balance: number; xlm_balance: number }[] }[]
+  wallets: { stellar_address: string; is_primary: boolean; wallet_balances: { primary_asset_balance: number; xlm_balance: number }[] }[]
 }
 
 function UserSearchContent() {
@@ -65,7 +65,7 @@ function UserSearchContent() {
       {results.map(user => {
         const primary = user.wallets?.find(w => w.is_primary) ?? user.wallets?.[0]
         const bal = primary?.wallet_balances?.[0]
-        const nsafl = Number(bal?.nsafl_balance ?? 0)
+        const nsafl = Number(bal?.primary_asset_balance ?? 0)
         const tier = nsafl >= 2501 ? 'T4' : nsafl >= 1001 ? 'T3' : nsafl >= 501 ? 'T2' : nsafl >= 100 ? 'T1' : 'T0'
         return (
           <div key={user.telegram_id} className="bg-[#0d1424] border border-white/8 rounded-xl p-4 space-y-3">

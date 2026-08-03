@@ -118,13 +118,13 @@ export async function GET(req: NextRequest) {
       // 1. Aggregate from wallet_balances
       supabase
         .from('wallet_balances')
-        .select('nsafl_balance, xlm_balance, balance_week_ago, updated_at'),
+        .select('primary_asset_balance, xlm_balance, balance_week_ago, updated_at'),
 
       // 2. Top supporters
       supabase
         .from('wallet_balances')
-        .select('nsafl_balance, wallets(stellar_address, users(telegram_username, telegram_first_name, display_preference))')
-        .order('nsafl_balance', { ascending: false })
+        .select('primary_asset_balance, wallets(stellar_address, users(telegram_username, telegram_first_name, display_preference))')
+        .order('primary_asset_balance', { ascending: false })
         .limit(10),
 
       // 3. Total registered users
@@ -143,14 +143,14 @@ export async function GET(req: NextRequest) {
     ])
 
     // --- Process aggregate data ---
-    type BalanceRow = { nsafl_balance: number; xlm_balance: number; balance_week_ago: number; updated_at: string }
+    type BalanceRow = { primary_asset_balance: number; xlm_balance: number; balance_week_ago: number; updated_at: string }
     const rows = ((aggregateResult.data ?? []) as BalanceRow[])
 
-    const totalCurrent = rows.reduce((sum, r) => sum + (Number(r.nsafl_balance) || 0), 0)
+    const totalCurrent = rows.reduce((sum, r) => sum + (Number(r.primary_asset_balance) || 0), 0)
     const totalWeekAgo = rows.reduce((sum, r) => sum + (Number(r.balance_week_ago) || 0), 0)
     const totalXlm = rows.reduce((sum, r) => sum + (Number(r.xlm_balance) || 0), 0)
     const walletCount = rows.length
-    const activeWallets = rows.filter((r) => Number(r.nsafl_balance) > 0).length
+    const activeWallets = rows.filter((r) => Number(r.primary_asset_balance) > 0).length
 
     // Weekly change
     let weeklyChange: string
@@ -165,7 +165,7 @@ export async function GET(req: NextRequest) {
     // Tier distribution from balances — buckets derived from TIERS (config/tiers.ts)
     const tierBuckets = { preTier: 0, tier1_4: 0, tier5_9: 0, top: 0 }
     for (const r of rows) {
-      const bal = Number(r.nsafl_balance) || 0
+      const bal = Number(r.primary_asset_balance) || 0
       if (bal < TIER_BUCKET_2_MIN) tierBuckets.preTier++
       else if (bal < TIER_BUCKET_3_MIN) tierBuckets.tier1_4++
       else if (bal < TIER_BUCKET_4_MIN) tierBuckets.tier5_9++
@@ -174,7 +174,7 @@ export async function GET(req: NextRequest) {
 
     // --- Process top supporters ---
     type SupporterRow = {
-      nsafl_balance: number
+      primary_asset_balance: number
       wallets: {
         stellar_address: string
         users: {
@@ -186,7 +186,7 @@ export async function GET(req: NextRequest) {
     }
     const supporterRows = (supporterResult.data ?? []) as SupporterRow[]
     const topSupporters = supporterRows
-      .filter((r) => Number(r.nsafl_balance) > 0)
+      .filter((r) => Number(r.primary_asset_balance) > 0)
       .map((r, i) => {
         const wallet = r.wallets
         const user = wallet?.users ?? null
@@ -204,7 +204,7 @@ export async function GET(req: NextRequest) {
           rank: i + 1,
           name,
           hub,
-          amount: formatAmount(Number(r.nsafl_balance)),
+          amount: formatAmount(Number(r.primary_asset_balance)),
         }
       })
 

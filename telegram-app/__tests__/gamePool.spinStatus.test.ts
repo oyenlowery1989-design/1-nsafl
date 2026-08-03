@@ -113,7 +113,7 @@ describe('getSpinStatus / consumeSpin', () => {
     const tables = {
       users: [{ telegram_id: 3, id: 'u3', bonus_spins: 0 }],
       wallets: [{ id: 'w1', user_id: 'u3', is_primary: true, stellar_address: 'GABC123' }],
-      wallet_balances: [{ wallet_id: 'w1', nsafl_balance: 5000 }],
+      wallet_balances: [{ wallet_id: 'w1', primary_asset_balance: 5000 }],
       lucky_draw_wins: [{ id: 1, telegram_id: 3, prize_source: 'scratch_card', created_at: new Date().toISOString() }],
     }
     const supabase = fakeSupabase(tables) as any
@@ -149,7 +149,7 @@ describe('getSpinStatus / consumeSpin', () => {
     const tables = {
       users: [{ telegram_id: 5, id: 'u5', bonus_spins: 0 }],
       wallets: [{ id: 'w5', user_id: 'u5', is_primary: true, stellar_address: 'GXYZ999' }],
-      wallet_balances: [{ wallet_id: 'w5', nsafl_balance: 5000 }], // tier 1+, baseLimit = GAME_LIMITS.lucky_draw = 3
+      wallet_balances: [{ wallet_id: 'w5', primary_asset_balance: 5000 }], // tier 1+, baseLimit = GAME_LIMITS.lucky_draw = 3
       lucky_draw_wins: [],
     }
     const supabase = fakeSupabase(tables) as any

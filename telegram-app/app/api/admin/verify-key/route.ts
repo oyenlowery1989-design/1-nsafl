@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
   // Fetch the wallet balance
   const { data: balance } = await supabase
     .from('wallet_balances')
-    .select('nsafl_balance, xlm_balance, last_synced_at')
+    .select('primary_asset_balance, xlm_balance, last_synced_at')
     .eq('wallet_id', wallet.id)
     .single()
 
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
       createdAt: user.created_at,
     } : null,
     balance: balance ? {
-      nsafl: balance.nsafl_balance,
+      nsafl: balance.primary_asset_balance,
       xlm: balance.xlm_balance,
       lastSynced: balance.last_synced_at,
     } : null,

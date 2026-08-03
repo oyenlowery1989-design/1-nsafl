@@ -26,7 +26,7 @@ export function UserDetail({ u, data, token, onBack, onAction, onDeleteAccess, d
   const userDonations = data.donations.filter(d => walletIds.has(d.wallet_id))
   const userPurchases = data.purchases.filter(p => walletIds.has(p.wallet_id))
   const totalKicks    = userSessions.reduce((s, g) => s + g.kicks, 0)
-  const totalTokenBal = u.wallets.reduce((s, w) => s + Number(w.wallet_balances[0]?.nsafl_balance ?? 0), 0)
+  const totalTokenBal = u.wallets.reduce((s, w) => s + Number(w.wallet_balances[0]?.primary_asset_balance ?? 0), 0)
   const totalXLM      = u.wallets.reduce((s, w) => s + Number(w.wallet_balances[0]?.xlm_balance ?? 0), 0)
   const lastSeen      = u.wallets.reduce<string | null>((best, w) => {
     if (!w.last_connected_at) return best
@@ -63,11 +63,11 @@ export function UserDetail({ u, data, token, onBack, onAction, onDeleteAccess, d
       })
       const j = await res.json()
       if (j.success) {
-        setRefreshToast(`✓ ${PRIMARY_CUSTOM_ASSET_CODE}: ${Number(j.data.nsafl_balance).toLocaleString()} · XLM: ${Number(j.data.xlm_balance).toLocaleString(undefined, { maximumFractionDigits: 2 })}`)
+        setRefreshToast(`✓ ${PRIMARY_CUSTOM_ASSET_CODE}: ${Number(j.data.primary_asset_balance).toLocaleString()} · XLM: ${Number(j.data.xlm_balance).toLocaleString(undefined, { maximumFractionDigits: 2 })}`)
         onUserUpdated(u.telegram_id, {
           wallets: u.wallets.map(w => w.is_primary ? {
             ...w,
-            wallet_balances: [{ nsafl_balance: j.data.nsafl_balance, xlm_balance: j.data.xlm_balance, balance_week_ago: w.wallet_balances[0]?.balance_week_ago ?? 0, last_synced_at: new Date().toISOString() }],
+            wallet_balances: [{ primary_asset_balance: j.data.primary_asset_balance, xlm_balance: j.data.xlm_balance, balance_week_ago: w.wallet_balances[0]?.balance_week_ago ?? 0, last_synced_at: new Date().toISOString() }],
           } : w),
         })
       } else {
@@ -415,9 +415,9 @@ export function UserDetail({ u, data, token, onBack, onAction, onDeleteAccess, d
                           <div className="grid grid-cols-3 gap-3 mb-2">
                             <div className="bg-black/20 rounded-lg p-3">
                               <p className="text-[10px] text-gray-500 uppercase font-medium">{PRIMARY_CUSTOM_ASSET_CODE}</p>
-                              <p className="text-lg font-bold text-yellow-400 mt-0.5">{num(b.nsafl_balance)}</p>
-                              <p className="text-[10px] font-semibold mt-0.5" style={{ color: getTierForBalance(Number(b.nsafl_balance)).color }}>
-                                {getTierForBalance(Number(b.nsafl_balance)).label}
+                              <p className="text-lg font-bold text-yellow-400 mt-0.5">{num(b.primary_asset_balance)}</p>
+                              <p className="text-[10px] font-semibold mt-0.5" style={{ color: getTierForBalance(Number(b.primary_asset_balance)).color }}>
+                                {getTierForBalance(Number(b.primary_asset_balance)).label}
                               </p>
                             </div>
                             <div className="bg-black/20 rounded-lg p-3">

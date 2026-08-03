@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     const { data: wallets } = idRow
       ? await supabase
           .from('wallets')
-          .select('id, stellar_address, is_primary, label, wallet_balances(nsafl_balance, xlm_balance, last_synced_at)')
+          .select('id, stellar_address, is_primary, label, wallet_balances(primary_asset_balance, xlm_balance, last_synced_at)')
           .eq('user_id', idRow.id)
           .limit(5)
       : { data: [] }

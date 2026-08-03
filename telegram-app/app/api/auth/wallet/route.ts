@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
         .upsert(
           {
             wallet_id: walletData.id,
-            nsafl_balance: tokenBal,
+            primary_asset_balance: tokenBal,
             xlm_balance: xlmBal,
             balance_week_ago: tokenBal, // first sync — set week ago to current
             last_synced_at: new Date().toISOString(),

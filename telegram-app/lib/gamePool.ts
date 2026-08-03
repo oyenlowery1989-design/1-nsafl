@@ -97,9 +97,9 @@ export async function getSpinStatus(
     if (wallet?.id) {
       walletAddress = wallet.stellar_address ?? null
       const { data: balanceRow } = await supabase
-        .from('wallet_balances').select('nsafl_balance').eq('wallet_id', wallet.id).single()
-      if (balanceRow?.nsafl_balance != null) {
-        const tier = getTierForBalance(Number(balanceRow.nsafl_balance))
+        .from('wallet_balances').select('primary_asset_balance').eq('wallet_id', wallet.id).single()
+      if (balanceRow?.primary_asset_balance != null) {
+        const tier = getTierForBalance(Number(balanceRow.primary_asset_balance))
         tierIndex = Math.max(0, TIERS.findIndex((t) => t.id === tier.id))
       }
     }
