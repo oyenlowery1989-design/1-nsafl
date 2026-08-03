@@ -39,7 +39,7 @@ export default function RewardsClaimsPage() {
     setLoading(false)
   }, [token])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load() }, [load]) // eslint-disable-line react-hooks/set-state-in-effect -- load() only sets local component state, not a synchronous external mutation
 
   async function retry(claimId: number) {
     setRetrying(claimId)
