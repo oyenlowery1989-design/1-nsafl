@@ -33,6 +33,7 @@ const NAV_GROUPS = [
     items: [
       { href: '/admin/game',       label: 'Game',          icon: 'sports_esports' },
       { href: '/admin/wins',       label: 'Wins',          icon: 'emoji_events' },
+      { href: '/admin/rewards-claims', label: 'Reward Claims', icon: 'diamond' },
       { href: '/admin/access',     label: 'Access',        icon: 'manage_search' },
       { href: '/admin/referrals',  label: 'Referrals',     icon: 'group_add' },
       { href: '/admin/trustline',  label: 'Trustlines',    icon: 'add_link' },
