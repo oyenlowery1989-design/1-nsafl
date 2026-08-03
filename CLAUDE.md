@@ -548,4 +548,3 @@ npm run lint       # eslint
 - Rewards page — actual claim flow (not just display)
 - Stats page — live charts with Supabase Realtime
 - Add `Header.tsx`, `TierBadge.tsx` components
-- Unit tests for `stellar.ts` validation and tier logic
