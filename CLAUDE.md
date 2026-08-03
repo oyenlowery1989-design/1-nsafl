@@ -194,7 +194,7 @@ SHOWN_ASSETS                = XLM,NSAFL:GAJVAQ5DCOJVZ6AL3P4QVDTGMOHRVHG6WJ6252SO
 To fork this app for a new token/brand, edit only these per-clone points — nothing else:
 
 - **`telegram-app/config/branding.ts`** — `BRANDING` object: app name, short name, domain, bot username, colors, team-selection mode, and all display copy (onboarding slides, referral share text, admin broadcast templates, buy/reward memos, prize notification title). This is the single source of truth for brand copy; everything else imports from it or from `lib/constants.ts`.
-- **`.env` / Vercel env vars** — `NEXT_PUBLIC_PRIMARY_ASSET_CODE`, `NEXT_PUBLIC_PRIMARY_ASSET_ISSUER`, `NEXT_PUBLIC_SHOWN_ASSETS`, `NEXT_PUBLIC_BOT_USERNAME`, `TELEGRAM_BOT_TOKEN`, Supabase keys, `NEXT_PUBLIC_DIRECT_BUY_XLM_ADDRESS`, `REWARD_SENDER_SECRET`, `REWARD_MEMO` (optional override).
+- **`.env` / Vercel env vars** — `NEXT_PUBLIC_PRIMARY_ASSET_CODE`, `NEXT_PUBLIC_PRIMARY_ASSET_ISSUER`, `NEXT_PUBLIC_SHOWN_ASSETS`, `NEXT_PUBLIC_BOT_USERNAME`, `TELEGRAM_BOT_TOKEN`, Supabase keys, `NEXT_PUBLIC_DIRECT_BUY_XLM_ADDRESS`, `REWARD_SENDER_SECRET`, `REWARD_MEMO` (optional override), `ADMIN_TELEGRAM_ID` (DMs for tier-10 physical gold claims + admin self-protection guard).
 - **`config/tiers.ts`** — tier thresholds, labels, and reward percentages.
 - **`config/afl.ts`** — club/team list; swap for whatever team-selection domain the new app needs (or set `BRANDING.teamSelection = 'off'` if the app has no team-selection step).
 - **`public/` assets** — logos, icons, favicon.
@@ -240,6 +240,7 @@ TELEGRAM_WEBHOOK_SECRET=<random secret>              # validates incoming Telegr
 REWARD_SENDER_SECRET=<Stellar secret key>             # signs auto-payout transactions for game prizes
 REWARD_MEMO=<text>                                    # optional — overrides default memo on reward payment txns
 NEXT_PUBLIC_REWARD_ASSET_ISSUER=<Stellar public key>  # issuer account for non-primary reward assets (wXLM/wNSAFL/wXRP/wUSDC)
+ADMIN_TELEGRAM_ID=<numeric Telegram user id>          # DMs for tier-10 physical gold claims + admin self-protection guard
 ```
 
 ---
