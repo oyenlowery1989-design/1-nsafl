@@ -526,6 +526,15 @@ npm run lint       # eslint
 - The source-address check specifically prevents claiming credit for a stranger's public on-chain payment by submitting its tx hash
 - Unverified/unmatched donations are still recorded but excluded from Top Supporters until verified
 
+### Rewards Claim Flow
+
+- `tier_reward_claims` table (migration `028`) tracks one claim per user per UTC calendar month — `claim_month` stored as `YYYY-MM-01`; a unique constraint on `(telegram_id, claim_month)` (or equivalent lookup) blocks a second claim in the same month, so month boundaries must be computed in UTC, not local time (see the Games Hub / `consume_daily_spin` UTC precedent above)
+- Reward assets are `wGOLD`/`wSILVER`/`wCOPPER` — added alongside the existing `wNSAFL`/`wXLM`/`wXRP`/`wUSDC` wrapped assets in `lib/rewardAssets.ts`; amounts per tier live in `config/tiers.ts`
+- `sendTierClaimPayment` (`lib/stellar-payment.ts`) is a sibling of the existing `sendPrizePayment` used by the Games Hub — same Horizon submit + rollback-to-pending-on-failure pattern, just keyed to a `tier_reward_claims` row instead of a `lucky_draw_wins` row
+- `POST /api/rewards/claim` creates/advances a claim; `GET /api/rewards/claim` returns current-month claim status; `POST /api/admin/retry-tier-claim` re-attempts a failed/pending payout from the admin claims list (`/admin/rewards-claims`)
+- Tier-10 claims trigger a physical-gold Telegram DM to the admin via `ADMIN_TELEGRAM_ID` (a numeric telegram id env var) — **NOT** `NEXT_PUBLIC_ADMIN_TELEGRAM_USERNAMES` (that's the client-side admin-nav gate, a different env var entirely). If `ADMIN_TELEGRAM_ID` is unset, the notify silently no-ops by design — it must never block a successful claim; check `physical_gold_notified` on the claim row if a tier-10 payout looks off
+- **`fail()` helper gotcha:** `lib/api-response.ts`'s `fail()` only serializes `{success, error, code}` — it silently drops any extra fields. Both `NO_TRUST` branches (`app/api/rewards/claim/route.ts` and `app/api/admin/retry-tier-claim/route.ts`) need to return an extra `lobstrDeeplink` field alongside the failure, so they bypass `fail()` and build `NextResponse.json(...)` directly instead, matching the existing precedent in `app/api/admin/send-reward/route.ts`. Any future route needing extra fields on a failure response must do the same — do not assume `fail()` will pass them through.
+
 ### Wallet Data Access
 
 - Client code must NOT query Supabase tables directly for wallet data — use `GET /api/user/wallet-live` (`app/api/user/wallet-live/route.ts`), which resolves the caller's own wallet server-side from `x-telegram-init-data` and returns live balance; this replaced direct browser table reads
@@ -545,6 +554,5 @@ npm run lint       # eslint
 - Real-time Supabase subscriptions for balance updates
 - Push notifications via Telegram bot
 - Clubs page — voting / funding mechanism
-- Rewards page — actual claim flow (not just display)
 - Stats page — live charts with Supabase Realtime
 - `Header.tsx`/`TierBadge.tsx` exist and are wired into dashboard + leaderboard; profile/rewards/stats are LOCKED (do not migrate without explicit instruction), buy/donate/clubs still use inline header markup — adopt incrementally if touched for other reasons
