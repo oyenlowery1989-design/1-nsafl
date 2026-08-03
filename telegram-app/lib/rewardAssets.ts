@@ -14,12 +14,15 @@ const ISSUER =
   ''
 
 export const REWARD_ASSETS: RewardAsset[] = [
-  { code: 'wXLM',   issuer: ISSUER, label: 'Wrapped XLM',  lobstrDeeplink: `https://lobstr.co/assets/wXLM:${ISSUER}`   },
+  { code: 'wXLM',   issuer: ISSUER, label: 'Wrapped XLM',   lobstrDeeplink: `https://lobstr.co/assets/wXLM:${ISSUER}`   },
   { code: 'wNSAFL', issuer: ISSUER, label: 'Wrapped NSAFL', lobstrDeeplink: `https://lobstr.co/assets/wNSAFL:${ISSUER}` },
-  { code: 'wXRP',   issuer: ISSUER, label: 'Wrapped XRP',  lobstrDeeplink: `https://lobstr.co/assets/wXRP:${ISSUER}`   },
-  { code: 'wUSDC',  issuer: ISSUER, label: 'Wrapped USDC', lobstrDeeplink: `https://lobstr.co/assets/wUSDC:${ISSUER}`  },
-  { code: 'wUSDT',  issuer: ISSUER, label: 'Wrapped USDT', lobstrDeeplink: `https://lobstr.co/assets/wUSDT:${ISSUER}`  },
-  { code: 'wDAI',   issuer: ISSUER, label: 'Wrapped DAI',  lobstrDeeplink: `https://lobstr.co/assets/wDAI:${ISSUER}`   },
+  { code: 'wXRP',   issuer: ISSUER, label: 'Wrapped XRP',   lobstrDeeplink: `https://lobstr.co/assets/wXRP:${ISSUER}`   },
+  { code: 'wUSDC',  issuer: ISSUER, label: 'Wrapped USDC',  lobstrDeeplink: `https://lobstr.co/assets/wUSDC:${ISSUER}`  },
+  { code: 'wUSDT',  issuer: ISSUER, label: 'Wrapped USDT',  lobstrDeeplink: `https://lobstr.co/assets/wUSDT:${ISSUER}`  },
+  { code: 'wDAI',   issuer: ISSUER, label: 'Wrapped DAI',   lobstrDeeplink: `https://lobstr.co/assets/wDAI:${ISSUER}`   },
+  { code: 'wGOLD',  issuer: ISSUER, label: 'Wrapped Gold',   lobstrDeeplink: `https://lobstr.co/assets/wGOLD:${ISSUER}`  },
+  { code: 'wSILVER', issuer: ISSUER, label: 'Wrapped Silver', lobstrDeeplink: `https://lobstr.co/assets/wSILVER:${ISSUER}` },
+  { code: 'wCOPPER', issuer: ISSUER, label: 'Wrapped Copper', lobstrDeeplink: `https://lobstr.co/assets/wCOPPER:${ISSUER}` },
 ]
 
 /** Parse prize label like "100 wXLM" → RewardAsset or null if not a sendable asset.

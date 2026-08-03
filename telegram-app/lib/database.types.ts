@@ -582,6 +582,59 @@ export type Database = {
           },
         ]
       }
+      tier_reward_claims: {
+        Row: {
+          claim_month: string
+          copper_amount: number
+          created_at: string
+          gold_amount: number
+          id: number
+          payout_notes: string | null
+          payout_status: string
+          payout_tx_hash: string | null
+          physical_gold_notified: boolean
+          silver_amount: number
+          telegram_id: number
+          tier_id: string
+        }
+        Insert: {
+          claim_month: string
+          copper_amount?: number
+          created_at?: string
+          gold_amount?: number
+          id?: number
+          payout_notes?: string | null
+          payout_status?: string
+          payout_tx_hash?: string | null
+          physical_gold_notified?: boolean
+          silver_amount?: number
+          telegram_id: number
+          tier_id: string
+        }
+        Update: {
+          claim_month?: string
+          copper_amount?: number
+          created_at?: string
+          gold_amount?: number
+          id?: number
+          payout_notes?: string | null
+          payout_status?: string
+          payout_tx_hash?: string | null
+          physical_gold_notified?: boolean
+          silver_amount?: number
+          telegram_id?: number
+          tier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tier_reward_claims_telegram_id_fkey"
+            columns: ["telegram_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["telegram_id"]
+          },
+        ]
+      }
       tiers: {
         Row: {
           color: string

@@ -15,7 +15,7 @@ import {
   BASE_FEE,
   Horizon,
 } from 'stellar-sdk'
-import { prizeToAsset } from '@/lib/rewardAssets'
+import { prizeToAsset, REWARD_ASSETS } from '@/lib/rewardAssets'
 import { BRANDING } from '@/config/branding'
 
 const HORIZON_URL = process.env.NEXT_PUBLIC_HORIZON_URL ?? 'https://horizon.stellar.org'
@@ -159,6 +159,106 @@ export async function sendPrizePayment(
       error: message,
       code,
       lobstrDeeplink: code === 'NO_TRUST' ? asset2?.lobstrDeeplink : undefined,
+    }
+  }
+}
+
+/**
+ * Send a tier reward claim payment — one atomic transaction with up to 3
+ * payment operations (gold/silver/copper). Sibling to sendPrizePayment,
+ * not a generalization of it: operates on tier_reward_claims instead of
+ * lucky_draw_wins, and builds a multi-operation transaction instead of one.
+ *
+ * @param claim        Row from tier_reward_claims (id + the 3 amounts)
+ * @param destination  Recipient's Stellar public key
+ * @param supabase     Service-role Supabase client
+ */
+export async function sendTierClaimPayment(
+  claim: { id: number; gold_amount: number; silver_amount: number; copper_amount: number },
+  destination: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+): Promise<PaymentResult> {
+  if (!REWARD_SENDER_SECRET) {
+    return { sent: false, error: 'REWARD_SENDER_SECRET not configured', code: 'CONFIG_ERROR' }
+  }
+
+  const legs = [
+    { code: 'wGOLD' as const, amount: claim.gold_amount },
+    { code: 'wSILVER' as const, amount: claim.silver_amount },
+    { code: 'wCOPPER' as const, amount: claim.copper_amount },
+  ].filter((leg) => leg.amount > 0)
+
+  if (legs.length === 0) {
+    return { sent: false, error: 'Claim has no non-zero reward amounts', code: 'NOT_SENDABLE' }
+  }
+
+  const assets = legs.map((leg) => ({ leg, asset: REWARD_ASSETS.find((a) => a.code === leg.code) ?? null }))
+  const missing = assets.find((a) => !a.asset || !a.asset.issuer)
+  if (missing) {
+    return { sent: false, error: `Issuer not configured for ${missing.leg.code}`, code: 'CONFIG_ERROR' }
+  }
+
+  try {
+    const { data: claimed, error: claimError } = await supabase
+      .from('tier_reward_claims')
+      .update({ payout_status: 'paying' })
+      .eq('id', claim.id)
+      .eq('payout_status', 'pending')
+      .select('id')
+    if (claimError) {
+      return { sent: false, error: claimError.message, code: 'DB_ERROR' }
+    }
+    if (!claimed?.length) {
+      return { sent: false, error: 'Claim is not pending (already paid or in flight)', code: 'ALREADY_PAID' }
+    }
+
+    const senderKeypair = Keypair.fromSecret(REWARD_SENDER_SECRET)
+    const server = new Horizon.Server(HORIZON_URL)
+    const senderAccount = await server.loadAccount(senderKeypair.publicKey())
+
+    const txBuilder = new TransactionBuilder(senderAccount, {
+      fee: BASE_FEE,
+      networkPassphrase: Networks.PUBLIC,
+    })
+
+    for (const { leg, asset } of assets) {
+      txBuilder.addOperation(Operation.payment({
+        destination,
+        asset: new Asset(asset!.code, asset!.issuer),
+        amount: String(leg.amount),
+      }))
+    }
+
+    const tx = txBuilder.addMemo(Memo.text(REWARD_MEMO)).setTimeout(180).build()
+    tx.sign(senderKeypair)
+    const result = await server.submitTransaction(tx)
+
+    const { error: paidError } = await supabase.from('tier_reward_claims').update({
+      payout_status: 'paid',
+      payout_tx_hash: result.hash,
+      payout_notes: `Auto-sent. Memo: ${REWARD_MEMO}`,
+    }).eq('id', claim.id)
+
+    if (paidError) {
+      console.error(`sendTierClaimPayment: paid update failed for claim ${claim.id}, txHash ${result.hash}:`, paidError.message)
+    }
+
+    return { sent: true, txHash: result.hash }
+  } catch (err) {
+    const { message, code } = parseHorizonError(err)
+    console.error(`sendTierClaimPayment error [${code}]:`, message)
+
+    await supabase.from('tier_reward_claims')
+      .update({ payout_status: 'pending', payout_notes: `Auto-send failed: ${code} ${message}`.slice(0, 200) })
+      .eq('id', claim.id).eq('payout_status', 'paying')
+
+    const failedAsset = assets[0]?.asset
+    return {
+      sent: false,
+      error: message,
+      code,
+      lobstrDeeplink: code === 'NO_TRUST' ? failedAsset?.lobstrDeeplink : undefined,
     }
   }
 }

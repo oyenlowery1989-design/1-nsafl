@@ -1,4 +1,5 @@
 'use client'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTelegramBack } from '@/hooks/useTelegramBack'
 import BottomNav from '@/components/BottomNav'
@@ -8,6 +9,7 @@ import { useWalletStore } from '@/hooks/useStore'
 import { getTierForBalance, getNextTier, TIERS, type Tier } from '@/config/tiers'
 import { PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
 import { BRANDING } from '@/config/branding'
+import { getTelegramInitData } from '@/lib/telegram'
 
 function getTierStatus(tier: Tier, currentTier: Tier, nextTier: Tier | null): 'current' | 'past' | 'next' | 'locked' {
   if (tier.id === currentTier.id) return 'current'
@@ -18,13 +20,17 @@ function getTierStatus(tier: Tier, currentTier: Tier, nextTier: Tier | null): 'c
   return 'locked'
 }
 
-function TierCard({ tier, status, balance, nextTier, progressPct, onBuy }: {
+function TierCard({ tier, status, balance, nextTier, progressPct, onBuy, claimStatus, onClaim, claiming, claimError }: {
   tier: Tier
   status: 'current' | 'past' | 'next' | 'locked'
   balance: number
   nextTier?: Tier | null
   progressPct?: number
   onBuy?: () => void
+  claimStatus?: { claimed: boolean; txHash?: string; payoutStatus?: string } | null
+  onClaim?: () => void
+  claiming?: boolean
+  claimError?: { message: string; lobstrDeeplink?: string } | null
 }) {
   const r = tier.rewards
   const isCurrent = status === 'current'
@@ -111,6 +117,51 @@ function TierCard({ tier, status, balance, nextTier, progressPct, onBuy }: {
         <p className="text-[10px] text-gray-400 mt-2 pt-2 border-t border-white/8 text-center">👑 Maximum tier reached</p>
       )}
 
+      {isCurrent && r && (
+        <div className="mt-2.5 pt-2.5 border-t border-white/8">
+          {claimStatus?.claimed && claimStatus.payoutStatus === 'paid' ? (
+            <div className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold text-green-400 bg-green-500/10 border border-green-500/25">
+              <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+              Claimed this month
+              {claimStatus.txHash && (
+                <a
+                  href={`https://stellar.expert/explorer/public/tx/${claimStatus.txHash}`}
+                  target="_blank" rel="noreferrer"
+                  className="underline ml-1"
+                >
+                  view tx
+                </a>
+              )}
+            </div>
+          ) : claimStatus?.claimed && claimStatus.payoutStatus === 'paying' ? (
+            <div className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/25">
+              <span className="material-symbols-outlined text-sm animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>hourglass_top</span>
+              Payout in progress…
+            </div>
+          ) : (
+            <>
+              <button
+                onClick={onClaim}
+                disabled={claiming}
+                className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold text-black transition active:scale-[0.98] disabled:opacity-50"
+                style={{ background: tier.color }}
+              >
+                <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>redeem</span>
+                {claiming ? 'Claiming…' : claimStatus?.claimed && claimStatus.payoutStatus === 'pending' ? 'Retry Claim' : 'Claim This Month\'s Rewards'}
+              </button>
+              {claimError && (
+                <p className="text-[9px] text-red-400 mt-1.5 text-center">
+                  {claimError.message}
+                  {claimError.lobstrDeeplink && (
+                    <> — <a href={claimError.lobstrDeeplink} target="_blank" rel="noreferrer" className="underline">add trustline</a></>
+                  )}
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
       {isNext && (
         <p className="text-[9px] text-amber-400 font-semibold mt-2 pt-2 border-t border-white/8">
           🔥 {(tier.minBalance - balance).toLocaleString()} more {PRIMARY_CUSTOM_ASSET_LABEL} to unlock
@@ -131,6 +182,50 @@ export default function RewardsPage() {
   const progressPct = nextTier
     ? Math.min(100, ((balance - currentTier.minBalance) / (nextTier.minBalance - currentTier.minBalance)) * 100)
     : 100
+
+  const [claimStatus, setClaimStatus] = useState<{ claimed: boolean; txHash?: string; payoutStatus?: string } | null>(null)
+  const [claiming, setClaiming] = useState(false)
+  const [claimError, setClaimError] = useState<{ message: string; lobstrDeeplink?: string } | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadClaimStatus() {
+      try {
+        const initData = getTelegramInitData()
+        const res = await fetch('/api/rewards/claim', { headers: { 'x-telegram-init-data': initData } })
+        const json = await res.json()
+        if (!cancelled && json.success) setClaimStatus(json.data)
+      } catch {
+        // network failure — leave claimStatus as null, same as a non-success JSON response
+      }
+    }
+    loadClaimStatus()
+    return () => { cancelled = true }
+  }, [])
+
+  async function handleClaim() {
+    setClaiming(true)
+    setClaimError(null)
+    const initData = getTelegramInitData()
+    const res = await fetch('/api/rewards/claim', {
+      method: 'POST',
+      headers: { 'x-telegram-init-data': initData },
+    })
+    const json = await res.json()
+    setClaiming(false)
+    if (json.success) {
+      setClaimStatus({ claimed: true, txHash: json.data.txHash, payoutStatus: 'paid' })
+    } else if (json.code === 'NO_TRUST') {
+      setClaimError({ message: json.error, lobstrDeeplink: json.lobstrDeeplink })
+      setClaimStatus({ claimed: true, payoutStatus: 'pending' })
+    } else if (json.code === 'ALREADY_CLAIMED') {
+      setClaimStatus({ claimed: true, payoutStatus: 'paid' })
+    } else if (json.code === 'IN_PROGRESS') {
+      setClaimStatus({ claimed: true, payoutStatus: 'paying' })
+    } else {
+      setClaimError({ message: json.error ?? 'Claim failed — try again later.' })
+    }
+  }
 
   if (!ready) {
     return (
@@ -172,6 +267,10 @@ export default function RewardsPage() {
                 nextTier={status === 'current' ? nextTier : undefined}
                 progressPct={status === 'current' ? progressPct : undefined}
                 onBuy={status === 'current' && nextTier ? () => router.push('/buy') : undefined}
+                claimStatus={status === 'current' ? claimStatus : undefined}
+                onClaim={status === 'current' ? handleClaim : undefined}
+                claiming={status === 'current' ? claiming : undefined}
+                claimError={status === 'current' ? claimError : undefined}
               />
             )
           })}
