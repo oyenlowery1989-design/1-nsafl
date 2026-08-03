@@ -12,5 +12,6 @@ describe('tier reward assets', () => {
   it('prizeToAsset resolves a wGOLD prize label', () => {
     const asset = prizeToAsset('5 wGOLD')
     expect(asset?.code).toBe('wGOLD')
+    expect(asset?.issuer).toBe('GAJVAQ5DCOJVZ6AL3P4QVDTGMOHRVHG6WJ6252SOCLTX5MXXX22Y67FL')
   })
 })
