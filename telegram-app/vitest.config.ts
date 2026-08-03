@@ -13,6 +13,10 @@ export default defineConfig({
       // runs too late. Declare env here instead — same reason NEXT_PUBLIC_REWARD_ASSET_ISSUER
       // is set above.
       REWARD_SENDER_SECRET: 'SAZRKJADWVP4YGBTRRSVOSTGKGXXOMLLEGPFSYIFJ2TB4L5SG5HNGCQV',
+      // Same hoisting reason — app/api/rewards/claim/route.ts reads this into a
+      // module-level IS_DEV const, letting route tests call POST/GET without a
+      // real signed x-telegram-init-data header.
+      NEXT_PUBLIC_DEV_BYPASS: 'true',
     },
   },
   resolve: {

@@ -27,7 +27,7 @@ function TierCard({ tier, status, balance, nextTier, progressPct, onBuy, claimSt
   nextTier?: Tier | null
   progressPct?: number
   onBuy?: () => void
-  claimStatus?: { claimed: boolean; txHash?: string } | null
+  claimStatus?: { claimed: boolean; txHash?: string; payoutStatus?: string } | null
   onClaim?: () => void
   claiming?: boolean
   claimError?: { message: string; lobstrDeeplink?: string } | null
@@ -119,7 +119,7 @@ function TierCard({ tier, status, balance, nextTier, progressPct, onBuy, claimSt
 
       {isCurrent && r && (
         <div className="mt-2.5 pt-2.5 border-t border-white/8">
-          {claimStatus?.claimed ? (
+          {claimStatus?.claimed && claimStatus.payoutStatus === 'paid' ? (
             <div className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold text-green-400 bg-green-500/10 border border-green-500/25">
               <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
               Claimed this month
@@ -133,6 +133,11 @@ function TierCard({ tier, status, balance, nextTier, progressPct, onBuy, claimSt
                 </a>
               )}
             </div>
+          ) : claimStatus?.claimed && claimStatus.payoutStatus === 'paying' ? (
+            <div className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/25">
+              <span className="material-symbols-outlined text-sm animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>hourglass_top</span>
+              Payout in progress…
+            </div>
           ) : (
             <>
               <button
@@ -142,7 +147,7 @@ function TierCard({ tier, status, balance, nextTier, progressPct, onBuy, claimSt
                 style={{ background: tier.color }}
               >
                 <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>redeem</span>
-                {claiming ? 'Claiming…' : 'Claim This Month\'s Rewards'}
+                {claiming ? 'Claiming…' : claimStatus?.claimed && claimStatus.payoutStatus === 'pending' ? 'Retry Claim' : 'Claim This Month\'s Rewards'}
               </button>
               {claimError && (
                 <p className="text-[9px] text-red-400 mt-1.5 text-center">
@@ -185,10 +190,14 @@ export default function RewardsPage() {
   useEffect(() => {
     let cancelled = false
     async function loadClaimStatus() {
-      const initData = getTelegramInitData()
-      const res = await fetch('/api/rewards/claim', { headers: { 'x-telegram-init-data': initData } })
-      const json = await res.json()
-      if (!cancelled && json.success) setClaimStatus(json.data)
+      try {
+        const initData = getTelegramInitData()
+        const res = await fetch('/api/rewards/claim', { headers: { 'x-telegram-init-data': initData } })
+        const json = await res.json()
+        if (!cancelled && json.success) setClaimStatus(json.data)
+      } catch {
+        // network failure — leave claimStatus as null, same as a non-success JSON response
+      }
     }
     loadClaimStatus()
     return () => { cancelled = true }
@@ -208,8 +217,11 @@ export default function RewardsPage() {
       setClaimStatus({ claimed: true, txHash: json.data.txHash, payoutStatus: 'paid' })
     } else if (json.code === 'NO_TRUST') {
       setClaimError({ message: json.error, lobstrDeeplink: json.lobstrDeeplink })
+      setClaimStatus({ claimed: true, payoutStatus: 'pending' })
     } else if (json.code === 'ALREADY_CLAIMED') {
-      setClaimStatus({ claimed: true })
+      setClaimStatus({ claimed: true, payoutStatus: 'paid' })
+    } else if (json.code === 'IN_PROGRESS') {
+      setClaimStatus({ claimed: true, payoutStatus: 'paying' })
     } else {
       setClaimError({ message: json.error ?? 'Claim failed — try again later.' })
     }

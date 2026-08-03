@@ -3,7 +3,7 @@ import { validateTelegramInitData } from '@/lib/telegram'
 import { createServiceClient } from '@/lib/supabase-server'
 import { ok, fail } from '@/lib/api-response'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { getTierForBalance } from '@/config/tiers'
+import { getTierForBalance, TIERS } from '@/config/tiers'
 import { sendTierClaimPayment } from '@/lib/stellar-payment'
 import { BRANDING } from '@/config/branding'
 
@@ -91,26 +91,52 @@ export async function POST(req: NextRequest) {
       copper_amount: tier.rewards.copper,
       payout_status: 'pending',
     })
-    .select('id')
+    .select('id, gold_amount, silver_amount, copper_amount')
     .single()
 
-  if (insertError) {
-    if (insertError.code === '23505') return fail('Already claimed this month', 'ALREADY_CLAIMED', 409)
-    return fail(insertError.message, 'DB_ERROR', 500)
+  let claimRow: { id: number; gold_amount: number; silver_amount: number; copper_amount: number }
+  let isPhysicalGoldEligible = tier.rewards.physicalGold
+
+  if (!insertError) {
+    claimRow = inserted
+  } else {
+    if (insertError.code !== '23505') return fail(insertError.message, 'DB_ERROR', 500)
+
+    // Row already exists for this month — look it up rather than assuming it's terminal.
+    // A prior attempt may have inserted-then-failed-to-pay (e.g. NO_TRUST), which must
+    // be retried, not reported as a permanent lockout.
+    const { data: existing } = await supabase
+      .from('tier_reward_claims')
+      .select('id, tier_id, payout_status, payout_tx_hash, gold_amount, silver_amount, copper_amount')
+      .eq('telegram_id', user.id)
+      .eq('claim_month', month)
+      .maybeSingle()
+
+    if (!existing) return fail('Already claimed this month', 'ALREADY_CLAIMED', 409)
+
+    if (existing.payout_status === 'paid') {
+      return fail('Already claimed this month', 'ALREADY_CLAIMED', 409)
+    }
+    if (existing.payout_status === 'paying') {
+      return NextResponse.json(
+        { success: false, error: 'A previous claim attempt is still in progress', code: 'IN_PROGRESS' },
+        { status: 409 },
+      )
+    }
+
+    // 'pending' — re-drive payment against the amounts already recorded on that
+    // row (don't recompute from current tier; the original claimed amounts stand).
+    claimRow = { id: existing.id, gold_amount: existing.gold_amount, silver_amount: existing.silver_amount, copper_amount: existing.copper_amount }
+    isPhysicalGoldEligible = TIERS.find((t) => t.id === existing.tier_id)?.rewards?.physicalGold ?? false
   }
 
-  const payment = await sendTierClaimPayment(
-    { id: inserted.id, gold_amount: tier.rewards.gold, silver_amount: tier.rewards.silver, copper_amount: tier.rewards.copper },
-    resolved.stellarAddress,
-    supabase,
-  )
-
-  if (tier.rewards.physicalGold && ADMIN_TELEGRAM_ID) {
-    void notifyAdminPhysicalGold(user.id, user.username ?? null)
-    await supabase.from('tier_reward_claims').update({ physical_gold_notified: true }).eq('id', inserted.id)
-  }
+  const payment = await sendTierClaimPayment(claimRow, resolved.stellarAddress, supabase)
 
   if (payment.sent) {
+    if (isPhysicalGoldEligible && ADMIN_TELEGRAM_ID) {
+      await notifyAdminPhysicalGold(user.id, user.username ?? null)
+      await supabase.from('tier_reward_claims').update({ physical_gold_notified: true }).eq('id', claimRow.id)
+    }
     return ok({ claimed: true, txHash: payment.txHash })
   }
 
@@ -123,7 +149,7 @@ export async function POST(req: NextRequest) {
   return fail(payment.error ?? 'Payment failed', payment.code ?? 'HORIZON_ERROR', 502)
 }
 
-/** Fire-and-forget Telegram DM to the admin — never blocks or fails the claim. */
+/** Telegram DM to the admin. Swallows its own errors — awaiting it never fails the claim. */
 async function notifyAdminPhysicalGold(telegramId: number, username: string | null) {
   if (!BOT_TOKEN || !ADMIN_TELEGRAM_ID) return
   const who = username ? `@${username}` : `telegram_id ${telegramId}`
