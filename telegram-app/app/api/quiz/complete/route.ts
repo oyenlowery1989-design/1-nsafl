@@ -16,9 +16,9 @@ const BASE_POINTS = 10
 const PERFECT_PRIZES = [
   { label: '1000 XLM', prize: 'xlm_1000', weight: 10 },
   { label: '100 XLM', prize: 'xlm_100', weight: 20 },
-  { label: `100 ${PRIMARY_CUSTOM_ASSET_CODE}`, prize: 'nsafl_100', weight: 30 },
-  { label: `50 ${PRIMARY_CUSTOM_ASSET_CODE}`, prize: 'nsafl_50', weight: 40 },
-  { label: `25 ${PRIMARY_CUSTOM_ASSET_CODE}`, prize: 'nsafl_25', weight: 50 },
+  { label: `100 ${PRIMARY_CUSTOM_ASSET_CODE}`, prize: 'token_100', weight: 30 },
+  { label: `50 ${PRIMARY_CUSTOM_ASSET_CODE}`, prize: 'token_50', weight: 40 },
+  { label: `25 ${PRIMARY_CUSTOM_ASSET_CODE}`, prize: 'token_25', weight: 50 },
   { label: '+1 Ball', prize: 'ball', weight: 170 },
   { label: 'Better luck next time!', prize: 'none', weight: 680 },
 ]

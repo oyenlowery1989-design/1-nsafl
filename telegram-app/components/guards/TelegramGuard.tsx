@@ -2,6 +2,10 @@
 import { useEffect, useState } from "react";
 import type { TelegramUser } from "@/lib/telegram";
 import { getTelegramInitData } from "@/lib/telegram";
+import {
+  REFERRER_STORAGE_KEY,
+  ACCESS_RECORDED_STORAGE_KEY,
+} from "@/lib/constants";
 import { useWalletStore } from "@/hooks/useStore";
 
 type TelegramWebApp = {
@@ -88,7 +92,7 @@ function stopDevToolsWatch() {
 // Honeypot: silently log anyone who hits the block screen (non-Telegram browser).
 // Collects standard server-log data (IP via headers) + lightweight client signals.
 // Deduped per browser session via sessionStorage — one record per visit, not per page load.
-const ACCESS_RECORDED_KEY = "nsafl_access_recorded";
+const ACCESS_RECORDED_KEY = ACCESS_RECORDED_STORAGE_KEY;
 
 function recordAccessAttempt(tgSdkPresent: boolean, tgSdkFake: boolean) {
   // Admin panel is intentionally accessed from a browser — don't log it as a suspicious attempt
@@ -164,7 +168,7 @@ export default function TelegramGuard({
           const parsed = parseInt(raw, 10);
           if (!isNaN(parsed)) {
             referredBy = parsed;
-            sessionStorage.setItem("nsafl_referrer", String(parsed));
+            sessionStorage.setItem(REFERRER_STORAGE_KEY, String(parsed));
           }
         }
         // Persist Telegram user ID so referral links work on profile/leaderboard

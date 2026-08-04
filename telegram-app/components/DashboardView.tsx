@@ -285,7 +285,7 @@ export default function DashboardView({ address, balance }: Props) {
             </div>
             {/* Prize pills */}
             <div className="flex flex-wrap gap-1.5 mb-3">
-              {['5,000 wNSAFL', 'XLM', 'GOLD', 'SILVER', 'Free Spin'].map((prize) => (
+              {[`5,000 w${PRIMARY_CUSTOM_ASSET_CODE}`, 'XLM', 'GOLD', 'SILVER', 'Free Spin'].map((prize) => (
                 <span key={prize} className="text-[9px] font-semibold px-2 py-0.5 rounded-full border" style={{ borderColor: `${BRANDING.colors.primary}44`, color: BRANDING.colors.primary, background: `${BRANDING.colors.primary}11` }}>{prize}</span>
               ))}
             </div>

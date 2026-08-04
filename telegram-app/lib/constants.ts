@@ -3,6 +3,11 @@ export const PRIMARY_CUSTOM_ASSET_CODE =
 
 export const PRIMARY_CUSTOM_ASSET_LABEL = `$${PRIMARY_CUSTOM_ASSET_CODE}`
 
+// Brand-derived browser storage keys — follow the asset code so clones rebrand automatically
+const KEY_PREFIX = PRIMARY_CUSTOM_ASSET_CODE.toLowerCase()
+export const REFERRER_STORAGE_KEY = `${KEY_PREFIX}_referrer`
+export const ACCESS_RECORDED_STORAGE_KEY = `${KEY_PREFIX}_access_recorded`
+
 export const PRIMARY_CUSTOM_ASSET_ISSUER =
   process.env.NEXT_PUBLIC_PRIMARY_ASSET_ISSUER ?? ''
 
