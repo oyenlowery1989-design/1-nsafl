@@ -48,20 +48,15 @@ function TeamLogo({ teamId, size = 20 }: { teamId: string | null; size?: number 
 }
 
 // ── Podium ────────────────────────────────────────────────────────────────────
-function Podium({ entries }: { entries: LeaderboardEntry[] }) {
-  const first  = entries[0];
-  const second = entries[1];
-  const third  = entries[2];
-
-  const PodiumSlot = ({
-    entry, height, emoji, labelColor, isCenter,
-  }: {
-    entry: LeaderboardEntry | undefined;
-    height: string;
-    emoji: string;
-    labelColor: string;
-    isCenter?: boolean;
-  }) => {
+function PodiumSlot({
+  entry, height, emoji, labelColor, isCenter,
+}: {
+  entry: LeaderboardEntry | undefined;
+  height: string;
+  emoji: string;
+  labelColor: string;
+  isCenter?: boolean;
+}) {
     if (!entry) return <div className="flex-1" />;
     return (
       <div className={`flex-1 flex flex-col items-center gap-1 ${isCenter ? '-mt-4' : 'mt-2'}`}>
@@ -92,7 +87,12 @@ function Podium({ entries }: { entries: LeaderboardEntry[] }) {
         </div>
       </div>
     );
-  };
+}
+
+function Podium({ entries }: { entries: LeaderboardEntry[] }) {
+  const first  = entries[0];
+  const second = entries[1];
+  const third  = entries[2];
 
   return (
     <div className="glass-card px-4 pt-4 pb-0 rounded-xl border border-primary/10 overflow-hidden">
@@ -244,7 +244,8 @@ export default function LeaderboardPage() {
 
   const showContent = useMinLoader(loaded);
 
-  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // load() flips loading state synchronously on purpose (fetch-on-mount pattern)
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
 
   const myEntry = currentAddress
     ? entries.find((e) => e.stellarAddress.toLowerCase() === currentAddress.toLowerCase()) ?? null
@@ -256,7 +257,10 @@ export default function LeaderboardPage() {
     : null;
   const neededToClimb = personAhead ? Math.ceil(personAhead.balance - myBal + 1) : null;
 
-  const liveTgId = typeof window !== 'undefined' ? (window as any)?.Telegram?.WebApp?.initDataUnsafe?.user?.id : null;
+  const liveTgId = typeof window !== 'undefined'
+    ? (window as unknown as { Telegram?: { WebApp?: { initDataUnsafe?: { user?: { id?: number } } } } })
+        ?.Telegram?.WebApp?.initDataUnsafe?.user?.id ?? null
+    : null;
   const tgId = liveTgId ?? telegramUserId;
   const referralLink = buildReferralLink(tgId);
 

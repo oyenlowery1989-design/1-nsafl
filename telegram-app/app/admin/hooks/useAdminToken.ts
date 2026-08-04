@@ -6,6 +6,7 @@ export function useAdminToken() {
 
   useEffect(() => {
     const stored = localStorage.getItem('admin_token')
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration-safe localStorage read; must run post-mount
     setToken(stored ?? '')
   }, [])
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- in-memory Supabase fake; typing the full builder chain adds no test safety */
 import { describe, it, expect } from 'vitest'
 import { GAME_LIMITS, getSpinStatus, consumeSpin } from '@/lib/gamePool'
 
@@ -20,7 +21,7 @@ function fakeSupabase(tables: { users: any[]; wallets: any[]; wallet_balances: a
     return key
   }
   function builder(tableName: string) {
-    let rows = tables[tableName as keyof typeof tables] as any[]
+    const rows = tables[tableName as keyof typeof tables] as any[]
     let mode: 'select' | 'update' = 'select'
     let patch: any = null
     let countOpt = false

@@ -57,6 +57,7 @@ function AdminShellInner({ children }: { children: React.ReactNode }) {
       router.push('/admin')
       return
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration-safe localStorage read; must run post-mount
     setToken(stored ?? '')
   }, [pathname, router])
 

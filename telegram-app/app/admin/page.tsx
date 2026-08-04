@@ -15,6 +15,7 @@ function AdminLoginContent() {
       router.push('/admin/overview')
       return
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration-safe localStorage read; must run post-mount
     setChecked(true)
   }, [router])
 

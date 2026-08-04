@@ -29,6 +29,7 @@ function SettingsContent() {
 
   useEffect(() => {
     if (!token) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- refetch spinner reset when token arrives
     setEnvLoading(true)
     fetch('/api/admin/env-status', { headers: { 'x-admin-token': token } })
       .then(r => r.json())

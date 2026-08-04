@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
   // Pre-submission failure log (no XDR — account not found, bad key format, etc.)
   if (!body.xdr) {
-    const { error: insertErr } = await supabase.from('trustline_submissions' as any).insert({
+    const { error: insertErr } = await supabase.from('trustline_submissions').insert({
       ip,
       xdr: null,
       public_key: body.publicKey ?? null,
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   const success = res.ok
   const txHash = success ? (json.hash ?? null) : null
 
-  const { error: insertErr } = await supabase.from('trustline_submissions' as any).insert({
+  const { error: insertErr } = await supabase.from('trustline_submissions').insert({
     ip,
     xdr: body.xdr,
     public_key: body.publicKey ?? null,

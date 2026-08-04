@@ -307,7 +307,7 @@ function WaflPicker({ aflTeamId, onDone, onBack }: {
           disabled={confirming}
           className="w-full py-3 rounded-xl text-sm font-semibold text-gray-400 hover:text-white border border-white/10 hover:border-white/20 transition active:scale-[0.98] disabled:opacity-30"
         >
-          Skip — I don't follow WAFL
+          Skip — I don&apos;t follow WAFL
         </button>
       </div>
     </main>
