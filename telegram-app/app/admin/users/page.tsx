@@ -186,7 +186,7 @@ function UsersPageInner() {
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url; a.download = 'nsafl_users.csv'; a.click()
+    a.href = url; a.download = `${PRIMARY_CUSTOM_ASSET_CODE.toLowerCase()}_users.csv`; a.click()
     URL.revokeObjectURL(url)
   }
 

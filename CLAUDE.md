@@ -95,7 +95,7 @@ html examples/                         ← HTML reference designs (NOT html1 - n
     │   ├── supabase-server.ts         ← Server client (createServerSupabaseClient, createServiceClient)
     │   ├── api-response.ts            ← ok(), fail() helpers
     │   └── logger.ts
-    └── supabase/migrations/           ← 000_baseline_schema.sql + 011, 013-025
+    └── supabase/migrations/           ← 000_baseline_schema.sql + 011, 013-029
 ```
 
 > **NOTE:** There is no `src/` directory. All app code lives directly under `telegram-app/` (app/, components/, hooks/, lib/, config/).
@@ -198,10 +198,14 @@ To fork this app for a new token/brand, edit only these per-clone points — not
 - **`config/tiers.ts`** — tier thresholds, labels, and reward percentages.
 - **`config/afl.ts`** — club/team list; swap for whatever team-selection domain the new app needs (or set `BRANDING.teamSelection = 'off'` if the app has no team-selection step).
 - **`public/` assets** — logos, icons, favicon.
-- **The two brand hex codes** — `#0A0E1A` (background) and `#D4AF37` (gold) are defined once as CSS variables in `app/globals.css` `@theme`, but are also repeated inline as Tailwind arbitrary values (`bg-[#0A0E1A]`, `text-[#D4AF37]`, etc.) across dozens of components — a full CSS-variable migration was judged not worth it (hundreds of call sites, zero logic value). To rebrand colors, grep-replace both hex strings project-wide.
-- **Reward assets** (`wNSAFL`-style wrapped tokens used in the Games Hub) are per-clone DATA, not branding copy — edit `lib/rewardAssets.ts` (asset list + Lobstr deeplinks) and `lib/gamePool.ts` `PRIZE_TABLES`, plus the three client-side prize display arrays in `components/SlotMachine.tsx`, `components/ScratchCard.tsx`, and `app/game/page.tsx` — these four must stay index-aligned with each other. Grep for `w<ASSET>` to find every label.
-- **Supabase project + migrations** — new Supabase project, run migrations 001+ in order, update `NEXT_PUBLIC_SUPABASE_URL` / keys.
-- **BotFather setup** — new bot via `/newbot`, `/newapp` to attach the Mini App URL, then set `TELEGRAM_BOT_TOKEN` to match.
+- **The two brand hex codes** — `#0A0E1A` (background) and `#D4AF37` (gold) live in exactly three code files: `app/globals.css` `@theme` (components use theme classes like `bg-background-dark` / `text-primary`), `config/branding.ts` `colors`, and `config/tiers.ts` (two tier `color` entries). Rebrand = edit those three files; no project-wide grep needed. (An earlier inline-hex era was fully migrated to theme classes.)
+- **`config/partnerClub.ts`** — partner-club promo data (+ its image in `public/`); edit or empty for a clone.
+- **`config/afl-players.ts`** — player list for homecoming campaigns; swap with the new domain's data.
+- **Reward assets** (`wNSAFL`-style wrapped tokens used in the Games Hub) are per-clone DATA, not branding copy — edit `lib/rewardAssets.ts` (asset list + Lobstr deeplinks) and `lib/gamePool.ts` `PRIZE_TABLES`, plus the three client-side prize display arrays in `components/SlotMachine.tsx`, `components/ScratchCard.tsx`, and `app/game/page.tsx` — these four must stay index-aligned with each other (`__tests__/gamePrizeAlignment.test.ts` fails on drift). Game-page/dashboard promo strings derive from the arrays; `components/TrustlineModal.tsx` `THEME` map is keyed by asset code (`wNSAFL` etc.) — update its keys too. Grep for `w<ASSET>` to find every label.
+- **Supabase project + migrations** — new Supabase project, run `000_baseline_schema.sql` then `011`, `013`–`029` in order, update `NEXT_PUBLIC_SUPABASE_URL` / keys.
+- **`next.config.ts`** — `remotePatterns` whitelists the club-logo CDNs (TheSportsDB, Wikimedia); a new team domain needs its image hosts added.
+- **`.env.example`** — template of every env var (`telegram-app/.env.example`); copy to `.env.local` and fill.
+- **BotFather setup** — new bot via `/newbot`, `/newapp` to attach the Mini App URL, then set `TELEGRAM_BOT_TOKEN` to match, and point the bot webhook at the new domain (`setWebhook` with `TELEGRAM_WEBHOOK_SECRET`).
 
 Everything else (API routes, components, hooks, page structure) is brand-agnostic and should not need touching.
 
@@ -214,7 +218,7 @@ Everything else (API routes, components, hooks, page structure) is brand-agnosti
 - `donations` table has `donation_type` (general/team/player) and `donation_target` columns
 - Tier IDs use hyphens: `pre-tier`, `tier-1` .. `tier-10` (11 tiers total, see `config/tiers.ts`)
 - Supabase project ID: `vrqlxguhfndrqiipisyi`
-- Migration status: `001`–`010` and `012` were applied directly to the project and never committed as individual files; `000_baseline_schema.sql` (full `public` schema dump via `supabase db dump --schema public`) now covers that gap, followed by `011`, `013`–`025` as individual files — `lib/database.types.ts` is regenerated via `npx supabase gen types typescript --project-id vrqlxguhfndrqiipisyi`
+- Migration status: `001`–`010` and `012` were applied directly to the project and never committed as individual files; `000_baseline_schema.sql` (full `public` schema dump via `supabase db dump --schema public`) now covers that gap, followed by `011`, `013`–`029` as individual files — `lib/database.types.ts` is regenerated via `npx supabase gen types typescript --project-id vrqlxguhfndrqiipisyi`
 - `(supabase as any)` casts remain widespread across `app/api/**` and `lib/gamePool.ts` — a byproduct of the missing types regen above, not a targeted table-by-table gap
 
 ---

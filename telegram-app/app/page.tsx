@@ -7,7 +7,7 @@ import BottomNav from '@/components/BottomNav'
 import NoTrustlineHelp from '@/components/NoTrustlineHelp'
 import OnboardingSlides from '@/components/OnboardingSlides'
 import ReferralWelcomeScreen from '@/components/ReferralWelcomeScreen'
-import { PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
+import { PRIMARY_CUSTOM_ASSET_LABEL, REFERRER_STORAGE_KEY } from '@/lib/constants'
 import { isValidStellarAddress, hasPrimaryAssetTrustline } from '@/lib/stellar'
 import { getTelegramInitData } from '@/lib/telegram'
 import { haptic } from '@/lib/telegram-ui'
@@ -29,7 +29,7 @@ export default function HomePage() {
   const hasSeenOnboarding = useWalletStore((s) => s.hasSeenOnboarding)
   const setHasSeenOnboarding = useWalletStore((s) => s.setHasSeenOnboarding)
   const referrerId = typeof window !== 'undefined'
-    ? parseInt(sessionStorage.getItem('nsafl_referrer') ?? '', 10) || null
+    ? parseInt(sessionStorage.getItem(REFERRER_STORAGE_KEY) ?? '', 10) || null
     : null
 
   const [phase, setPhase] = useState<Phase>(
@@ -38,7 +38,7 @@ export default function HomePage() {
       : isConnected ? (favoriteTeam || BRANDING.teamSelection === 'off' ? 'dashboard' : 'team-select') : 'gate'
   )
 
-  // TelegramGuard writes 'nsafl_referrer' to sessionStorage after mount, so the
+  // TelegramGuard writes REFERRER_STORAGE_KEY to sessionStorage after mount, so the
   // referral-welcome upgrade must happen post-mount, not during useState init.
   useEffect(() => {
     if (!hasSeenOnboarding && referrerId && (phase === 'onboarding' || phase === 'gate')) {
@@ -73,7 +73,7 @@ export default function HomePage() {
         return
       }
 
-      const referrerRaw = sessionStorage.getItem('nsafl_referrer')
+      const referrerRaw = sessionStorage.getItem(REFERRER_STORAGE_KEY)
       const referredBy = referrerRaw ? parseInt(referrerRaw, 10) : null
 
       const authRes = await fetch('/api/auth/wallet', {

@@ -129,6 +129,14 @@ export const PRIZES: Prize[] = [
   { label: "Better Luck", emoji: "💨", color: "#1a202c", weight: 450 },
 ];
 
+// Unique asset codes across the wheel prizes — drives UI copy + trustline checklist,
+// so per-clone prize edits in PRIZES propagate without touching strings below.
+const GAME_ASSET_CODES = [
+  ...new Set(
+    PRIZES.filter(isAssetPrize).map((p) => p.label.split(" ").pop() as string),
+  ),
+];
+
 interface SpinResult {
   prize: string;
   amount: number | null;
@@ -666,7 +674,7 @@ function LuckyDraw({
                     {stellarAddress && (
                       <TrustlineChecker
                         stellarAddress={stellarAddress}
-                        requiredCodes={["wXLM", "wNSAFL", "wXRP", "wUSDC"]}
+                        requiredCodes={GAME_ASSET_CODES}
                       />
                     )}
                     <button
@@ -988,7 +996,7 @@ function HubView({
               )}
             </div>
             <p className="text-[11px] text-gray-500 ml-8">
-              Win wXLM, wNSAFL, wXRP, wUSDC — or bonus spins 🎰
+              Win {GAME_ASSET_CODES.join(", ")} — or bonus spins 🎰
             </p>
           </div>
 
@@ -1092,7 +1100,7 @@ function HubView({
                   ) : null}
                 </div>
                 <p className="text-[11px] text-gray-500 ml-8">
-                  Match 3 reels — win wXLM, wNSAFL, wXRP, wUSDC 🎰
+                  Match 3 reels — win {GAME_ASSET_CODES.join(", ")} 🎰
                 </p>
               </div>
 
