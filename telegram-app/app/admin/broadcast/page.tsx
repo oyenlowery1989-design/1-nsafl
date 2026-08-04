@@ -62,7 +62,7 @@ function BroadcastContent() {
           </select>
         </div>
         <div>
-          <label className="block text-xs text-gray-400 mb-1.5">Message <span className="text-gray-600">(HTML supported: &lt;b&gt;bold&lt;/b&gt;, &lt;i&gt;italic&lt;/i&gt;, &lt;a href="..."&gt;link&lt;/a&gt;)</span></label>
+          <label className="block text-xs text-gray-400 mb-1.5">Message <span className="text-gray-600">(HTML supported: &lt;b&gt;bold&lt;/b&gt;, &lt;i&gt;italic&lt;/i&gt;, &lt;a href=&quot;...&quot;&gt;link&lt;/a&gt;)</span></label>
           <textarea
             value={message}
             onChange={e => { setMessage(e.target.value); setPreview(null); setConfirm(false); setResult(null) }}

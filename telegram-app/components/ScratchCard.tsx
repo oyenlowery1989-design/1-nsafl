@@ -361,6 +361,7 @@ export default function ScratchCard({
   useEffect(() => {
     if (!allRevealed || submittedRef.current || prizeIdx === null) return
     submittedRef.current = true
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot transition when reveal completes, guarded by submittedRef
     setSubmitted(true)
 
     const p = SCRATCH_PRIZES[prizeIdx]

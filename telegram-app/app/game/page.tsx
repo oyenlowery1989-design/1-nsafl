@@ -330,6 +330,11 @@ function LuckyDraw({
     return () => cancelAnimationFrame(rafRef.current);
   }, [spinning, drawWheel]);
 
+  const [claimed, setClaimed] = useState(false);
+  const [claimSending, setClaimSending] = useState(false);
+  const [autoSent, setAutoSent] = useState(false);
+  const [autoSentTxHash, setAutoSentTxHash] = useState<string | null>(null);
+
   const handleSpin = useCallback(async () => {
     if (spinning || processing) return;
     if (!canSpin && !freeSpin) return;
@@ -393,6 +398,7 @@ function LuckyDraw({
     if (!result) return;
     if (winSentRef.current) return;
     winSentRef.current = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot reset per new result, guarded by winSentRef
     setClaimed(false); // reset claim button for new win
 
     if (result.label === "Free Spin") {
@@ -439,10 +445,6 @@ function LuckyDraw({
     result.label !== "Free Spin" &&
     (isAssetPrize(result) || result.label === "+2 Spins");
 
-  const [claimed, setClaimed] = useState(false);
-  const [claimSending, setClaimSending] = useState(false);
-  const [autoSent, setAutoSent] = useState(false);
-  const [autoSentTxHash, setAutoSentTxHash] = useState<string | null>(null);
   const handleClaimViaBot = useCallback(async () => {
     if (!winCode || claimed || claimSending) return;
     setClaimSending(true);

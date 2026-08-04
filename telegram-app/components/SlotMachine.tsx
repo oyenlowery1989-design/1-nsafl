@@ -322,6 +322,7 @@ export default function SlotMachine({
   useEffect(() => {
     if (!result || winSentRef.current) return
     winSentRef.current = true
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot reset per new result, guarded by winSentRef
     setClaimed(false)
 
     if (result.label === 'Free Spin') {

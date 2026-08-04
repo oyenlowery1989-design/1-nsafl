@@ -60,7 +60,7 @@ function UserSearchContent() {
       </form>
       {err && <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">{err}</p>}
       {!searching && results.length === 0 && q && !err && (
-        <p className="text-sm text-gray-600 text-center py-6">No users found for "{q}"</p>
+        <p className="text-sm text-gray-600 text-center py-6">No users found for &quot;{q}&quot;</p>
       )}
       {results.map(user => {
         const primary = user.wallets?.find(w => w.is_primary) ?? user.wallets?.[0]
