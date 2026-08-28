@@ -52,6 +52,7 @@ export const SHOWN_ASSET_CONFIGS: AssetConfig[] = (
     }
   })
 
+// Compatibility export until BottomNav consumes getNavigationItems from config/app.
 export const NAV_ITEMS = [
   { href: '/stats',      label: 'Stats',      icon: 'query_stats',   isCenter: false },
   { href: '/clubs',      label: 'Clubs',      icon: 'stadium',       isCenter: false },

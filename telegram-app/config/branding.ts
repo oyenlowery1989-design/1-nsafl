@@ -1,5 +1,5 @@
-// config/branding.ts — per-clone file. A new project edits THIS file, .env,
-// config/tiers.ts, config/afl.ts, and public/ assets. Nothing else.
+// Rebrand in config/app.ts, config/branding.ts, config/tiers.ts, config/afl.ts,
+// .env, and public/ assets.
 import { PRIMARY_CUSTOM_ASSET_CODE, PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
 
 const APP_NAME = 'The Homecoming Hub'
