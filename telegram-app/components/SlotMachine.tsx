@@ -3,7 +3,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { haptic } from '@/lib/telegram-ui'
 import { getTelegramInitData, openTelegramLink, buildBotStartLink } from '@/lib/telegram'
 import { BRANDING } from '@/config/branding'
-import { WRAPPED_PRIMARY_ASSET_CODE } from '@/lib/rewardAssets'
+import { GAME_PRIZE_DEFINITIONS, type GamePrizeDefinition } from '@/lib/rewardAssets'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const SYM_SIZE = 64       // px per symbol cell
@@ -13,32 +13,17 @@ const INIT_IDX = 13       // which symbol is centred at startup (midpoint)
 const INIT_Y = (1 - INIT_IDX) * SYM_SIZE    // -768px
 
 // ── Prize table ────────────────────────────────────────────────────────────────
-interface SlotPrize {
-  label: string
+interface SlotPrize extends GamePrizeDefinition {
   symbol: string
-  weight: number
-  isAsset?: boolean
-  isWXLM?: boolean
-  isPrimaryAsset?: boolean
-  isWXRP?: boolean
-  isWUSDC?: boolean
-  amount?: number
 }
 
 // Client-side reel rendering ONLY (labels/symbols) — the server (lib/gamePool.ts
 // PRIZE_TABLES.slot_machine) rolls the prize and returns its index. This array's order MUST
 // match PRIZE_TABLES.slot_machine exactly so `prizeIndex` from the server maps to the right prize.
-export const SLOT_PRIZES: SlotPrize[] = [
-  { label: '100 wXLM',    symbol: '💎', weight: 10,  isAsset: true, isWXLM: true,   amount: 100  },
-  { label: `5000 ${WRAPPED_PRIMARY_ASSET_CODE}`, symbol: '🏆', weight: 15,  isAsset: true, isPrimaryAsset: true, amount: 5000 },
-  { label: `2500 ${WRAPPED_PRIMARY_ASSET_CODE}`, symbol: '🥇', weight: 25,  isAsset: true, isPrimaryAsset: true, amount: 2500 },
-  { label: `1000 ${WRAPPED_PRIMARY_ASSET_CODE}`, symbol: '⭐', weight: 50,  isAsset: true, isPrimaryAsset: true, amount: 1000 },
-  { label: '50 wXRP',     symbol: '🔷', weight: 50,  isAsset: true, isWXRP: true,   amount: 50   },
-  { label: '100 wUSDC',   symbol: '💵', weight: 50,  isAsset: true, isWUSDC: true,  amount: 100  },
-  { label: '+2 Spins',    symbol: '🎱', weight: 50  },
-  { label: 'Free Spin',   symbol: '🔄', weight: 250 },
-  { label: 'Better Luck', symbol: '💨', weight: 450 },
-]
+export const SLOT_PRIZES = GAME_PRIZE_DEFINITIONS.slot_machine.map((prize, index) => ({
+  ...prize,
+  symbol: ['💎', '🏆', '🥇', '⭐', '🔷', '💵', '🎱', '🔄', '💨'][index],
+})) as SlotPrize[]
 
 const SYMBOLS = SLOT_PRIZES.map(p => p.symbol)
 
@@ -55,10 +40,7 @@ interface SpinResult {
 }
 
 function getAssetLabel(p: SlotPrize): string {
-  if (p.isWXLM) return 'wXLM'
-  if (p.isPrimaryAsset) return WRAPPED_PRIMARY_ASSET_CODE
-  if (p.isWXRP) return 'wXRP'
-  return 'wUSDC'
+  return p.label.trim().split(/\s+/).at(-1) ?? ''
 }
 
 /** Build a shuffled strip of STRIP_COUNT symbols (each of 9 symbols appearing 3×). */

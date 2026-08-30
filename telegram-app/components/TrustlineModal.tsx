@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { REWARD_ASSETS, RewardAsset } from "@/lib/rewardAssets";
+import { REWARD_ASSETS, RewardAsset, WRAPPED_PRIMARY_ASSET_CODE } from "@/lib/rewardAssets";
 import { HORIZON_URL } from "@/lib/constants";
 import { getTelegramInitData } from "@/lib/telegram";
 import { BRANDING } from "@/config/branding";
@@ -30,7 +30,7 @@ const THEME: Record<
     text: "#38bdf8",
     badge: "🌊",
   },
-  wNSAFL: {
+  [WRAPPED_PRIMARY_ASSET_CODE]: {
     bg: "rgba(183,121,31,0.15)",
     border: "rgba(212,175,55,0.3)",
     text: BRANDING.colors.primary,

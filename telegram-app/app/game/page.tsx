@@ -10,7 +10,7 @@ import {
   PRIMARY_CUSTOM_ASSET_CODE,
   PRIMARY_CUSTOM_ASSET_LABEL,
 } from "@/lib/constants";
-import { WRAPPED_PRIMARY_ASSET_CODE } from "@/lib/rewardAssets";
+import { GAME_PRIZE_DEFINITIONS, type GamePrizeDefinition } from "@/lib/rewardAssets";
 import { BRANDING } from "@/config/branding";
 import { PARTNER_CLUB } from "@/config/partnerClub";
 import WalletGuard from "@/components/WalletGuard";
@@ -34,101 +34,33 @@ type GameView =
   | "quiz-result";
 
 // ── Lucky Draw ────────────────────────────────────────────────────────────────
-interface Prize {
-  label: string;
+interface Prize extends GamePrizeDefinition {
   emoji: string;
   color: string;
-  weight: number;
-  isPrimaryAsset?: boolean;
-  isWXLM?: boolean;
-  isWXRP?: boolean;
-  isWUSDC?: boolean;
-  amount?: number;
 }
 
 function isAssetPrize(p: Prize): boolean {
-  return !!(p.isPrimaryAsset || p.isWXLM || p.isWXRP || p.isWUSDC);
+  return !!p.isAsset;
 }
 
 function getAssetSymbol(p: Prize): string {
-  if (p.isWXLM) return "wXLM";
-  if (p.isPrimaryAsset) return WRAPPED_PRIMARY_ASSET_CODE;
-  if (p.isWXRP) return "wXRP";
-  return "wUSDC";
+  return p.label.trim().split(/\s+/).at(-1) ?? "";
 }
 
 // Client-side wheel rendering ONLY (labels/colors/emoji) — the server (lib/gamePool.ts
 // PRIZE_TABLES.lucky_draw) rolls the prize and returns its index. This array's order MUST
 // match PRIZE_TABLES.lucky_draw exactly so `prizeIndex` from the server points at the right segment.
-export const PRIZES: Prize[] = [
-  {
-    label: "100 wXLM",
-    emoji: "💎",
-    color: "#0a3d62",
-    weight: 15,
-    isWXLM: true,
-    amount: 100,
-  },
-  {
-    label: "50 wXLM",
-    emoji: "✨",
-    color: "#1e6091",
-    weight: 20,
-    isWXLM: true,
-    amount: 50,
-  },
-  {
-    label: "20 wXLM",
-    emoji: "🌟",
-    color: "#1a4a6a",
-    weight: 30,
-    isWXLM: true,
-    amount: 20,
-  },
-  {
-    label: `5000 ${WRAPPED_PRIMARY_ASSET_CODE}`,
-    emoji: "🏆",
-    color: "#b7791f",
-    weight: 10,
-    isPrimaryAsset: true,
-    amount: 5000,
-  },
-  {
-    label: `2500 ${WRAPPED_PRIMARY_ASSET_CODE}`,
-    emoji: "🥇",
-    color: BRANDING.colors.primary,
-    weight: 25,
-    isPrimaryAsset: true,
-    amount: 2500,
-  },
-  {
-    label: `1000 ${WRAPPED_PRIMARY_ASSET_CODE}`,
-    emoji: "🥈",
-    color: "#c8a030",
-    weight: 50,
-    isPrimaryAsset: true,
-    amount: 1000,
-  },
-  {
-    label: "50 wXRP",
-    emoji: "🔷",
-    color: "#1a4060",
-    weight: 50,
-    isWXRP: true,
-    amount: 50,
-  },
-  {
-    label: "100 wUSDC",
-    emoji: "💵",
-    color: "#0a4a2a",
-    weight: 50,
-    isWUSDC: true,
-    amount: 100,
-  },
-  { label: "+2 Spins", emoji: "🎱", color: "#145c3a", weight: 50 },
-  { label: "Free Spin", emoji: "🔄", color: "#1a4a8a", weight: 250 },
-  { label: "Better Luck", emoji: "💨", color: "#1a202c", weight: 450 },
-];
+export const PRIZES = GAME_PRIZE_DEFINITIONS.lucky_draw.map((prize, index) => ({
+  ...prize,
+  ...[
+    { emoji: "💎", color: "#0a3d62" }, { emoji: "✨", color: "#1e6091" },
+    { emoji: "🌟", color: "#1a4a6a" }, { emoji: "🏆", color: "#b7791f" },
+    { emoji: "🥇", color: BRANDING.colors.primary }, { emoji: "🥈", color: "#c8a030" },
+    { emoji: "🔷", color: "#1a4060" }, { emoji: "💵", color: "#0a4a2a" },
+    { emoji: "🎱", color: "#145c3a" }, { emoji: "🔄", color: "#1a4a8a" },
+    { emoji: "💨", color: "#1a202c" },
+  ][index],
+})) as Prize[];
 
 // Unique asset codes across the wheel prizes — drives UI copy + trustline checklist,
 // so per-clone prize edits in PRIZES propagate without touching strings below.

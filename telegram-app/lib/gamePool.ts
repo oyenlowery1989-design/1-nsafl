@@ -1,9 +1,9 @@
 import { randomInt } from 'crypto'
 import { createServiceClient } from '@/lib/supabase-server'
 import { getTierForBalance, TIERS } from '@/config/tiers'
-import { WRAPPED_PRIMARY_ASSET_CODE } from '@/lib/rewardAssets'
+import { GAME_PRIZE_DEFINITIONS, type GamePrizeSource } from '@/lib/rewardAssets'
 
-export type GameSource = 'lucky_draw' | 'slot_machine' | 'scratch_card'
+export type GameSource = GamePrizeSource
 
 export interface GamePrize {
   label: string          // exact string stored in lucky_draw_wins.prize, e.g. "100 wXLM"
@@ -11,42 +11,7 @@ export interface GamePrize {
   weight: number
 }
 
-export const PRIZE_TABLES: Record<GameSource, GamePrize[]> = {
-  lucky_draw: [
-    { label: '100 wXLM', amount: 100, weight: 15 },
-    { label: '50 wXLM', amount: 50, weight: 20 },
-    { label: '20 wXLM', amount: 20, weight: 30 },
-    { label: `5000 ${WRAPPED_PRIMARY_ASSET_CODE}`, amount: 5000, weight: 10 },
-    { label: `2500 ${WRAPPED_PRIMARY_ASSET_CODE}`, amount: 2500, weight: 25 },
-    { label: `1000 ${WRAPPED_PRIMARY_ASSET_CODE}`, amount: 1000, weight: 50 },
-    { label: '50 wXRP', amount: 50, weight: 50 },
-    { label: '100 wUSDC', amount: 100, weight: 50 },
-    { label: '+2 Spins', amount: null, weight: 50 },
-    { label: 'Free Spin', amount: null, weight: 250 },
-    { label: 'Better Luck', amount: null, weight: 450 },
-  ],
-  slot_machine: [
-    { label: '100 wXLM', amount: 100, weight: 10 },
-    { label: `5000 ${WRAPPED_PRIMARY_ASSET_CODE}`, amount: 5000, weight: 15 },
-    { label: `2500 ${WRAPPED_PRIMARY_ASSET_CODE}`, amount: 2500, weight: 25 },
-    { label: `1000 ${WRAPPED_PRIMARY_ASSET_CODE}`, amount: 1000, weight: 50 },
-    { label: '50 wXRP', amount: 50, weight: 50 },
-    { label: '100 wUSDC', amount: 100, weight: 50 },
-    { label: '+2 Spins', amount: null, weight: 50 },
-    { label: 'Free Spin', amount: null, weight: 250 },
-    { label: 'Better Luck', amount: null, weight: 450 },
-  ],
-  scratch_card: [
-    { label: '100 wXLM', amount: 100, weight: 8 },
-    { label: `5000 ${WRAPPED_PRIMARY_ASSET_CODE}`, amount: 5000, weight: 12 },
-    { label: `2500 ${WRAPPED_PRIMARY_ASSET_CODE}`, amount: 2500, weight: 20 },
-    { label: `1000 ${WRAPPED_PRIMARY_ASSET_CODE}`, amount: 1000, weight: 40 },
-    { label: '50 wXRP', amount: 50, weight: 40 },
-    { label: '100 wUSDC', amount: 100, weight: 40 },
-    { label: '+2 Cards', amount: null, weight: 60 },
-    { label: 'Better Luck', amount: null, weight: 780 },
-  ],
-}
+export const PRIZE_TABLES: Record<GameSource, GamePrize[]> = GAME_PRIZE_DEFINITIONS
 
 export function rollPrize(source: GameSource): { prize: GamePrize; index: number } {
   const table = PRIZE_TABLES[source]
