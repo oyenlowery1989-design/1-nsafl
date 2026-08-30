@@ -3,6 +3,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { haptic } from '@/lib/telegram-ui'
 import { getTelegramInitData, openTelegramLink, buildBotStartLink } from '@/lib/telegram'
 import { BRANDING } from '@/config/branding'
+import { WRAPPED_PRIMARY_ASSET_CODE } from '@/lib/rewardAssets'
 
 // ── Prize table ────────────────────────────────────────────────────────────────
 interface ScratchPrize {
@@ -11,7 +12,7 @@ interface ScratchPrize {
   weight: number
   isAsset?: boolean
   isWXLM?: boolean
-  isWNSAFL?: boolean
+  isPrimaryAsset?: boolean
   isWXRP?: boolean
   isWUSDC?: boolean
   amount?: number
@@ -23,9 +24,9 @@ interface ScratchPrize {
 // match PRIZE_TABLES.scratch_card exactly so `prizeIndex` from the server maps to the right prize.
 export const SCRATCH_PRIZES: ScratchPrize[] = [
   { label: '100 wXLM',    emoji: '💎', weight: 8,   isAsset: true, isWXLM: true,   amount: 100  },
-  { label: '5000 wNSAFL', emoji: '🏆', weight: 12,  isAsset: true, isWNSAFL: true, amount: 5000 },
-  { label: '2500 wNSAFL', emoji: '🥇', weight: 20,  isAsset: true, isWNSAFL: true, amount: 2500 },
-  { label: '1000 wNSAFL', emoji: '⭐', weight: 40,  isAsset: true, isWNSAFL: true, amount: 1000 },
+  { label: `5000 ${WRAPPED_PRIMARY_ASSET_CODE}`, emoji: '🏆', weight: 12,  isAsset: true, isPrimaryAsset: true, amount: 5000 },
+  { label: `2500 ${WRAPPED_PRIMARY_ASSET_CODE}`, emoji: '🥇', weight: 20,  isAsset: true, isPrimaryAsset: true, amount: 2500 },
+  { label: `1000 ${WRAPPED_PRIMARY_ASSET_CODE}`, emoji: '⭐', weight: 40,  isAsset: true, isPrimaryAsset: true, amount: 1000 },
   { label: '50 wXRP',     emoji: '🔷', weight: 40,  isAsset: true, isWXRP: true,   amount: 50   },
   { label: '100 wUSDC',   emoji: '💵', weight: 40,  isAsset: true, isWUSDC: true,  amount: 100  },
   { label: '+2 Cards',    emoji: '🃏', weight: 60  },
@@ -47,7 +48,7 @@ interface ScratchResult {
 
 function getAssetLabel(p: ScratchPrize): string {
   if (p.isWXLM) return 'wXLM'
-  if (p.isWNSAFL) return 'wNSAFL'
+  if (p.isPrimaryAsset) return WRAPPED_PRIMARY_ASSET_CODE
   if (p.isWXRP) return 'wXRP'
   return 'wUSDC'
 }

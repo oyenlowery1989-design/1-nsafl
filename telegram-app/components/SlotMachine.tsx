@@ -3,6 +3,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { haptic } from '@/lib/telegram-ui'
 import { getTelegramInitData, openTelegramLink, buildBotStartLink } from '@/lib/telegram'
 import { BRANDING } from '@/config/branding'
+import { WRAPPED_PRIMARY_ASSET_CODE } from '@/lib/rewardAssets'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const SYM_SIZE = 64       // px per symbol cell
@@ -18,7 +19,7 @@ interface SlotPrize {
   weight: number
   isAsset?: boolean
   isWXLM?: boolean
-  isWNSAFL?: boolean
+  isPrimaryAsset?: boolean
   isWXRP?: boolean
   isWUSDC?: boolean
   amount?: number
@@ -29,9 +30,9 @@ interface SlotPrize {
 // match PRIZE_TABLES.slot_machine exactly so `prizeIndex` from the server maps to the right prize.
 export const SLOT_PRIZES: SlotPrize[] = [
   { label: '100 wXLM',    symbol: '💎', weight: 10,  isAsset: true, isWXLM: true,   amount: 100  },
-  { label: '5000 wNSAFL', symbol: '🏆', weight: 15,  isAsset: true, isWNSAFL: true, amount: 5000 },
-  { label: '2500 wNSAFL', symbol: '🥇', weight: 25,  isAsset: true, isWNSAFL: true, amount: 2500 },
-  { label: '1000 wNSAFL', symbol: '⭐', weight: 50,  isAsset: true, isWNSAFL: true, amount: 1000 },
+  { label: `5000 ${WRAPPED_PRIMARY_ASSET_CODE}`, symbol: '🏆', weight: 15,  isAsset: true, isPrimaryAsset: true, amount: 5000 },
+  { label: `2500 ${WRAPPED_PRIMARY_ASSET_CODE}`, symbol: '🥇', weight: 25,  isAsset: true, isPrimaryAsset: true, amount: 2500 },
+  { label: `1000 ${WRAPPED_PRIMARY_ASSET_CODE}`, symbol: '⭐', weight: 50,  isAsset: true, isPrimaryAsset: true, amount: 1000 },
   { label: '50 wXRP',     symbol: '🔷', weight: 50,  isAsset: true, isWXRP: true,   amount: 50   },
   { label: '100 wUSDC',   symbol: '💵', weight: 50,  isAsset: true, isWUSDC: true,  amount: 100  },
   { label: '+2 Spins',    symbol: '🎱', weight: 50  },
@@ -55,7 +56,7 @@ interface SpinResult {
 
 function getAssetLabel(p: SlotPrize): string {
   if (p.isWXLM) return 'wXLM'
-  if (p.isWNSAFL) return 'wNSAFL'
+  if (p.isPrimaryAsset) return WRAPPED_PRIMARY_ASSET_CODE
   if (p.isWXRP) return 'wXRP'
   return 'wUSDC'
 }

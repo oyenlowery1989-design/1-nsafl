@@ -1,6 +1,8 @@
 // Prize asset configuration for Lucky Draw rewards.
 // All reward assets share a single issuer (NEXT_PUBLIC_REWARD_ASSET_ISSUER).
 
+import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
+
 export interface RewardAsset {
   code: string
   issuer: string
@@ -13,9 +15,11 @@ const ISSUER =
   process.env.NEXT_PUBLIC_PRIMARY_ASSET_ISSUER ??
   ''
 
+export const WRAPPED_PRIMARY_ASSET_CODE = `w${PRIMARY_CUSTOM_ASSET_CODE}`
+
 export const REWARD_ASSETS: RewardAsset[] = [
   { code: 'wXLM',   issuer: ISSUER, label: 'Wrapped XLM',   lobstrDeeplink: `https://lobstr.co/assets/wXLM:${ISSUER}`   },
-  { code: 'wNSAFL', issuer: ISSUER, label: 'Wrapped NSAFL', lobstrDeeplink: `https://lobstr.co/assets/wNSAFL:${ISSUER}` },
+  { code: WRAPPED_PRIMARY_ASSET_CODE, issuer: ISSUER, label: `Wrapped ${PRIMARY_CUSTOM_ASSET_CODE}`, lobstrDeeplink: `https://lobstr.co/assets/${WRAPPED_PRIMARY_ASSET_CODE}:${ISSUER}` },
   { code: 'wXRP',   issuer: ISSUER, label: 'Wrapped XRP',   lobstrDeeplink: `https://lobstr.co/assets/wXRP:${ISSUER}`   },
   { code: 'wUSDC',  issuer: ISSUER, label: 'Wrapped USDC',  lobstrDeeplink: `https://lobstr.co/assets/wUSDC:${ISSUER}`  },
   { code: 'wUSDT',  issuer: ISSUER, label: 'Wrapped USDT',  lobstrDeeplink: `https://lobstr.co/assets/wUSDT:${ISSUER}`  },

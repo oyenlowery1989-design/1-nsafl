@@ -10,6 +10,7 @@ import {
   PRIMARY_CUSTOM_ASSET_CODE,
   PRIMARY_CUSTOM_ASSET_LABEL,
 } from "@/lib/constants";
+import { WRAPPED_PRIMARY_ASSET_CODE } from "@/lib/rewardAssets";
 import { BRANDING } from "@/config/branding";
 import { PARTNER_CLUB } from "@/config/partnerClub";
 import WalletGuard from "@/components/WalletGuard";
@@ -38,7 +39,7 @@ interface Prize {
   emoji: string;
   color: string;
   weight: number;
-  isWNSAFL?: boolean;
+  isPrimaryAsset?: boolean;
   isWXLM?: boolean;
   isWXRP?: boolean;
   isWUSDC?: boolean;
@@ -46,12 +47,12 @@ interface Prize {
 }
 
 function isAssetPrize(p: Prize): boolean {
-  return !!(p.isWNSAFL || p.isWXLM || p.isWXRP || p.isWUSDC);
+  return !!(p.isPrimaryAsset || p.isWXLM || p.isWXRP || p.isWUSDC);
 }
 
 function getAssetSymbol(p: Prize): string {
   if (p.isWXLM) return "wXLM";
-  if (p.isWNSAFL) return "wNSAFL";
+  if (p.isPrimaryAsset) return WRAPPED_PRIMARY_ASSET_CODE;
   if (p.isWXRP) return "wXRP";
   return "wUSDC";
 }
@@ -85,27 +86,27 @@ export const PRIZES: Prize[] = [
     amount: 20,
   },
   {
-    label: "5000 wNSAFL",
+    label: `5000 ${WRAPPED_PRIMARY_ASSET_CODE}`,
     emoji: "🏆",
     color: "#b7791f",
     weight: 10,
-    isWNSAFL: true,
+    isPrimaryAsset: true,
     amount: 5000,
   },
   {
-    label: "2500 wNSAFL",
+    label: `2500 ${WRAPPED_PRIMARY_ASSET_CODE}`,
     emoji: "🥇",
     color: BRANDING.colors.primary,
     weight: 25,
-    isWNSAFL: true,
+    isPrimaryAsset: true,
     amount: 2500,
   },
   {
-    label: "1000 wNSAFL",
+    label: `1000 ${WRAPPED_PRIMARY_ASSET_CODE}`,
     emoji: "🥈",
     color: "#c8a030",
     weight: 50,
-    isWNSAFL: true,
+    isPrimaryAsset: true,
     amount: 1000,
   },
   {
