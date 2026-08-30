@@ -2,7 +2,7 @@
 import { useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { NAV_ITEMS } from '@/lib/constants'
+import { getNavigationItems } from '@/config/app'
 import { haptic } from '@/lib/telegram-ui'
 
 const LONG_PRESS_MS = 1500
@@ -90,9 +90,9 @@ export default function BottomNav() {
   return (
     <nav className="fixed bottom-0 w-full bg-background-dark/90 backdrop-blur-xl border-t border-white/10 pb-safe pt-2 px-4 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
       <div className="flex justify-between items-center pb-2">
-        {NAV_ITEMS.map((item) => {
+        {getNavigationItems().map((item) => {
           const isActive = pathname === item.href
-          if (item.isCenter) {
+          if (item.href === '/') {
             return (
               <div key={item.href} className="relative -top-5 flex flex-col items-center justify-center">
                 {/* expanding ring */}
