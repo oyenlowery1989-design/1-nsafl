@@ -12,12 +12,12 @@ import { isValidStellarAddress, hasPrimaryAssetTrustline } from '@/lib/stellar'
 import { getTelegramInitData } from '@/lib/telegram'
 import { haptic } from '@/lib/telegram-ui'
 import { BRANDING } from '@/config/branding'
-import { isFeatureEnabled } from '@/config/app'
+import { isFeatureEnabled, isPackEnabled } from '@/config/app'
 import Header from '@/components/Header'
 
 type Phase = 'referral-welcome' | 'onboarding' | 'gate' | 'connecting' | 'no-trustline' | 'celebration' | 'team-select' | 'dashboard'
 
-export default function HomePage() {
+function StellarHomePage() {
   const stellarAddress = useWalletStore((s) => s.stellarAddress)
   const tokenBalance = useWalletStore((s) => s.tokenBalance)
   const isConnected = useWalletStore((s) => s.isConnected)
@@ -256,6 +256,24 @@ export default function HomePage() {
       </main>
       <BottomNav />
     </>
+  )
+}
+
+export default function HomePage() {
+  if (!isPackEnabled('stellar-wallet')) return <NeutralHome />
+
+  return <StellarHomePage />
+}
+
+function NeutralHome() {
+  return (
+    <main className="min-h-screen px-6 py-12 flex items-center justify-center">
+      <section className="glass-card rounded-2xl p-8 max-w-sm text-center space-y-3">
+        <span className="material-symbols-outlined text-4xl text-primary">apps</span>
+        <h1 className="text-3xl text-white">{BRANDING.appName}</h1>
+        <p className="text-sm text-gray-400">Choose domain packs in config/app.ts to build this app.</p>
+      </section>
+    </main>
   )
 }
 
