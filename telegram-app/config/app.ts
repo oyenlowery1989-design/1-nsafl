@@ -1,33 +1,43 @@
 import { BRANDING } from '@/config/branding'
-import type { PackId, PackManifest } from '@/packs/types'
+import { donationsPack } from '@/packs/donations/manifest'
+import { gamesPack } from '@/packs/games/manifest'
+import { leaderboardPack } from '@/packs/leaderboard/manifest'
+import { quizPack } from '@/packs/quiz/manifest'
+import { rewardsPack } from '@/packs/rewards/manifest'
+import { sportsPack } from '@/packs/sports/manifest'
+import { stellarWalletPack } from '@/packs/stellar-wallet/manifest'
+import type { NavigationItem, PackId, PackManifest } from '@/packs/types'
 
 export type AppFeature = PackId
 
 type FeatureConfig = Readonly<Record<AppFeature, boolean>>
+type PackConfig = PackManifest & Readonly<{ enabled: boolean }>
+type ConfigNavigationItem = NavigationItem & Readonly<{ feature?: AppFeature }>
 
-type NavigationItem = {
-  href: string
-  label: string
-  icon: string
-  feature?: AppFeature
+const packs: Readonly<Record<PackId, PackConfig>> = {
+  sports: { ...sportsPack, enabled: true },
+  'stellar-wallet': { ...stellarWalletPack, enabled: true },
+  games: { ...gamesPack, enabled: true },
+  quiz: { ...quizPack, enabled: true },
+  rewards: { ...rewardsPack, enabled: true },
+  donations: { ...donationsPack, enabled: true },
+  leaderboard: { ...leaderboardPack, enabled: true },
 }
 
-const packs: Readonly<Record<PackId, PackManifest>> = {
-  sports: { enabled: true },
-  'stellar-wallet': { enabled: true },
-  games: { enabled: true },
-  quiz: { enabled: true },
-  rewards: { enabled: true },
-  donations: { enabled: true },
-  leaderboard: { enabled: true },
-}
-
-const navigation: readonly NavigationItem[] = [
-  { href: '/stats', label: 'Stats', icon: 'query_stats', feature: 'sports' },
-  { href: '/clubs', label: 'Clubs', icon: 'stadium', feature: 'sports' },
+export const neutralNavigation = [
   { href: '/', label: 'Home', icon: 'home' },
-  { href: '/rewards', label: 'Rewards', icon: 'redeem', feature: 'rewards' },
   { href: '/profile', label: 'Profile', icon: 'person' },
+] as const satisfies readonly NavigationItem[]
+
+function getPackNavigation(pack: PackConfig): readonly ConfigNavigationItem[] {
+  return (pack.navigation ?? []).map((item) => ({ ...item, feature: pack.id }))
+}
+
+const navigation: readonly ConfigNavigationItem[] = [
+  ...getPackNavigation(packs.sports),
+  neutralNavigation[0],
+  ...getPackNavigation(packs.rewards),
+  neutralNavigation[1],
 ]
 
 const features: FeatureConfig = Object.fromEntries(
@@ -46,4 +56,8 @@ export function isFeatureEnabled(feature: AppFeature) {
 
 export function getNavigationItems(features: FeatureConfig = APP_CONFIG.features) {
   return APP_CONFIG.navigation.filter((item) => !item.feature || features[item.feature])
+}
+
+export function getCenterAction(features: FeatureConfig = APP_CONFIG.features) {
+  return Object.values(APP_CONFIG.packs).find((pack) => features[pack.id] && pack.centerAction)?.centerAction ?? null
 }
