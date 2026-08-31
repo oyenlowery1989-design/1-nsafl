@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { APP_CONFIG, getNavigationItems, isFeatureEnabled } from '@/config/app'
+import { APP_CONFIG, getNavigationItems, isFeatureEnabled, isPackEnabled } from '@/config/app'
 
 describe('template configuration', () => {
   it('keeps every NSAFL module enabled by default', () => {
+    expect(isPackEnabled('stellar-wallet')).toBe(true)
     expect(isFeatureEnabled('sports')).toBe(true)
     expect(isFeatureEnabled('games')).toBe(true)
     expect(isFeatureEnabled('rewards')).toBe(true)

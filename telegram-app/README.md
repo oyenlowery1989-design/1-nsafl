@@ -20,6 +20,10 @@ npm run dev
 
 `NEXT_PUBLIC_*` values are baked into the client build, so deploy again after changing them.
 
+## Core and packs
+
+The Telegram shell, profile, notifications, admin access, and branding/theme are domain-neutral core. `config/app.ts` selects source-controlled packs before deployment; the current sports and Stellar data is still NSAFL-specific pack data pending extraction.
+
 ## Optional modules
 
 Set any feature in `config/app.ts` to `false`:

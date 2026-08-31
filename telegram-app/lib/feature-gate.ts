@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server'
-import { isFeatureEnabled, type AppFeature } from '@/config/app'
+import { isPackEnabled, type AppFeature } from '@/config/app'
+import type { PackId } from '@/packs/types'
 
-export function requireFeature(feature: AppFeature) {
-  if (isFeatureEnabled(feature)) return null
+export function requirePack(pack: PackId) {
+  if (isPackEnabled(pack)) return null
 
   return NextResponse.json({ success: false, code: 'FEATURE_DISABLED' }, { status: 404 })
 }
+
+export const requireFeature = (feature: AppFeature) => requirePack(feature)

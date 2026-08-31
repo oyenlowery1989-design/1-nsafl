@@ -1,12 +1,7 @@
 import { BRANDING } from '@/config/branding'
+import type { PackId, PackManifest } from '@/packs/types'
 
-export type AppFeature =
-  | 'sports'
-  | 'games'
-  | 'quiz'
-  | 'rewards'
-  | 'donations'
-  | 'leaderboard'
+export type AppFeature = PackId
 
 type FeatureConfig = Readonly<Record<AppFeature, boolean>>
 
@@ -17,13 +12,14 @@ type NavigationItem = {
   feature?: AppFeature
 }
 
-const features: FeatureConfig = {
-  sports: true,
-  games: true,
-  quiz: true,
-  rewards: true,
-  donations: true,
-  leaderboard: true,
+const packs: Readonly<Record<PackId, PackManifest>> = {
+  sports: { enabled: true },
+  'stellar-wallet': { enabled: true },
+  games: { enabled: true },
+  quiz: { enabled: true },
+  rewards: { enabled: true },
+  donations: { enabled: true },
+  leaderboard: { enabled: true },
 }
 
 const navigation: readonly NavigationItem[] = [
@@ -34,10 +30,18 @@ const navigation: readonly NavigationItem[] = [
   { href: '/profile', label: 'Profile', icon: 'person' },
 ]
 
-export const APP_CONFIG = { brand: BRANDING, features, navigation } as const
+const features: FeatureConfig = Object.fromEntries(
+  Object.entries(packs).map(([pack, config]) => [pack, config.enabled]),
+) as FeatureConfig
+
+export const APP_CONFIG = { brand: BRANDING, packs, features, navigation } as const
+
+export function isPackEnabled(pack: PackId) {
+  return APP_CONFIG.packs[pack].enabled
+}
 
 export function isFeatureEnabled(feature: AppFeature) {
-  return APP_CONFIG.features[feature]
+  return isPackEnabled(feature)
 }
 
 export function getNavigationItems(features: FeatureConfig = APP_CONFIG.features) {
