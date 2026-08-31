@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useTelegramBack } from "@/hooks/useTelegramBack";
 import BottomNav from "@/components/BottomNav";
+import FeatureRedirect from '@/components/FeatureRedirect'
 import WalletGuard from "@/components/WalletGuard";
 import Header from "@/components/Header";
 import TierBadge from "@/components/TierBadge";
@@ -197,7 +198,7 @@ function LeaderRow({
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
-export default function LeaderboardPage() {
+function LeaderboardPage() {
   const router = useRouter();
   useTelegramBack(() => router.back());
 
@@ -451,4 +452,8 @@ export default function LeaderboardPage() {
       <BottomNav />
     </WalletGuard>
   );
+}
+
+export default function LeaderboardPageRoute() {
+  return <FeatureRedirect feature="leaderboard"><LeaderboardPage /></FeatureRedirect>
 }

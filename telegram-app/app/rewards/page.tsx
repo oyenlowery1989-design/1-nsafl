@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTelegramBack } from '@/hooks/useTelegramBack'
 import BottomNav from '@/components/BottomNav'
+import FeatureRedirect from '@/components/FeatureRedirect'
 import WalletGuard from '@/components/WalletGuard'
 import PageLoader, { useMinLoader } from '@/components/PageLoader'
 import { useWalletStore } from '@/hooks/useStore'
@@ -171,7 +172,7 @@ function TierCard({ tier, status, balance, nextTier, progressPct, onBuy, claimSt
   )
 }
 
-export default function RewardsPage() {
+function RewardsPage() {
   const router = useRouter()
   useTelegramBack(() => router.back())
   const ready = useMinLoader(true)
@@ -311,4 +312,8 @@ export default function RewardsPage() {
       <BottomNav />
     </WalletGuard>
   )
+}
+
+export default function RewardsPageRoute() {
+  return <FeatureRedirect feature="rewards"><RewardsPage /></FeatureRedirect>
 }

@@ -16,6 +16,7 @@ import { PARTNER_CLUB } from "@/config/partnerClub";
 import WalletGuard from "@/components/WalletGuard";
 import TrustlineChecker from "@/components/TrustlineChecker";
 import BottomNav from "@/components/BottomNav";
+import FeatureRedirect from '@/components/FeatureRedirect'
 import ModePicker, { type QuizMode } from "@/components/quiz/ModePicker";
 import QuizSession from "@/components/quiz/QuizSession";
 import ResultScreen from "@/components/quiz/ResultScreen";
@@ -1239,7 +1240,7 @@ function HubView({
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
-export default function GamePage() {
+function GamePage() {
   const router = useRouter();
   const [view, setView] = useState<GameView>("hub");
 
@@ -1661,4 +1662,8 @@ export default function GamePage() {
       )}
     </WalletGuard>
   );
+}
+
+export default function GamePageRoute() {
+  return <FeatureRedirect feature="games"><GamePage /></FeatureRedirect>
 }

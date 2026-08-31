@@ -2,7 +2,7 @@
 import { useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { getNavigationItems } from '@/config/app'
+import { getNavigationItems, isFeatureEnabled } from '@/config/app'
 import { haptic } from '@/lib/telegram-ui'
 
 const LONG_PRESS_MS = 1500
@@ -93,6 +93,21 @@ export default function BottomNav() {
         {getNavigationItems().map((item) => {
           const isActive = pathname === item.href
           if (item.href === '/') {
+            if (!isFeatureEnabled('games')) {
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex flex-col items-center space-y-0.5 transition ${
+                    isActive ? 'text-primary' : 'text-gray-500 hover:text-primary'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-xl">home</span>
+                  <span className="text-[9px] font-medium tracking-wide uppercase">Home</span>
+                </Link>
+              )
+            }
+
             return (
               <div key={item.href} className="relative -top-5 flex flex-col items-center justify-center">
                 {/* expanding ring */}

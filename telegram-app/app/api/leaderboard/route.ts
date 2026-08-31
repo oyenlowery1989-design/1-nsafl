@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { requireFeature } from '@/lib/feature-gate'
 import { ok, fail } from '@/lib/api-response'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { createServiceClient } from '@/lib/supabase-server'
@@ -66,6 +67,9 @@ async function fetchHorizonHolders(): Promise<{ address: string; balance: number
 }
 
 export async function GET(req: NextRequest) {
+  const disabled = requireFeature('leaderboard')
+  if (disabled) return disabled
+
   const rateLimitError = checkRateLimit(req, 60)
   if (rateLimitError) return rateLimitError
 

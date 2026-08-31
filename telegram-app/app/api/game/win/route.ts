@@ -1,5 +1,6 @@
 import { randomBytes } from 'crypto'
 import { NextRequest } from 'next/server'
+import { requireFeature } from '@/lib/feature-gate'
 import { validateTelegramInitData } from '@/lib/telegram'
 import { createServiceClient } from '@/lib/supabase-server'
 import { ok, fail } from '@/lib/api-response'
@@ -12,6 +13,9 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ''
 const IS_DEV = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_DEV_BYPASS === 'true'
 
 export async function GET(req: NextRequest) {
+  const disabled = requireFeature('games')
+  if (disabled) return disabled
+
   const initData = req.headers.get('x-telegram-init-data') ?? ''
   const user = IS_DEV ? { id: 0 } : validateTelegramInitData(initData, BOT_TOKEN)
   if (!user) return fail('Unauthorized', 'UNAUTHORIZED')
@@ -31,6 +35,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const disabled = requireFeature('games')
+  if (disabled) return disabled
+
   const initData = req.headers.get('x-telegram-init-data') ?? ''
   const user = IS_DEV ? { id: 0 } : validateTelegramInitData(initData, BOT_TOKEN)
   if (!user) return fail('Unauthorized', 'UNAUTHORIZED')

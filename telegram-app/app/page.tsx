@@ -12,6 +12,7 @@ import { isValidStellarAddress, hasPrimaryAssetTrustline } from '@/lib/stellar'
 import { getTelegramInitData } from '@/lib/telegram'
 import { haptic } from '@/lib/telegram-ui'
 import { BRANDING } from '@/config/branding'
+import { isFeatureEnabled } from '@/config/app'
 import Header from '@/components/Header'
 
 type Phase = 'referral-welcome' | 'onboarding' | 'gate' | 'connecting' | 'no-trustline' | 'celebration' | 'team-select' | 'dashboard'
@@ -35,7 +36,7 @@ export default function HomePage() {
   const [phase, setPhase] = useState<Phase>(
     !hasSeenOnboarding
       ? 'onboarding'
-      : isConnected ? (favoriteTeam || BRANDING.teamSelection === 'off' ? 'dashboard' : 'team-select') : 'gate'
+      : isConnected ? (!isFeatureEnabled('sports') || favoriteTeam || BRANDING.teamSelection === 'off' ? 'dashboard' : 'team-select') : 'gate'
   )
 
   // TelegramGuard writes REFERRER_STORAGE_KEY to sessionStorage after mount, so the
@@ -190,7 +191,7 @@ export default function HomePage() {
       <CelebrationScreen
         address={inputAddress || stellarAddress!}
         balance={celebrationBalance}
-        onEnter={() => { haptic.light(); setPhase(favoriteTeam || BRANDING.teamSelection === 'off' ? 'dashboard' : 'team-select') }}
+          onEnter={() => { haptic.light(); setPhase(!isFeatureEnabled('sports') || favoriteTeam || BRANDING.teamSelection === 'off' ? 'dashboard' : 'team-select') }}
       />
     )
   }

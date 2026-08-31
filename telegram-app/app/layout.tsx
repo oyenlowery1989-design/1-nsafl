@@ -38,11 +38,17 @@ export default function RootLayout({
         />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){var d=document,l=d.createElement('div');l.id='app-loader';l.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:${BRANDING.colors.background}';var s=d.createElement('div');s.style.cssText='width:48px;height:48px;border:3px solid rgba(212,175,55,0.2);border-top-color:${BRANDING.colors.primary};border-radius:50%;animation:loader-spin .8s linear infinite';l.appendChild(s);var st=d.createElement('style');st.textContent='@keyframes loader-spin{to{transform:rotate(360deg)}}';l.appendChild(st);d.currentScript.after(l)})()`,
+            __html: `(function(){var d=document,l=d.createElement('div');l.id='app-loader';l.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:${BRANDING.colors.background}';var s=d.createElement('div');s.style.cssText='width:48px;height:48px;border:3px solid color-mix(in srgb,${BRANDING.colors.primary} 20%,transparent);border-top-color:${BRANDING.colors.primary};border-radius:50%;animation:loader-spin .8s linear infinite';l.appendChild(s);var st=d.createElement('style');st.textContent='@keyframes loader-spin{to{transform:rotate(360deg)}}';l.appendChild(st);d.currentScript.after(l)})()`,
           }}
         />
       </head>
-      <body className="antialiased">
+      <body
+        className="antialiased"
+        style={{
+          '--brand-primary': BRANDING.colors.primary,
+          '--brand-background': BRANDING.colors.background,
+        } as React.CSSProperties}
+      >
         <ErrorBoundary>
           <TelegramGuard>{children}</TelegramGuard>
         </ErrorBoundary>

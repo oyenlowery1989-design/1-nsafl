@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { requireFeature } from '@/lib/feature-gate'
 import { ok, fail } from '@/lib/api-response'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { createServiceClient } from '@/lib/supabase-server'
@@ -19,6 +20,9 @@ function getUser(req: NextRequest): TelegramUser | null {
 
 // GET — fetch current team
 export async function GET(req: NextRequest) {
+  const disabled = requireFeature('sports')
+  if (disabled) return disabled
+
   const rateLimitError = checkRateLimit(req)
   if (rateLimitError) return rateLimitError
 
@@ -38,6 +42,9 @@ export async function GET(req: NextRequest) {
 
 // POST — instantly update team (no approval needed)
 export async function POST(req: NextRequest) {
+  const disabled = requireFeature('sports')
+  if (disabled) return disabled
+
   const telegramUser = getUser(req)
   if (!telegramUser) return fail('Invalid auth', 'INVALID_AUTH', 401)
 

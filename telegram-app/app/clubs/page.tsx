@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
+import FeatureRedirect from '@/components/FeatureRedirect'
 import WalletGuard from "@/components/WalletGuard";
 import PageLoader, { useMinLoader } from "@/components/PageLoader";
 import { useTelegramBack } from "@/hooks/useTelegramBack";
@@ -938,7 +939,7 @@ function FanHubTab({
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
-export default function ClubsPage() {
+function ClubsPage() {
   const router = useRouter();
   useTelegramBack(() => router.back());
 
@@ -1226,4 +1227,8 @@ export default function ClubsPage() {
       <BottomNav />
     </WalletGuard>
   );
+}
+
+export default function ClubsPageRoute() {
+  return <FeatureRedirect feature="sports"><ClubsPage /></FeatureRedirect>
 }

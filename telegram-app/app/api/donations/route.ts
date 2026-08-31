@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { requireFeature } from '@/lib/feature-gate'
 import { ok, fail } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { createServiceClient } from "@/lib/supabase-server";
@@ -46,6 +47,9 @@ async function resolveCallerAddress(
 }
 
 export async function GET(req: NextRequest) {
+  const disabled = requireFeature('donations')
+  if (disabled) return disabled
+
   const rateLimitError = checkRateLimit(req, 30)
   if (rateLimitError) return rateLimitError
 
@@ -201,6 +205,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const disabled = requireFeature('donations')
+  if (disabled) return disabled
+
   const rateLimitError = checkRateLimit(req, 10); // 10 donations/min max
   if (rateLimitError) return rateLimitError;
 

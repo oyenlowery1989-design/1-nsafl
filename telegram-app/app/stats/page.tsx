@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTelegramBack } from '@/hooks/useTelegramBack'
 import BottomNav from '@/components/BottomNav'
+import FeatureRedirect from '@/components/FeatureRedirect'
 import WalletGuard from '@/components/WalletGuard'
 import PageLoader, { useMinLoader } from '@/components/PageLoader'
 import Link from 'next/link'
@@ -93,7 +94,7 @@ function DistributionBar({ label, count, total, color }: { label: string; count:
   )
 }
 
-export default function StatsPage() {
+function StatsPage() {
   const router = useRouter()
   useTelegramBack(() => router.back())
   const [data, setData] = useState<StatsData | null>(null)
@@ -703,4 +704,8 @@ export default function StatsPage() {
       <BottomNav />
     </WalletGuard>
   )
+}
+
+export default function StatsPageRoute() {
+  return <FeatureRedirect feature="sports"><StatsPage /></FeatureRedirect>
 }

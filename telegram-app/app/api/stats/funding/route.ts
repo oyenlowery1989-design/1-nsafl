@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { requireFeature } from '@/lib/feature-gate'
 import { ok } from '@/lib/api-response'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { createServiceClient } from '@/lib/supabase-server'
@@ -107,6 +108,9 @@ async function fetchStellarTokenStats() {
 }
 
 export async function GET(req: NextRequest) {
+  const disabled = requireFeature('donations')
+  if (disabled) return disabled
+
   const rateLimitError = checkRateLimit(req)
   if (rateLimitError) return rateLimitError
 

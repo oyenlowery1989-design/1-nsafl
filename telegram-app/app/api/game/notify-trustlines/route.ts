@@ -4,6 +4,7 @@
  * Called from the "Claim via Bot" button in the game win panel.
  */
 import { NextRequest } from 'next/server'
+import { requireFeature } from '@/lib/feature-gate'
 import { validateTelegramInitData } from '@/lib/telegram'
 import { ok, fail } from '@/lib/api-response'
 import { checkRateLimit } from '@/lib/rate-limit'
@@ -13,6 +14,9 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ''
 const IS_DEV = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_DEV_BYPASS === 'true'
 
 export async function POST(req: NextRequest) {
+  const disabled = requireFeature('games')
+  if (disabled) return disabled
+
   // 3 notifications per minute per IP — prevents spam
   const limited = checkRateLimit(req, 3)
   if (limited) return limited

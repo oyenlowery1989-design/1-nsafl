@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { requireFeature } from '@/lib/feature-gate'
 import { ok, fail } from '@/lib/api-response'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { createServiceClient } from '@/lib/supabase-server'
@@ -9,6 +10,9 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ''
 
 // ── GET — community aggregate + top 10 leaderboard ───────────────────────────
 export async function GET(req: NextRequest) {
+  const disabled = requireFeature('games')
+  if (disabled) return disabled
+
   const rateLimitErr = checkRateLimit(req, 60)
   if (rateLimitErr) return rateLimitErr
 
@@ -68,6 +72,9 @@ export async function GET(req: NextRequest) {
 
 // ── POST — save a completed session ──────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  const disabled = requireFeature('games')
+  if (disabled) return disabled
+
   const rateLimitErr = checkRateLimit(req, 20)
   if (rateLimitErr) return rateLimitErr
 

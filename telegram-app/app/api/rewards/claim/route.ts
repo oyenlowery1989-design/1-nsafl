@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireFeature } from '@/lib/feature-gate'
 import { validateTelegramInitData } from '@/lib/telegram'
 import { createServiceClient } from '@/lib/supabase-server'
 import { ok, fail } from '@/lib/api-response'
@@ -41,6 +42,9 @@ async function resolveWalletAndBalance(supabase: ReturnType<typeof createService
 }
 
 export async function GET(req: NextRequest) {
+  const disabled = requireFeature('rewards')
+  if (disabled) return disabled
+
   const user = getUser(req)
   if (!user) return fail('Unauthorized', 'UNAUTHORIZED', 401)
 
@@ -66,6 +70,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const disabled = requireFeature('rewards')
+  if (disabled) return disabled
+
   const user = getUser(req)
   if (!user) return fail('Unauthorized', 'UNAUTHORIZED', 401)
 

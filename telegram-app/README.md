@@ -1,36 +1,32 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Telegram Mini App Template
 
-## Getting Started
-
-First, run the development server:
+## Run locally
 
 ```bash
+cp .env.example .env.local
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Clone checklist
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Set the Telegram, Supabase, Stellar, admin, and reward values in `.env.local`.
+2. Update identity and copy in `config/branding.ts`.
+3. Choose enabled modules and bottom navigation in `config/app.ts`.
+4. Replace tier thresholds and rewards in `config/tiers.ts`; replace sports/team data in `config/afl.ts` when sports is enabled.
+5. Adjust game rewards in `lib/rewardAssets.ts` when games are enabled.
+6. Replace images, icons, and other public assets in `public/`.
+7. Run `npx tsc --noEmit`, `npm run lint`, and `npm test` before deployment.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`NEXT_PUBLIC_*` values are baked into the client build, so deploy again after changing them.
 
-## Learn More
+## Optional modules
 
-To learn more about Next.js, take a look at the following resources:
+Set any feature in `config/app.ts` to `false`:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `sports` hides sports pages and team selection.
+- `games` hides the game page and its long-press home control.
+- `quiz`, `rewards`, and `donations` disable their respective flows.
+- `leaderboard` hides the holder-ranking page and endpoint.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Disabled pages redirect to `/`. Their API routes respond with `404` and `{ success: false, code: 'FEATURE_DISABLED' }` before authentication, database, or Stellar work.

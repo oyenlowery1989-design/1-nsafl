@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTelegramBack } from '@/hooks/useTelegramBack'
 import BottomNav from '@/components/BottomNav'
+import FeatureRedirect from '@/components/FeatureRedirect'
 import WalletGuard from '@/components/WalletGuard'
 import ErrorCard from '@/components/ErrorCard'
 import { useWalletStore } from '@/hooks/useStore'
@@ -18,7 +19,7 @@ const SUPPORTER_WALLET = process.env.NEXT_PUBLIC_PRIMARY_ASSET_ISSUER ?? ''
 
 type DonationType = 'general' | 'team' | 'player' | null
 
-export default function DonatePage() {
+function DonatePage() {
   const router = useRouter()
   useTelegramBack(() => router.back())
   const stellarAddress = useWalletStore((s) => s.stellarAddress)
@@ -278,4 +279,8 @@ export default function DonatePage() {
       <BottomNav />
     </WalletGuard>
   )
+}
+
+export default function DonatePageRoute() {
+  return <FeatureRedirect feature="donations"><DonatePage /></FeatureRedirect>
 }
