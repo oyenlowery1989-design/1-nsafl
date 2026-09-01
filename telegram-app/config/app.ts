@@ -59,6 +59,10 @@ export function getNavigationItems(features: FeatureConfig = APP_CONFIG.features
   return APP_CONFIG.navigation.filter((item) => !item.feature || features[item.feature])
 }
 
+export function getAdminNavigationItems(features: FeatureConfig = APP_CONFIG.features) {
+  return Object.values(APP_CONFIG.packs).flatMap((pack) => features[pack.id] ? (pack.admin ?? []) : [])
+}
+
 export function getCenterAction(features: FeatureConfig = APP_CONFIG.features) {
   return Object.values(APP_CONFIG.packs).find((pack) => features[pack.id] && pack.centerAction)?.centerAction ?? null
 }

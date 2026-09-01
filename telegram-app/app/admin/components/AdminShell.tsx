@@ -3,6 +3,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
+import { getAdminNavigationItems, isPackEnabled } from '@/config/app'
 import { Icon } from './ui'
 
 const NAV_GROUPS = [
@@ -16,8 +17,6 @@ const NAV_GROUPS = [
     label: 'Data',
     items: [
       { href: '/admin/users',      label: 'Users',         icon: 'group' },
-      { href: '/admin/donations',  label: 'Donations',     icon: 'volunteer_activism' },
-      { href: '/admin/purchases',  label: 'Purchases',     icon: 'shopping_cart' },
     ],
   },
   {
@@ -31,15 +30,11 @@ const NAV_GROUPS = [
   {
     label: 'Activity',
     items: [
-      { href: '/admin/game',       label: 'Game',          icon: 'sports_esports' },
-      { href: '/admin/wins',       label: 'Wins',          icon: 'emoji_events' },
-      { href: '/admin/rewards-claims', label: 'Reward Claims', icon: 'diamond' },
       { href: '/admin/access',     label: 'Access',        icon: 'manage_search' },
-      { href: '/admin/referrals',  label: 'Referrals',     icon: 'group_add' },
-      { href: '/admin/trustline',  label: 'Trustlines',    icon: 'add_link' },
       { href: '/admin/activity',   label: 'Activity Log',  icon: 'history' },
     ],
   },
+  { label: 'Packs', items: getAdminNavigationItems() },
 ]
 
 function AdminShellInner({ children }: { children: React.ReactNode }) {
@@ -63,7 +58,7 @@ function AdminShellInner({ children }: { children: React.ReactNode }) {
 
   // Poll pending wins badge
   useEffect(() => {
-    if (!token) return
+    if (!token || !isPackEnabled('games')) return
     const poll = async () => {
       try {
         const res = await fetch('/api/admin/wins?status=pending&limit=1', { headers: { 'x-admin-token': token } })
