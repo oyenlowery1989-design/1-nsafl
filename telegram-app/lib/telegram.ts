@@ -1,5 +1,4 @@
 import crypto from "crypto";
-import { BRANDING } from "@/config/branding";
 
 export interface TelegramUser {
   id: number;
@@ -80,8 +79,6 @@ export function getTelegramUser(): TelegramUser | null {
   return user ?? null;
 }
 
-const REFERRAL_SHARE_TEXT = BRANDING.copy.referralShareText;
-
 export function buildReferralLink(
   tgId: number | string | null | undefined,
   botUsername?: string,
@@ -91,9 +88,9 @@ export function buildReferralLink(
   return tgId ? `https://t.me/${bot}?start=ref_${tgId}` : `https://t.me/${bot}`;
 }
 
-export function shareReferralLink(referralLink: string): void {
+export function shareReferralLink(referralLink: string, shareText: string): void {
   if (!referralLink || typeof window === "undefined") return;
-  const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(REFERRAL_SHARE_TEXT)}`;
+  const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(shareText)}`;
   (window as TelegramWindow).Telegram?.WebApp?.openTelegramLink?.(shareUrl);
 }
 

@@ -12,7 +12,9 @@ import { isValidStellarAddress, hasPrimaryAssetTrustline } from '@/lib/stellar'
 import { getTelegramInitData } from '@/lib/telegram'
 import { haptic } from '@/lib/telegram-ui'
 import { BRANDING } from '@/config/branding'
-import { isFeatureEnabled, isPackEnabled } from '@/config/app'
+import { stellarWalletCopy } from './copy'
+import { sportsCopy } from '@/packs/sports/copy'
+import { isFeatureEnabled } from '@/config/app'
 import Header from '@/components/Header'
 
 type Phase = 'referral-welcome' | 'onboarding' | 'gate' | 'connecting' | 'no-trustline' | 'celebration' | 'team-select' | 'dashboard'
@@ -36,7 +38,7 @@ export default function StellarHomePage() {
   const [phase, setPhase] = useState<Phase>(
     !hasSeenOnboarding
       ? 'onboarding'
-      : isConnected ? (!isFeatureEnabled('sports') || favoriteTeam || BRANDING.teamSelection === 'off' ? 'dashboard' : 'team-select') : 'gate'
+      : isConnected ? (!isFeatureEnabled('sports') || favoriteTeam || sportsCopy.teamSelection === 'off' ? 'dashboard' : 'team-select') : 'gate'
   )
 
   // TelegramGuard writes REFERRER_STORAGE_KEY to sessionStorage after mount, so the
@@ -191,7 +193,7 @@ export default function StellarHomePage() {
       <CelebrationScreen
         address={inputAddress || stellarAddress!}
         balance={celebrationBalance}
-          onEnter={() => { haptic.light(); setPhase(!isFeatureEnabled('sports') || favoriteTeam || BRANDING.teamSelection === 'off' ? 'dashboard' : 'team-select') }}
+          onEnter={() => { haptic.light(); setPhase(!isFeatureEnabled('sports') || favoriteTeam || sportsCopy.teamSelection === 'off' ? 'dashboard' : 'team-select') }}
       />
     )
   }
@@ -301,7 +303,7 @@ function CelebrationScreen({
           Wallet Connected
         </h2>
         <p className="text-gray-400 text-sm max-w-[250px] mx-auto leading-relaxed">
-          {BRANDING.copy.walletConnectedSubtitle}
+          {stellarWalletCopy.walletConnectedSubtitle}
         </p>
       </div>
 

@@ -1,6 +1,5 @@
-import { isPackEnabled } from '@/config/app'
+import { getHomeContribution } from '@/config/app'
 import { BRANDING } from '@/config/branding'
-import StellarHomePage from '@/packs/stellar-wallet/StellarHomePage'
 
 function NeutralHome() {
   return (
@@ -14,6 +13,8 @@ function NeutralHome() {
   )
 }
 
+const HomeContribution = getHomeContribution()
+
 export default function HomePage() {
-  return isPackEnabled('stellar-wallet') ? <StellarHomePage /> : <NeutralHome />
+  return HomeContribution ? <HomeContribution /> : <NeutralHome />
 }

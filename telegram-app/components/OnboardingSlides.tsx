@@ -1,12 +1,12 @@
 'use client'
 import { useState, useRef } from 'react'
-import { BRANDING } from '@/config/branding'
+import { stellarWalletCopy } from '@/packs/stellar-wallet/copy'
 
 interface Props {
   onDone: () => void
 }
 
-const SLIDES = BRANDING.copy.onboardingSlides
+const SLIDES = stellarWalletCopy.onboardingSlides
 
 const TIERS = [
   { label: 'Pre-Tier', range: '0–99', color: 'text-gray-400', border: 'border-gray-600' },

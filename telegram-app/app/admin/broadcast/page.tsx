@@ -2,9 +2,9 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useAdminToken } from '../hooks/useAdminToken'
 import { Icon } from '../components/ui'
-import { BRANDING } from '@/config/branding'
+import { gamesCopy } from '@/packs/games/copy'
 
-const TEMPLATES = BRANDING.copy.broadcastTemplates
+const TEMPLATES = gamesCopy.broadcastTemplates
 
 function BroadcastContent() {
   const token = useAdminToken() ?? ''
@@ -89,7 +89,7 @@ function BroadcastContent() {
           {preview && !confirm && (
             <button onClick={() => setConfirm(true)} disabled={sending || !message.trim()}
               className="flex items-center gap-1.5 text-sm font-bold text-black px-4 py-2 rounded-lg disabled:opacity-40 transition"
-              style={{ background: `linear-gradient(135deg, ${BRANDING.colors.primary} 0%, #f0d060 100%)` }}>
+              style={{ background: 'linear-gradient(135deg, var(--brand-primary) 0%, color-mix(in srgb, var(--brand-primary) 70%, white) 100%)' }}>
               <Icon name="send" className="text-sm" />
               Send to {preview.recipientCount}
             </button>

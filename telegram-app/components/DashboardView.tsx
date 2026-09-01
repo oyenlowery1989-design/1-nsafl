@@ -10,6 +10,7 @@ import { PARTNER_CLUB, PARTNER_SQUAD } from '@/config/partnerClub'
 import { getTierForBalance, getNextTier } from '@/config/tiers'
 import { useWalletStore } from '@/hooks/useStore'
 import { getTelegramInitData, buildReferralLink, shareReferralLink } from '@/lib/telegram'
+import { stellarWalletCopy } from '@/packs/stellar-wallet/copy'
 import { toast } from './Toast'
 import { haptic } from '@/lib/telegram-ui'
 
@@ -365,7 +366,7 @@ export default function DashboardView({ address, balance }: Props) {
                 <p className="text-[10px] text-gray-400 leading-tight">+{myXlmRefundPct}% XLM refund · bonus spins · bigger rewards</p>
               </div>
               <button
-                onClick={() => shareReferralLink(buildReferralLink(telegramUserId))}
+                onClick={() => shareReferralLink(buildReferralLink(telegramUserId), stellarWalletCopy.referralShareText)}
                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-blue-500/40 bg-blue-500/15 text-blue-300 font-bold text-[11px] flex-shrink-0 active:scale-[0.97] transition"
               >
                 <span className="material-symbols-outlined text-[13px]">share</span>

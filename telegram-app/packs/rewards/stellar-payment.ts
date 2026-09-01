@@ -16,10 +16,10 @@ import {
   Horizon,
 } from 'stellar-sdk'
 import { prizeToAsset, REWARD_ASSETS } from '@/lib/rewardAssets'
-import { BRANDING } from '@/config/branding'
+import { rewardsCopy } from './copy'
 
 const HORIZON_URL = process.env.NEXT_PUBLIC_HORIZON_URL ?? 'https://horizon.stellar.org'
-const REWARD_MEMO = (process.env.REWARD_MEMO ?? BRANDING.copy.rewardMemo).slice(0, 28)
+const REWARD_MEMO = (process.env.REWARD_MEMO ?? rewardsCopy.rewardMemo).slice(0, 28)
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ''
 
 /** Send a Telegram message to a user via the bot. Fire-and-forget — never throws. */
@@ -27,7 +27,7 @@ export async function notifyPrizeSent(telegramId: number, prize: string, txHash:
   if (!BOT_TOKEN || !telegramId) return
   const explorerUrl = `https://stellar.expert/explorer/public/tx/${txHash}`
   const message =
-    `🎉 <b>${BRANDING.copy.prizeNotificationTitle}</b>\n\n` +
+    `🎉 <b>${rewardsCopy.prizeNotificationTitle}</b>\n\n` +
     `Prize: <b>${prize}</b>\n` +
     `Transaction: <a href="${explorerUrl}">View on Explorer</a>\n\n` +
     `The tokens are on their way to your Stellar wallet. 🏉`

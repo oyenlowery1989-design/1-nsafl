@@ -4,12 +4,11 @@ import "./globals.css";
 import TelegramGuard from "@/components/guards/TelegramGuard";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ToastContainer } from "@/components/Toast";
-import { PRIMARY_CUSTOM_ASSET_CODE } from "@/lib/constants";
 import { BRANDING } from "@/config/branding";
 
 export const metadata: Metadata = {
   title: BRANDING.appName,
-  description: `${PRIMARY_CUSTOM_ASSET_CODE} — ${BRANDING.appName} Telegram Mini App`,
+  description: BRANDING.description,
 };
 
 export default function RootLayout({

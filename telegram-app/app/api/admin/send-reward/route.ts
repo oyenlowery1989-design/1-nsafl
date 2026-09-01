@@ -5,11 +5,11 @@ import { verifyAdminToken } from '@/app/api/admin/route'
 import { REWARD_ASSETS } from '@/lib/rewardAssets'
 import { sendPrizePayment, REWARD_SENDER_SECRET, parseHorizonError, notifyPrizeSent } from '@/lib/stellar-payment'
 import { Keypair } from 'stellar-sdk'
-import { BRANDING } from '@/config/branding'
+import { rewardsCopy } from '@/packs/rewards/copy'
 import { PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
 
 const HORIZON_URL = process.env.NEXT_PUBLIC_HORIZON_URL ?? 'https://horizon.stellar.org'
-const REWARD_MEMO = (process.env.REWARD_MEMO ?? BRANDING.copy.rewardMemo).slice(0, 28)
+const REWARD_MEMO = (process.env.REWARD_MEMO ?? rewardsCopy.rewardMemo).slice(0, 28)
 
 /** GET — config diagnostic (admin only) */
 export async function GET(req: NextRequest) {

@@ -6,6 +6,7 @@ import { quizPack } from '@/packs/quiz/manifest'
 import { rewardsPack } from '@/packs/rewards/manifest'
 import { sportsPack } from '@/packs/sports/manifest'
 import { stellarWalletPack } from '@/packs/stellar-wallet/manifest'
+import type { ComponentType } from 'react'
 import type { NavigationItem, PackId, PackManifest } from '@/packs/types'
 
 export type AppFeature = PackId
@@ -60,4 +61,8 @@ export function getNavigationItems(features: FeatureConfig = APP_CONFIG.features
 
 export function getCenterAction(features: FeatureConfig = APP_CONFIG.features) {
   return Object.values(APP_CONFIG.packs).find((pack) => features[pack.id] && pack.centerAction)?.centerAction ?? null
+}
+
+export function getHomeContribution(features: FeatureConfig = APP_CONFIG.features): ComponentType | null {
+  return Object.values(APP_CONFIG.packs).find((pack) => features[pack.id] && pack.home)?.home ?? null
 }

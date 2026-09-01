@@ -19,6 +19,7 @@ import {
   shareReferralLink,
   buildReferralLink,
 } from "@/lib/telegram";
+import { stellarWalletCopy } from '@/packs/stellar-wallet/copy'
 import {
   fetchAccountInfo,
   StellarAccountInfo,
@@ -498,7 +499,7 @@ export default function ProfilePage() {
 
   function shareReferralLinkHandler() {
     haptic.medium();
-    shareReferralLink(referralLink);
+    shareReferralLink(referralLink, stellarWalletCopy.referralShareText);
   }
 
   // ── Pull-to-refresh touch tracking ──────────────────────────────────────

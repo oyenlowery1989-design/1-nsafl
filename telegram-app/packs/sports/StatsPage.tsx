@@ -9,6 +9,7 @@ import PageLoader, { useMinLoader } from '@/components/PageLoader'
 import Link from 'next/link'
 import { PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
 import { BRANDING } from '@/config/branding'
+import { sportsCopy } from './copy'
 import { PARTNER_CLUB } from '@/config/partnerClub'
 import { ALL_CLUBS, AFL_CLUBS, WAFL_CLUBS } from "@/config/afl"
 import { getTelegramInitData } from '@/lib/telegram'
@@ -135,7 +136,7 @@ function StatsPage() {
       <header className="pt-3 pb-2 px-4 sticky top-0 z-10 bg-background-dark border-b border-white/10">
         <div>
           <h1 className="text-lg font-bold text-white tracking-tight">Movement Stats</h1>
-          <p className="text-xs text-primary font-medium">{BRANDING.copy.statsProgressTagline}</p>
+          <p className="text-xs text-primary font-medium">{sportsCopy.statsProgressTagline}</p>
         </div>
       </header>
 
