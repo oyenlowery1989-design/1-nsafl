@@ -19,7 +19,7 @@ import {
   shareReferralLink,
   buildReferralLink,
 } from "@/lib/telegram";
-import { getPackCopy } from '@/config/app'
+import { getPackCopy, isPackEnabled } from '@/config/app'
 import { BRANDING } from '@/config/branding'
 import {
   fetchAccountInfo,
@@ -153,7 +153,7 @@ function TelegramAvatar({
   );
 }
 
-export default function ProfilePage() {
+function FullProfilePage() {
   const router = useRouter();
   useTelegramBack(() => router.back());
   const stellarAddress = useWalletStore((s) => s.stellarAddress);
@@ -1524,4 +1524,23 @@ export default function ProfilePage() {
       )}
     </WalletGuard>
   );
+}
+
+export default function ProfilePage() {
+  const hasEnabledDomain = (['sports', 'stellar-wallet', 'rewards', 'donations'] as const).some(isPackEnabled)
+
+  if (!hasEnabledDomain) {
+    return (
+      <main aria-label="Profile" className="min-h-screen bg-background-dark px-4 py-8">
+        <section className="bg-white/[0.03] backdrop-blur-[12px] border border-white/10 rounded-2xl p-5 text-center">
+          <span className="material-symbols-outlined text-primary text-3xl">person</span>
+          <h1 className="mt-3 font-serif text-xl font-bold text-white">Profile</h1>
+          <p className="mt-2 text-sm text-gray-400">Profile features are unavailable in this app configuration.</p>
+        </section>
+        <BottomNav />
+      </main>
+    )
+  }
+
+  return <FullProfilePage />
 }
