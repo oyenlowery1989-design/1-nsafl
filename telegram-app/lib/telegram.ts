@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { BRANDING } from "@/config/branding";
 
 export interface TelegramUser {
   id: number;
@@ -83,14 +84,14 @@ export function buildReferralLink(
   tgId: number | string | null | undefined,
   botUsername?: string,
 ): string {
-  const bot =
-    botUsername ?? process.env.NEXT_PUBLIC_BOT_USERNAME ?? "NSAFL_bot";
+  const bot = botUsername ?? BRANDING.botUsername;
   return tgId ? `https://t.me/${bot}?start=ref_${tgId}` : `https://t.me/${bot}`;
 }
 
-export function shareReferralLink(referralLink: string, shareText: string): void {
+export function shareReferralLink(referralLink: string, shareText?: string): void {
   if (!referralLink || typeof window === "undefined") return;
-  const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(shareText)}`;
+  const text = shareText ? `&text=${encodeURIComponent(shareText)}` : "";
+  const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}${text}`;
   (window as TelegramWindow).Telegram?.WebApp?.openTelegramLink?.(shareUrl);
 }
 
@@ -107,8 +108,7 @@ export function openTelegramLink(url: string): void {
 
 /** Build a ?start= bot deep link (opens bot chat, not Mini App) */
 export function buildBotStartLink(param: string, botUsername?: string): string {
-  const bot =
-    botUsername ?? process.env.NEXT_PUBLIC_BOT_USERNAME ?? "NSAFL_bot";
+  const bot = botUsername ?? BRANDING.botUsername;
   return `https://t.me/${bot}?start=${param}`;
 }
 

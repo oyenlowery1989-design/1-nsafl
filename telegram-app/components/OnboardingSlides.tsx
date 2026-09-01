@@ -1,12 +1,17 @@
 'use client'
 import { useState, useRef } from 'react'
-import { stellarWalletCopy } from '@/packs/stellar-wallet/copy'
+
+export type OnboardingSlide = Readonly<{
+  icon: string
+  title: string
+  body: string
+  showTiers: boolean
+}>
 
 interface Props {
   onDone: () => void
+  slides: readonly OnboardingSlide[]
 }
-
-const SLIDES = stellarWalletCopy.onboardingSlides
 
 const TIERS = [
   { label: 'Pre-Tier', range: '0–99', color: 'text-gray-400', border: 'border-gray-600' },
@@ -14,12 +19,12 @@ const TIERS = [
   { label: 'T10 Legend', range: '100k+', color: 'text-primary', border: 'border-primary/50' },
 ]
 
-export default function OnboardingSlides({ onDone }: Props) {
+export default function OnboardingSlides({ onDone, slides }: Props) {
   const [index, setIndex] = useState(0)
   const touchStartX = useRef<number | null>(null)
 
-  const slide = SLIDES[index]
-  const isLast = index === SLIDES.length - 1
+  const slide = slides[index]
+  const isLast = index === slides.length - 1
 
   function next() {
     if (isLast) {
@@ -115,7 +120,7 @@ export default function OnboardingSlides({ onDone }: Props) {
       <div className="relative z-10 px-8 pb-10 flex flex-col items-center gap-6">
         {/* Dot indicators */}
         <div className="flex gap-2">
-          {SLIDES.map((_, i) => (
+          {slides.map((_, i) => (
             <button
               key={i}
               onClick={() => setIndex(i)}

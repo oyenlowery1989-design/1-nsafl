@@ -14,7 +14,7 @@ import { PARTNER_CLUB } from "@/config/partnerClub";
 import { TIERS, getTierForBalance } from "@/config/tiers";
 import { PRIMARY_CUSTOM_ASSET_LABEL } from "@/lib/constants";
 import { getTelegramInitData, buildReferralLink, shareReferralLink } from "@/lib/telegram";
-import { stellarWalletCopy } from '@/packs/stellar-wallet/copy'
+import { getPackCopy } from '@/config/app'
 import type { LeaderboardEntry } from "@/app/api/leaderboard/route";
 import ErrorCard from "@/components/ErrorCard";
 
@@ -266,7 +266,7 @@ function LeaderboardPage() {
   const tgId = liveTgId ?? telegramUserId;
   const referralLink = buildReferralLink(tgId);
 
-  function shareReferral() { shareReferralLink(referralLink, stellarWalletCopy.referralShareText); }
+  function shareReferral() { shareReferralLink(referralLink, getPackCopy<string>('referralShareText') ?? undefined); }
 
   return (
     <WalletGuard>

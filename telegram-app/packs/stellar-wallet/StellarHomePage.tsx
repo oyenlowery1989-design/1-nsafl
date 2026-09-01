@@ -123,6 +123,7 @@ export default function StellarHomePage() {
     return (
       <ReferralWelcomeScreen
         referrerId={referrerId}
+        description={stellarWalletCopy.referralWelcome}
         onContinue={() => setPhase('onboarding')}
       />
     )
@@ -131,6 +132,7 @@ export default function StellarHomePage() {
   if (phase === 'onboarding') {
     return (
       <OnboardingSlides
+        slides={stellarWalletCopy.onboardingSlides}
         onDone={() => {
           setHasSeenOnboarding()
           setPhase('gate')
@@ -160,7 +162,7 @@ export default function StellarHomePage() {
   }
 
   if (phase === 'dashboard') {
-    return <DashboardView address={stellarAddress!} balance={tokenBalance} />
+    return <DashboardView address={stellarAddress!} balance={tokenBalance} referralShareText={stellarWalletCopy.referralShareText} />
   }
 
   if (phase === 'team-select') {

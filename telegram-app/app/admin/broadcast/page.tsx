@@ -2,9 +2,10 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useAdminToken } from '../hooks/useAdminToken'
 import { Icon } from '../components/ui'
-import { gamesCopy } from '@/packs/games/copy'
+import { getPackCopy } from '@/config/app'
 
-const TEMPLATES = gamesCopy.broadcastTemplates
+type BroadcastTemplate = Readonly<{ label: string; message: string }>
+const TEMPLATES = getPackCopy<readonly BroadcastTemplate[]>('broadcastTemplates') ?? []
 
 function BroadcastContent() {
   const token = useAdminToken() ?? ''

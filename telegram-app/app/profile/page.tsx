@@ -19,7 +19,8 @@ import {
   shareReferralLink,
   buildReferralLink,
 } from "@/lib/telegram";
-import { stellarWalletCopy } from '@/packs/stellar-wallet/copy'
+import { getPackCopy } from '@/config/app'
+import { BRANDING } from '@/config/branding'
 import {
   fetchAccountInfo,
   StellarAccountInfo,
@@ -481,9 +482,9 @@ export default function ProfilePage() {
     : donations.slice(0, 5);
 
   // Referral link — resolve tgId from multiple sources
-  const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME ?? "NSAFL_bot";
+  const botUsername = BRANDING.botUsername;
   const tgId = liveTgUser?.id ?? telegramUserId;
-  const referralLink = tgId ? buildReferralLink(tgId, botUsername) : "";
+  const referralLink = tgId ? buildReferralLink(tgId) : "";
   const displayedReferrals = showAllReferrals
     ? referrals
     : referrals.slice(0, 5);
@@ -499,7 +500,7 @@ export default function ProfilePage() {
 
   function shareReferralLinkHandler() {
     haptic.medium();
-    shareReferralLink(referralLink, stellarWalletCopy.referralShareText);
+    shareReferralLink(referralLink, getPackCopy<string>('referralShareText') ?? undefined);
   }
 
   // ── Pull-to-refresh touch tracking ──────────────────────────────────────

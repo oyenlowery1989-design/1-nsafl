@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest'
-import { getHomeContribution } from '@/config/app'
+import { getPackCopy } from '@/config/app'
+import { getRootHome, NeutralHome } from '@/app/page'
 
 const disabledPacks = {
   sports: false,
@@ -11,6 +12,10 @@ const disabledPacks = {
   leaderboard: false,
 } as const
 
-it('selects no pack home with every pack disabled', () => {
-  expect(getHomeContribution(disabledPacks)).toBeNull()
+it('renders the neutral root when every pack is disabled', () => {
+  expect(getRootHome(disabledPacks)).toBe(NeutralHome)
+})
+
+it('exposes no pack copy when every pack is disabled', () => {
+  expect(getPackCopy('referralShareText', disabledPacks)).toBeNull()
 })

@@ -11,7 +11,7 @@ import type { NavigationItem, PackId, PackManifest } from '@/packs/types'
 
 export type AppFeature = PackId
 
-type FeatureConfig = Readonly<Record<AppFeature, boolean>>
+export type FeatureConfig = Readonly<Record<AppFeature, boolean>>
 type PackConfig = PackManifest & Readonly<{ enabled: boolean }>
 type ConfigNavigationItem = NavigationItem & Readonly<{ feature?: AppFeature }>
 
@@ -65,4 +65,12 @@ export function getCenterAction(features: FeatureConfig = APP_CONFIG.features) {
 
 export function getHomeContribution(features: FeatureConfig = APP_CONFIG.features): ComponentType | null {
   return Object.values(APP_CONFIG.packs).find((pack) => features[pack.id] && pack.home)?.home ?? null
+}
+
+export function getPackCopy<T>(key: string, features: FeatureConfig = APP_CONFIG.features): T | null {
+  for (const pack of Object.values(APP_CONFIG.packs)) {
+    const value = features[pack.id] ? pack.copy?.[key] : undefined
+    if (value !== undefined) return value as T
+  }
+  return null
 }

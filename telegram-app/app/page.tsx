@@ -1,7 +1,7 @@
-import { getHomeContribution } from '@/config/app'
+import { getHomeContribution, type FeatureConfig } from '@/config/app'
 import { BRANDING } from '@/config/branding'
 
-function NeutralHome() {
+export function NeutralHome() {
   return (
     <main className="min-h-screen px-6 py-12 flex items-center justify-center">
       <section className="glass-card rounded-2xl p-8 max-w-sm text-center space-y-3">
@@ -13,7 +13,11 @@ function NeutralHome() {
   )
 }
 
-const HomeContribution = getHomeContribution()
+export function getRootHome(features?: FeatureConfig) {
+  return getHomeContribution(features) ?? NeutralHome
+}
+
+const HomeContribution = getRootHome()
 
 export default function HomePage() {
   return HomeContribution ? <HomeContribution /> : <NeutralHome />
