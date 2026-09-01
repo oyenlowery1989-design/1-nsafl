@@ -60,5 +60,9 @@ it('blocks each pack-owned admin workflow when its pack is disabled', async () =
   await expect(quiz(new Request('https://example.test/api/admin/quiz') as never)).resolves.toMatchObject({ status: 404 })
   await expect(teamRequest(new Request('https://example.test/api/admin/team-request', { method: 'POST' }) as never)).resolves.toMatchObject({ status: 404 })
   await expect(overviewStats(new Request('https://example.test/api/admin/overview-stats') as never)).resolves.toMatchObject({ status: 404 })
-  await expect(verify(new Request('https://example.test/api/admin/verify', { method: 'POST', body: JSON.stringify({ type: 'donation', id: 'id' }) }) as never)).resolves.toMatchObject({ status: 404 })
+  await expect(verify(new Request('https://example.test/api/admin/verify', {
+    method: 'POST',
+    headers: { 'x-admin-pack': 'donations' },
+    body: '{',
+  }) as never)).resolves.toMatchObject({ status: 404 })
 })

@@ -41,7 +41,7 @@ function DonationsContent() {
   async function verify(id: string) {
     setVerifyingId(id)
     const res = await fetch('/api/admin/verify', {
-      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-token': token, 'x-admin-pack': 'donations' },
       body: JSON.stringify({ type: 'donation', id }),
     })
     const j = await res.json()

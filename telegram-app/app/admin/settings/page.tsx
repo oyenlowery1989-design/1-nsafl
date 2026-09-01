@@ -4,6 +4,7 @@ import { Icon } from '../components/ui'
 import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
 import { REWARD_ASSETS } from '@/lib/rewardAssets'
 import { useAdminToken } from '../hooks/useAdminToken'
+import { isPackEnabled } from '@/config/app'
 
 type SenderConfig = {
   senderPublicKey: string
@@ -13,19 +14,21 @@ type SenderConfig = {
 }
 
 function SettingsContent() {
+  const hasRewards = isPackEnabled('rewards')
+  const hasGames = isPackEnabled('games')
   const token = useAdminToken() ?? ''
   const [config, setConfig] = useState<SenderConfig | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(hasRewards)
   const [envStatus, setEnvStatus] = useState<Record<string, boolean> | null>(null)
   const [envLoading, setEnvLoading] = useState(false)
 
   useEffect(() => {
-    if (!token) return
+    if (!token || !hasRewards) return
     fetch('/api/admin/send-reward', { headers: { 'x-admin-token': token } })
       .then(r => r.json())
       .then(j => { if (j.success) setConfig(j.data) })
       .finally(() => setLoading(false))
-  }, [token])
+  }, [hasRewards, token])
 
   useEffect(() => {
     if (!token) return
@@ -62,7 +65,7 @@ function SettingsContent() {
       </h2>
 
       {/* Reward wallet config */}
-      <div className="bg-[#0d1424] border border-white/8 rounded-xl p-5 space-y-4">
+      {hasRewards && <div className="bg-[#0d1424] border border-white/8 rounded-xl p-5 space-y-4">
         <h3 className="text-sm font-semibold text-gray-200 flex items-center gap-2">
           <Icon name="account_balance_wallet" className="text-sm text-primary" />
           Reward Wallet
@@ -87,10 +90,10 @@ function SettingsContent() {
             </div>
           </div>
         ) : <p className="text-sm text-red-400">Failed to load config</p>}
-      </div>
+      </div>}
 
       {/* Game config */}
-      <div className="bg-[#0d1424] border border-white/8 rounded-xl p-5 space-y-4">
+      {hasGames && <div className="bg-[#0d1424] border border-white/8 rounded-xl p-5 space-y-4">
         <h3 className="text-sm font-semibold text-gray-200 flex items-center gap-2">
           <Icon name="sports_esports" className="text-sm text-primary" />
           Game Limits
@@ -109,7 +112,7 @@ function SettingsContent() {
             </div>
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* Env vars */}
       <div className="bg-[#0d1424] border border-white/8 rounded-xl p-5 space-y-3">

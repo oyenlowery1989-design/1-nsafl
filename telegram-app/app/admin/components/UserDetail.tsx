@@ -7,6 +7,7 @@ import type { User, AdminData } from '../types'
 import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
 import { getTierForBalance } from '@/config/tiers'
 import { ALL_CLUBS } from '@/config/afl'
+import { isPackEnabled } from '@/config/app'
 
 interface Props {
   u: User
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export function UserDetail({ u, data, token, onBack, onAction, onDeleteAccess, deletingAccessId, onUserUpdated }: Props) {
+  const hasWallet = isPackEnabled('stellar-wallet')
   const walletIds     = new Set(u.wallets.map(w => w.id))
   const userAccess    = data.accessAttempts.filter(a => a.telegram_id === u.telegram_id)
   const userSessions  = data.gameSessions.filter(g => g.telegram_id === u.telegram_id)
@@ -54,6 +56,7 @@ export function UserDetail({ u, data, token, onBack, onAction, onDeleteAccess, d
   }
 
   async function refreshBalance() {
+    if (!hasWallet) return
     setRefreshing(true)
     setRefreshToast(null)
     try {

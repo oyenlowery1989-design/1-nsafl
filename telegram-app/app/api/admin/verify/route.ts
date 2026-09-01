@@ -1,38 +1,11 @@
 import { NextRequest } from 'next/server'
-import { ok, fail } from '@/lib/api-response'
-import { createServiceClient } from '@/lib/supabase-server'
-import { verifyAdminToken } from '@/app/api/admin/route'
-import { requirePack } from '@/lib/feature-gate'
+import { fail } from '@/lib/api-response'
+import { POST as verifyDonation } from '@/packs/donations/admin/verify-route'
+import { POST as verifyPurchase } from '@/packs/stellar-wallet/admin/verify-purchase-route'
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => null)
-  if (!body || !body.type || !body.id) return fail('Missing type or id', 'INVALID_DATA')
-
-  const { type, id } = body as { type: 'donation' | 'purchase'; id: string }
-
-  if (type !== 'donation' && type !== 'purchase') {
-    return fail('type must be donation or purchase', 'INVALID_DATA')
-  }
-
-  const disabled = requirePack(type === 'donation' ? 'donations' : 'stellar-wallet')
-  if (disabled) return disabled
-  if (!verifyAdminToken(req)) return fail('Forbidden', 'FORBIDDEN', 403)
-
-  const supabase = createServiceClient()
-
-  if (type === 'donation') {
-    const { error } = await supabase
-      .from('donations')
-      .update({ verified: true })
-      .eq('id', id)
-    if (error) return fail(error.message, 'DB_ERROR', 500)
-  } else {
-    const { error } = await supabase
-      .from('purchases')
-      .update({ verified: true })
-      .eq('id', id)
-    if (error) return fail(error.message, 'DB_ERROR', 500)
-  }
-
-  return ok({ verified: true, type, id })
+  const pack = req.headers.get('x-admin-pack')
+  if (pack === 'donations') return verifyDonation(req)
+  if (pack === 'stellar-wallet') return verifyPurchase(req)
+  return fail('Missing pack context', 'INVALID_DATA')
 }

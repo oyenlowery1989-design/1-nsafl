@@ -3,6 +3,12 @@ import { NextRequest } from 'next/server'
 import { ok, fail } from '@/lib/api-response'
 import { createServiceClient } from '@/lib/supabase-server'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { isPackEnabled } from '@/config/app'
+import { getDonationsAdminData } from '@/packs/donations/admin/data'
+import { getGamesAdminData } from '@/packs/games/admin/data'
+import { getLeaderboardAdminData } from '@/packs/leaderboard/admin/data'
+import { getSportsAdminData } from '@/packs/sports/admin/data'
+import { getWalletAdminData } from '@/packs/stellar-wallet/admin/data'
 
 export function verifyAdminToken(req: NextRequest): boolean {
   if (checkRateLimit(req, 30, `admin:${req.headers.get('x-forwarded-for') ?? 'local'}`)) return false
@@ -19,85 +25,33 @@ export async function GET(req: NextRequest) {
 
   const supabase = createServiceClient()
 
-  const [
-    { data: users },
-    { data: teamRequests },
-    { data: gameSessions },
-    { data: donations },
-    { data: purchases },
-    { data: accessAttempts },
-    { data: referredUsers },
-    { data: trustlineSubmissions },
-    { data: allBalances },
-  ] = await Promise.all([
-    // Users + wallets + balances in one shot
+  const [{ data: users }, { data: accessAttempts }] = await Promise.all([
+    // Core identity data only. Domain data is composed below by enabled packs.
     supabase
       .from('users')
       .select(`
-        telegram_id, telegram_username, telegram_first_name, telegram_photo_url, telegram_phone,
-        favorite_team, display_preference, opt_in_telegram_notifications, is_blocked,
-        referred_by, bonus_balls, bonus_spins, created_at, updated_at,
-        wallets (
-          id, stellar_address, label, is_primary, created_at, last_connected_at,
-          wallet_balances ( primary_asset_balance, xlm_balance, balance_week_ago, last_synced_at )
-        )
+        id, telegram_id, telegram_username, telegram_first_name, telegram_photo_url, telegram_phone,
+        display_preference, opt_in_telegram_notifications, is_blocked, created_at, updated_at
       `)
       .order('created_at', { ascending: false }),
-
-    // All team change requests
-    supabase
-      .from('team_change_requests')
-      .select('id, telegram_id, requested_team, status, admin_note, created_at, resolved_at')
-      .order('created_at', { ascending: false }),
-
-    // Game sessions
-    supabase
-      .from('game_sessions')
-      .select('id, telegram_id, wallet_id, kicks, balls_spawned, duration_seconds, created_at')
-      .order('created_at', { ascending: false })
-      .limit(200),
-
-    // Donations
-    supabase
-      .from('donations')
-      .select('id, wallet_id, amount, asset_code, donation_type, donation_target, stellar_tx_hash, verified, created_at')
-      .order('created_at', { ascending: false }),
-
-    // Purchases
-    supabase
-      .from('purchases')
-      .select('id, wallet_id, xlm_amount, token_amount, stellar_tx_hash, purchase_type, verified, created_at')
-      .order('created_at', { ascending: false }),
-
-    // Access attempts (last 100)
     supabase
       .from('access_attempts')
       .select('id, ip, user_agent, tg_sdk_present, tg_sdk_fake, devtools_opened, screen, timezone, language, url, telegram_id, telegram_username, telegram_first_name, geo_location, created_at')
       .order('created_at', { ascending: false })
       .limit(100),
-
-    // Users who were referred (have referred_by set) - for referral stats
-    supabase
-      .from('users')
-      .select('telegram_id, telegram_first_name, telegram_username, referred_by, created_at')
-      .not('referred_by', 'is', null)
-      .order('created_at', { ascending: false }),
-
-    // Trustline submissions (last 50)
-    supabase
-      .from('trustline_submissions')
-      .select('id, ip, xdr, horizon_result, success, tx_hash, created_at')
-      .order('created_at', { ascending: false })
-      .limit(50),
-
-    // Aggregate totals directly — avoids relying on nested JS aggregation
-    supabase.from('wallet_balances').select('primary_asset_balance, xlm_balance'),
-
   ])
 
-  // Build referral stats from referred users list + users lookup
   const allUsers = users ?? []
-  const referred = referredUsers ?? []
+  const [walletData, sportsData, gamesData, donationsData, leaderboardData] = await Promise.all([
+    isPackEnabled('stellar-wallet') ? getWalletAdminData(supabase) : null,
+    isPackEnabled('sports') ? getSportsAdminData(supabase) : null,
+    isPackEnabled('games') ? getGamesAdminData(supabase) : null,
+    isPackEnabled('donations') ? getDonationsAdminData(supabase) : null,
+    isPackEnabled('leaderboard') ? getLeaderboardAdminData(supabase) : null,
+  ])
+
+  const referred = leaderboardData?.referredUsers ?? []
+  const referredByTelegramId = new Map(referred.map((user) => [user.telegram_id, user.referred_by]))
 
   // Group referred users by their referrer
   const referrerMap = new Map<number, { count: number; lastAt: string }>()
@@ -113,8 +67,7 @@ export async function GET(req: NextRequest) {
   }
 
   const referralStats = Array.from(referrerMap.entries()).map(([referrerId, stats]) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const referrer = allUsers.find((u: any) => u.telegram_id === referrerId)
+    const referrer = allUsers.find((u) => u.telegram_id === referrerId)
     return {
       referrer_id: referrerId,
       referrer_name: referrer?.telegram_first_name ?? null,
@@ -124,20 +77,26 @@ export async function GET(req: NextRequest) {
     }
   }).sort((a, b) => b.referral_count - a.referral_count)
 
-  const totalNsafl = (allBalances ?? []).reduce((s, b) => s + Number(b.primary_asset_balance ?? 0), 0)
-  const totalXlm   = (allBalances ?? []).reduce((s, b) => s + Number(b.xlm_balance ?? 0), 0)
+  const adminUsers = allUsers.map(({ id, ...user }) => ({
+    ...user,
+    favorite_team: sportsData?.teamsByTelegramId.get(user.telegram_id) ?? null,
+    referred_by: referredByTelegramId.get(user.telegram_id) ?? null,
+    bonus_balls: gamesData?.bonusesByTelegramId.get(user.telegram_id)?.bonus_balls ?? 0,
+    bonus_spins: gamesData?.bonusesByTelegramId.get(user.telegram_id)?.bonus_spins ?? 0,
+    wallets: walletData?.walletsByUserId.get(id) ?? [],
+  }))
 
   return ok({
-    users: allUsers,
-    teamRequests: teamRequests ?? [],
-    gameSessions: gameSessions ?? [],
-    donations: donations ?? [],
-    purchases: purchases ?? [],
+    users: adminUsers,
+    teamRequests: sportsData?.teamRequests ?? [],
+    gameSessions: gamesData?.gameSessions ?? [],
+    donations: donationsData?.donations ?? [],
+    purchases: walletData?.purchases ?? [],
     accessAttempts: accessAttempts ?? [],
     referralStats,
     referredUsers: referred,
-    trustlineSubmissions: trustlineSubmissions ?? [],
-    totalNsafl,
-    totalXlm,
+    trustlineSubmissions: walletData?.trustlineSubmissions ?? [],
+    totalNsafl: walletData?.totalNsafl,
+    totalXlm: walletData?.totalXlm,
   })
 }

@@ -2,6 +2,7 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useAdminToken } from '../hooks/useAdminToken'
 import { Icon } from '../components/ui'
+import { isPackEnabled } from '@/config/app'
 
 type PaidWin = {
   id: number
@@ -17,18 +18,19 @@ type PaidWin = {
 }
 
 function ActivityContent() {
+  const hasGames = isPackEnabled('games')
   const token = useAdminToken() ?? ''
   const [wins, setWins] = useState<PaidWin[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(hasGames)
   const [filterAdmin, setFilterAdmin] = useState('')
 
   useEffect(() => {
-    if (!token) return
+    if (!token || !hasGames) return
     fetch('/api/admin/wins?status=paid&limit=100', { headers: { 'x-admin-token': token } })
       .then(r => r.json())
       .then(j => setWins((j.data ?? j).wins ?? []))
       .finally(() => setLoading(false))
-  }, [token])
+  }, [hasGames, token])
 
   const filtered = filterAdmin
     ? wins.filter(w => w.paid_by?.toLowerCase().includes(filterAdmin.toLowerCase()))

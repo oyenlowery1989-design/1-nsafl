@@ -8,6 +8,7 @@ import { ago, num, teamName, shortAddr, dt } from '../utils'
 import type { AdminData, User, ConfirmAction } from '../types'
 import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
 import { ALL_CLUBS } from '@/config/afl'
+import { isPackEnabled } from '@/config/app'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -49,6 +50,8 @@ type StatusFilter = 'all' | 'active' | 'blocked'
 // ── Inner page ───────────────────────────────────────────────────────────────
 
 function UsersPageInner() {
+  const hasGames = isPackEnabled('games')
+  const hasWallet = isPackEnabled('stellar-wallet')
   // Auth
   const token = useAdminToken()
 
@@ -79,7 +82,7 @@ function UsersPageInner() {
     try {
       const [adminRes, winsRes] = await Promise.all([
         fetch('/api/admin', { headers: { 'x-admin-token': token } }),
-        fetch('/api/admin/wins?limit=1000', { headers: { 'x-admin-token': token } }),
+        hasGames ? fetch('/api/admin/wins?limit=1000', { headers: { 'x-admin-token': token } }) : null,
       ])
       if (!adminRes.ok) throw new Error(`Admin API ${adminRes.status}`)
       const adminJson = await adminRes.json()
@@ -87,7 +90,7 @@ function UsersPageInner() {
       setData(adminJson.data)
 
       // Build win counts per telegram_id
-      if (winsRes.ok) {
+      if (winsRes?.ok) {
         const winsJson = await winsRes.json()
         const wins: { telegram_id: number }[] = winsJson.data?.wins ?? winsJson.wins ?? []
         const counts: Record<number, number> = {}
@@ -101,7 +104,7 @@ function UsersPageInner() {
     } finally {
       setLoading(false)
     }
-  }, [token])
+  }, [hasGames, token])
 
   useEffect(() => { if (token) fetchData() }, [token, fetchData])
 
@@ -161,6 +164,7 @@ function UsersPageInner() {
 
   // Sync all balances
   async function syncAllBalances() {
+    if (!hasWallet) return
     setSyncing(true)
     try {
       const res = await fetch('/api/admin/sync-missing-balances', {
