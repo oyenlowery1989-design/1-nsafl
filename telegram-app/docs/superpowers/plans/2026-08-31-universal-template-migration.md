@@ -10,6 +10,13 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-31-universal-template-design.md`
 
+## Continuation Status — paused 2026-08-31
+
+- Task 1 complete: `6f4ad10 refactor: compose complete pack manifests`; review clean; 65 tests passed.
+- Task 2 implementation complete: `d928e10 refactor: add neutral app shell`; TypeScript passed, lint had 0 errors/63 existing warnings, and 66 tests passed.
+- Resume with the required Task 2 review. Use base `6f4ad103fb602ca224a92bce6052721c506a277e`, head `d928e10`, and `.superpowers/sdd/2026-08-31-universal-template-migration/task-2-report.md`.
+- Do not begin Task 3 until that review is clean or its findings are resolved.
+
 ## Global Constraints
 
 - Preserve NSAFL URLs, authorization, enabled behavior, and schema.
@@ -23,7 +30,7 @@
 
 **Files:** `packs/types.ts`, `config/app.ts`, `packs/*/manifest.ts`, `__tests__/app-config.test.ts`.
 
-- [ ] **Step 1: Write failing composition tests**
+- [x] **Step 1: Write failing composition tests**
 
 ```ts
 it('returns only neutral navigation with every pack disabled', () => {
@@ -34,11 +41,11 @@ it('uses a pack-provided center action', () => {
 })
 ```
 
-- [ ] **Step 2: Run `npm test -- __tests__/app-config.test.ts`**
+- [x] **Step 2: Run `npm test -- __tests__/app-config.test.ts`**
 
 Expected: fail because empty-core composition and center actions do not exist.
 
-- [ ] **Step 3: Add the minimal contract**
+- [x] **Step 3: Add the minimal contract**
 
 ```ts
 export type PackManifest = Readonly<{
@@ -49,7 +56,7 @@ export type PackManifest = Readonly<{
 }>
 ```
 
-- [ ] **Step 4: Verify focused tests and commit**
+- [x] **Step 4: Verify focused tests and commit**
 
 ```bash
 git add packs config/app.ts __tests__/app-config.test.ts
@@ -60,7 +67,7 @@ git commit -m "refactor: compose complete pack manifests"
 
 **Files:** `config/branding.ts`, `app/{layout,page}.tsx`, `components/{BottomNav,PageLoader}.tsx`, `app/globals.css`, pack home/copy modules, `__tests__/neutral-core.test.ts`.
 
-- [ ] **Step 1: Write a failing empty-core test**
+- [x] **Step 1: Write a failing empty-core test**
 
 ```ts
 it('selects no pack home with every pack disabled', () => {
@@ -68,15 +75,15 @@ it('selects no pack home with every pack disabled', () => {
 })
 ```
 
-- [ ] **Step 2: Run `npm test -- __tests__/neutral-core.test.ts`**
+- [x] **Step 2: Run `npm test -- __tests__/neutral-core.test.ts`**
 
 Expected: fail because root selects the Stellar home and shared shell is domain-specific.
 
-- [ ] **Step 3: Implement neutral shell behavior**
+- [x] **Step 3: Implement neutral shell behavior**
 
 Keep branding to identity/theme tokens. Move football/game actions, Stellar home, onboarding, referral, and campaign copy into manifests.
 
-- [ ] **Step 4: Verify focused tests and commit**
+- [x] **Step 4: Verify focused tests and commit**
 
 ```bash
 git add config app components packs __tests__/neutral-core.test.ts
