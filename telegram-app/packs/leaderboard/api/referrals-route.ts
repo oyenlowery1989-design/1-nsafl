@@ -3,6 +3,7 @@ import { ok, fail } from '@/lib/api-response'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { createServiceClient } from '@/lib/supabase-server'
 import { validateTelegramInitData, TelegramUser } from '@/lib/telegram'
+import { requirePack } from '@/lib/feature-gate'
 
 const isDev =
   process.env.NODE_ENV !== 'production' &&
@@ -18,6 +19,9 @@ function getUser(req: NextRequest): TelegramUser | null {
 
 // GET /api/user/referrals — returns count + list of users referred by the caller
 export async function GET(req: NextRequest) {
+  const disabled = requirePack('leaderboard')
+  if (disabled) return disabled
+
   const rateLimitError = checkRateLimit(req)
   if (rateLimitError) return rateLimitError
 

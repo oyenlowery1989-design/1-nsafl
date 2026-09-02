@@ -74,6 +74,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     const { error } = body.favorite_team !== undefined
       ? await createSportsRepository(supabase).setFavoriteTeam(telegramId, body.favorite_team)
       : { error: null }
+    if (error) return fail('Failed to update user', 'DB_ERROR', 500)
     if (Object.keys(updatePayload).length) {
       const { error: updateError } = await supabase.from('users').update(updatePayload).eq('telegram_id', telegramId)
       if (updateError) return fail('Failed to update user', 'DB_ERROR', 500)
@@ -82,7 +83,6 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
       const { error: bonusError } = await createGamesRepository(supabase).setBonusPool(telegramId, bonusPool)
       if (bonusError) return fail('Failed to update user', 'DB_ERROR', 500)
     }
-    if (error) return fail('Failed to update user', 'DB_ERROR', 500)
     return ok({ telegramId, updated: { ...updatePayload, ...bonusPool, ...(body.favorite_team !== undefined ? { favorite_team: body.favorite_team } : {}) } })
   }
 

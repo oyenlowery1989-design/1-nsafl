@@ -4,6 +4,15 @@ type SupabaseClient = ReturnType<typeof createServiceClient>
 
 export function createGamesRepository(supabase: SupabaseClient) {
   return {
+    async getBonusSpins(telegramId: number): Promise<number | null> {
+      const { data } = await supabase
+        .from('users')
+        .select('bonus_spins')
+        .eq('telegram_id', telegramId)
+        .maybeSingle()
+      return data?.bonus_spins ?? null
+    },
+
     async countWins(telegramId: number): Promise<number> {
       const { count } = await supabase
         .from('lucky_draw_wins')

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { ok, fail } from '@/lib/api-response'
 import { createServiceClient } from '@/lib/supabase-server'
 import { validateTelegramInitData, TelegramUser } from '@/lib/telegram'
+import { requirePack } from '@/lib/feature-gate'
 
 const isDev =
   process.env.NODE_ENV !== 'production' &&
@@ -11,6 +12,9 @@ const isDev =
 // Returns the display name of a referrer — used for the "invited by" welcome screen.
 // Only the caller's own referrer may be looked up (scoped to users.referred_by).
 export async function GET(req: NextRequest) {
+  const disabled = requirePack('leaderboard')
+  if (disabled) return disabled
+
   const initData = req.headers.get('x-telegram-init-data') ?? ''
 
   let telegramUser: TelegramUser
