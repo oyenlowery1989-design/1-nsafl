@@ -8,6 +8,7 @@ import { createServiceClient } from '@/lib/supabase-server'
 import { ok, fail } from '@/lib/api-response'
 import { verifyAdminToken } from '@/app/api/admin/route'
 import { createStellarWalletRepository } from '@/packs/stellar-wallet/repository'
+import { createGamesRepository } from '@/packs/games/repository'
 
 export async function GET(req: NextRequest) {
   if (!verifyAdminToken(req)) return fail('Forbidden', 'FORBIDDEN', 403)
@@ -17,6 +18,7 @@ export async function GET(req: NextRequest) {
 
   const supabase = createServiceClient()
   const wallets = createStellarWalletRepository(supabase)
+  const games = createGamesRepository(supabase)
 
   // Build query — numeric = search by telegram_id, otherwise by username
   const isNumeric = /^\d+$/.test(q)
@@ -38,11 +40,7 @@ export async function GET(req: NextRequest) {
     const userWallets = await wallets.listWallets(u.telegram_id)
 
     // Win count
-    const { count: winCount } = await supabase
-      .from('lucky_draw_wins')
-      .select('id', { count: 'exact', head: true })
-      .eq('telegram_id', u.telegram_id)
-      .neq('prize', 'Better Luck')
+    const winCount = await games.countWins(u.telegram_id)
 
     // Referral count
     const { count: refCount } = await supabase
@@ -53,7 +51,7 @@ export async function GET(req: NextRequest) {
     return {
       ...u,
       wallets: userWallets,
-      winCount: winCount ?? 0,
+      winCount,
       referralCount: refCount ?? 0,
     }
   }))

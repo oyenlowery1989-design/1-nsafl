@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase-server'
 import { verifyAdminToken } from '@/app/api/admin/route'
 import { createStellarWalletRepository } from '@/packs/stellar-wallet/repository'
 import { createSportsRepository } from '@/packs/sports/repository'
+import { createGamesRepository } from '@/packs/games/repository'
 
 type Ctx = { params: Promise<{ telegramId: string }> }
 
@@ -29,7 +30,7 @@ export async function DELETE(req: NextRequest, ctx: Ctx) {
     }
 
     // 4. Delete telegram-id-keyed data
-    await supabase.from('game_sessions').delete().eq('telegram_id', telegramId)
+    await createGamesRepository(supabase).removeSessions(telegramId)
     await createSportsRepository(supabase).removeTeamRequests(telegramId)
 
     // 5. Delete user row — they can return fresh on next open (not blocked)
@@ -65,8 +66,10 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   if (body.favorite_team !== undefined || body.display_preference !== undefined || body.bonus_balls !== undefined || body.bonus_spins !== undefined) {
     const updatePayload: Record<string, unknown> = {}
     if (body.display_preference !== undefined) updatePayload.display_preference = body.display_preference
-    if (typeof body.bonus_balls === 'number' && body.bonus_balls >= 0) updatePayload.bonus_balls = body.bonus_balls
-    if (typeof body.bonus_spins === 'number' && body.bonus_spins >= 0) updatePayload.bonus_spins = body.bonus_spins
+    const bonusPool = {
+      ...(typeof body.bonus_balls === 'number' && body.bonus_balls >= 0 ? { bonus_balls: body.bonus_balls } : {}),
+      ...(typeof body.bonus_spins === 'number' && body.bonus_spins >= 0 ? { bonus_spins: body.bonus_spins } : {}),
+    }
     const { error } = body.favorite_team !== undefined
       ? await createSportsRepository(supabase).setFavoriteTeam(telegramId, body.favorite_team)
       : { error: null }
@@ -74,8 +77,12 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
       const { error: updateError } = await supabase.from('users').update(updatePayload).eq('telegram_id', telegramId)
       if (updateError) return fail('Failed to update user', 'DB_ERROR', 500)
     }
+    if (Object.keys(bonusPool).length) {
+      const { error: bonusError } = await createGamesRepository(supabase).setBonusPool(telegramId, bonusPool)
+      if (bonusError) return fail('Failed to update user', 'DB_ERROR', 500)
+    }
     if (error) return fail('Failed to update user', 'DB_ERROR', 500)
-    return ok({ telegramId, updated: { ...updatePayload, ...(body.favorite_team !== undefined ? { favorite_team: body.favorite_team } : {}) } })
+    return ok({ telegramId, updated: { ...updatePayload, ...bonusPool, ...(body.favorite_team !== undefined ? { favorite_team: body.favorite_team } : {}) } })
   }
 
   await supabase
