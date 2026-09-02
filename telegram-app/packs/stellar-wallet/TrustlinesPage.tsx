@@ -1,6 +1,7 @@
 'use client'
 import { useRouter } from 'next/navigation'
-import { useWalletStore } from '@/hooks/useStore'
+import { useIdentityStore } from '@/hooks/useStore'
+import { useStellarWalletStore } from './store'
 import WalletGuard from '@/components/WalletGuard'
 import BottomNav from '@/components/BottomNav'
 import TrustlineModal from '@/components/TrustlineModal'
@@ -8,8 +9,8 @@ import FeatureRedirect from '@/components/FeatureRedirect'
 
 function TrustlinesPage() {
   const router = useRouter()
-  const stellarAddress = useWalletStore(s => s.stellarAddress)
-  const telegramUser   = useWalletStore(s => s.telegramUser)
+  const stellarAddress = useStellarWalletStore(s => s.stellarAddress)
+  const telegramUser = useIdentityStore(s => s.telegramUser)
 
   return (
     <WalletGuard>

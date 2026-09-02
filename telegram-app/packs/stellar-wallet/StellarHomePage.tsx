@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useWalletStore } from '@/hooks/useStore'
+import { useIdentityStore } from '@/hooks/useStore'
+import { useSportsStore } from '@/packs/sports/store'
+import { useStellarWalletStore } from './store'
 import DashboardView from '@/components/DashboardView'
 import TeamSelectScreen from '@/components/TeamSelectScreen'
 import BottomNav from '@/components/BottomNav'
@@ -20,17 +22,17 @@ import Header from '@/components/Header'
 type Phase = 'referral-welcome' | 'onboarding' | 'gate' | 'connecting' | 'no-trustline' | 'celebration' | 'team-select' | 'dashboard'
 
 export default function StellarHomePage() {
-  const stellarAddress = useWalletStore((s) => s.stellarAddress)
-  const tokenBalance = useWalletStore((s) => s.tokenBalance)
-  const isConnected = useWalletStore((s) => s.isConnected)
-  const favoriteTeam = useWalletStore((s) => s.favoriteTeam)
-  const setFavoriteWaflTeam = useWalletStore((s) => s.setFavoriteWaflTeam)
-  const setWallet = useWalletStore((s) => s.setWallet)
-  const setBalances = useWalletStore((s) => s.setBalances)
-  const setTelegramUser = useWalletStore((s) => s.setTelegramUser)
-  const setFavoriteTeam = useWalletStore((s) => s.setFavoriteTeam)
-  const hasSeenOnboarding = useWalletStore((s) => s.hasSeenOnboarding)
-  const setHasSeenOnboarding = useWalletStore((s) => s.setHasSeenOnboarding)
+  const stellarAddress = useStellarWalletStore((s) => s.stellarAddress)
+  const tokenBalance = useStellarWalletStore((s) => s.tokenBalance)
+  const isConnected = useStellarWalletStore((s) => s.isConnected)
+  const favoriteTeam = useSportsStore((s) => s.favoriteTeam)
+  const setFavoriteWaflTeam = useSportsStore((s) => s.setFavoriteWaflTeam)
+  const setWallet = useStellarWalletStore((s) => s.setWallet)
+  const setBalances = useStellarWalletStore((s) => s.setBalances)
+  const setTelegramUser = useIdentityStore((s) => s.setTelegramUser)
+  const setFavoriteTeam = useSportsStore((s) => s.setFavoriteTeam)
+  const hasSeenOnboarding = useStellarWalletStore((s) => s.hasSeenOnboarding)
+  const setHasSeenOnboarding = useStellarWalletStore((s) => s.setHasSeenOnboarding)
   const referrerId = typeof window !== 'undefined'
     ? parseInt(sessionStorage.getItem(REFERRER_STORAGE_KEY) ?? '', 10) || null
     : null

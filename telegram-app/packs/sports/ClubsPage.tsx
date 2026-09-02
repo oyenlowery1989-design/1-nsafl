@@ -6,7 +6,7 @@ import FeatureRedirect from '@/components/FeatureRedirect'
 import WalletGuard from "@/components/WalletGuard";
 import PageLoader, { useMinLoader } from "@/components/PageLoader";
 import { useTelegramBack } from "@/hooks/useTelegramBack";
-import { useWalletStore } from "@/hooks/useStore";
+import { useSportsStore } from "./store";
 import { toast } from "@/components/Toast";
 import { getTelegramInitData } from "@/lib/telegram";
 import { PRIMARY_CUSTOM_ASSET_LABEL } from "@/lib/constants";
@@ -586,7 +586,7 @@ function WhipLash347Tab({
   onJoinTeam: () => void
   isJoining: boolean
 }) {
-  const favoriteTeam = useWalletStore((s) => s.favoriteTeam)
+  const favoriteTeam = useSportsStore((s) => s.favoriteTeam)
   const isMember = favoriteTeam === PARTNER_CLUB.id
   const fanCount = teamDistribution?.[PARTNER_CLUB.id] ?? 0
   const captain = PARTNER_SQUAD.find((p) => p.captain)
@@ -758,8 +758,8 @@ function FanHubTab({
   teamDistribution: TeamDistribution | null;
   loading: boolean;
 }) {
-  const favoriteTeam = useWalletStore((s) => s.favoriteTeam);
-  const setFavoriteTeam = useWalletStore((s) => s.setFavoriteTeam);
+  const favoriteTeam = useSportsStore((s) => s.favoriteTeam);
+  const setFavoriteTeam = useSportsStore((s) => s.setFavoriteTeam);
   const [league, setLeague] = useState<"AFL" | "WAFL" | "WL347">(PARTNER_CLUB.enabled ? "WL347" : "AFL");
   const [isJoining, setIsJoining] = useState(false);
 

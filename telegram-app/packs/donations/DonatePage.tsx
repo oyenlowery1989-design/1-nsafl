@@ -6,7 +6,7 @@ import BottomNav from '@/components/BottomNav'
 import FeatureRedirect from '@/components/FeatureRedirect'
 import WalletGuard from '@/components/WalletGuard'
 import ErrorCard from '@/components/ErrorCard'
-import { useWalletStore } from '@/hooks/useStore'
+import { useStellarWalletStore } from '@/packs/stellar-wallet/store'
 import { ALL_CLUBS, AFL_CLUBS, WAFL_CLUBS } from '@/config/afl'
 import { AFL_PLAYERS } from '@/config/afl-players'
 import { PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
@@ -22,7 +22,7 @@ type DonationType = 'general' | 'team' | 'player' | null
 function DonatePage() {
   const router = useRouter()
   useTelegramBack(() => router.back())
-  const stellarAddress = useWalletStore((s) => s.stellarAddress)
+  const stellarAddress = useStellarWalletStore((s) => s.stellarAddress)
 
   const [donationType, setDonationType] = useState<DonationType>(null)
   const [selectedClub, setSelectedClub] = useState('')

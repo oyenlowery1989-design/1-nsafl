@@ -9,7 +9,9 @@ import {
 import BottomNav from "@/components/BottomNav";
 import WalletGuard from "@/components/WalletGuard";
 import PageLoader, { useMinLoader } from "@/components/PageLoader";
-import { useWalletStore } from "@/hooks/useStore";
+import { useIdentityStore } from "@/hooks/useStore";
+import { useSportsStore } from "@/packs/sports/store";
+import { useStellarWalletStore } from "@/packs/stellar-wallet/store";
 import {
   SHOWN_ASSET_CONFIGS,
   PRIMARY_CUSTOM_ASSET_CODE,
@@ -156,17 +158,19 @@ function TelegramAvatar({
 function FullProfilePage() {
   const router = useRouter();
   useTelegramBack(() => router.back());
-  const stellarAddress = useWalletStore((s) => s.stellarAddress);
-  const tokenBalance = useWalletStore((s) => s.tokenBalance);
-  const xlmBalance = useWalletStore((s) => s.xlmBalance);
-  const telegramUser = useWalletStore((s) => s.telegramUser);
-  const favoriteTeam = useWalletStore((s) => s.favoriteTeam);
-  const favoriteWaflTeam = useWalletStore((s) => s.favoriteWaflTeam);
-  const disconnect = useWalletStore((s) => s.disconnect);
-  const setFavoriteTeam = useWalletStore((s) => s.setFavoriteTeam);
-  const setFavoriteWaflTeam = useWalletStore((s) => s.setFavoriteWaflTeam);
-  const displayPreference = useWalletStore((s) => s.displayPreference);
-  const setDisplayPreference = useWalletStore((s) => s.setDisplayPreference);
+  const stellarAddress = useStellarWalletStore((s) => s.stellarAddress);
+  const tokenBalance = useStellarWalletStore((s) => s.tokenBalance);
+  const xlmBalance = useStellarWalletStore((s) => s.xlmBalance);
+  const telegramUser = useIdentityStore((s) => s.telegramUser);
+  const favoriteTeam = useSportsStore((s) => s.favoriteTeam);
+  const favoriteWaflTeam = useSportsStore((s) => s.favoriteWaflTeam);
+  const disconnectWallet = useStellarWalletStore((s) => s.disconnect);
+  const resetTeams = useSportsStore((s) => s.resetTeams);
+  const resetIdentity = useIdentityStore((s) => s.resetIdentity);
+  const setFavoriteTeam = useSportsStore((s) => s.setFavoriteTeam);
+  const setFavoriteWaflTeam = useSportsStore((s) => s.setFavoriteWaflTeam);
+  const displayPreference = useIdentityStore((s) => s.displayPreference);
+  const setDisplayPreference = useIdentityStore((s) => s.setDisplayPreference);
 
   // Prefer live Telegram SDK data, fallback to persisted store value
   const liveTgUser = getTelegramUser();
@@ -238,7 +242,7 @@ function FullProfilePage() {
       })
       .catch(() => null);
   }, []);
-  const telegramUserId = useWalletStore((s) => s.telegramUserId);
+  const telegramUserId = useIdentityStore((s) => s.telegramUserId);
 
   // Fetch a page of transactions and return how many visible (non-spam) ones were added
   const loadTxns = useCallback(
@@ -404,7 +408,9 @@ function FullProfilePage() {
 
   function handleDisconnect() {
     haptic.warning();
-    disconnect();
+    disconnectWallet();
+    resetTeams();
+    resetIdentity();
     router.push("/");
   }
 

@@ -1,12 +1,14 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { TelegramUser } from "@/lib/telegram";
 import { getTelegramInitData } from "@/lib/telegram";
 import {
   REFERRER_STORAGE_KEY,
   ACCESS_RECORDED_STORAGE_KEY,
 } from "@/lib/constants";
-import { useWalletStore } from "@/hooks/useStore";
+import { useIdentityStore } from "@/hooks/useStore";
+import { useSportsStore } from "@/packs/sports/store";
+import { useStellarWalletStore } from "@/packs/stellar-wallet/store";
 
 type TelegramWebApp = {
   initData?: string;
@@ -125,8 +127,15 @@ export default function TelegramGuard({
   children: React.ReactNode;
 }) {
   const [state, setState] = useState<GuardState>("pending");
-  const disconnect = useWalletStore((s) => s.disconnect);
-  const setTelegramUserId = useWalletStore((s) => s.setTelegramUserId);
+  const resetIdentity = useIdentityStore((s) => s.resetIdentity);
+  const setTelegramUserId = useIdentityStore((s) => s.setTelegramUserId);
+  const disconnectWallet = useStellarWalletStore((s) => s.disconnect);
+  const resetTeams = useSportsStore((s) => s.resetTeams);
+  const disconnect = useCallback(() => {
+    disconnectWallet();
+    resetTeams();
+    resetIdentity();
+  }, [disconnectWallet, resetIdentity, resetTeams]);
 
   useEffect(() => {
     const check = async () => {
@@ -194,7 +203,7 @@ export default function TelegramGuard({
       clearTimeout(t);
       stopDevToolsWatch();
     };
-  }, []);
+  }, [disconnect, setTelegramUserId]);
 
   // Dismiss the inline loader once guard resolves AND Material Symbols font is loaded.
   // Uses document.fonts.load() to explicitly wait for the icon font — document.fonts.ready

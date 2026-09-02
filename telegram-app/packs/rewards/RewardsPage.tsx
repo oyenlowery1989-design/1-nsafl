@@ -6,7 +6,7 @@ import BottomNav from '@/components/BottomNav'
 import FeatureRedirect from '@/components/FeatureRedirect'
 import WalletGuard from '@/components/WalletGuard'
 import PageLoader, { useMinLoader } from '@/components/PageLoader'
-import { useWalletStore } from '@/hooks/useStore'
+import { useStellarWalletStore } from '@/packs/stellar-wallet/store'
 import { getTierForBalance, getNextTier, TIERS, type Tier } from '@/config/tiers'
 import { PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
 import { BRANDING } from '@/config/branding'
@@ -176,7 +176,7 @@ function RewardsPage() {
   const router = useRouter()
   useTelegramBack(() => router.back())
   const ready = useMinLoader(true)
-  const tokenBalance = useWalletStore((s) => s.tokenBalance)
+  const tokenBalance = useStellarWalletStore((s) => s.tokenBalance)
   const balance = parseFloat(tokenBalance) || 0
   const currentTier = getTierForBalance(balance)
   const nextTier = getNextTier(currentTier)

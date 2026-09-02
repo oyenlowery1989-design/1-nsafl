@@ -16,7 +16,7 @@ import { getTelegramInitData } from '@/lib/telegram'
 import { TIERS, formatReward } from '@/config/tiers'
 import ErrorCard from '@/components/ErrorCard'
 import type { LeaderboardEntry } from '@/app/api/leaderboard/route'
-import { useWalletStore } from '@/hooks/useStore'
+import { useStellarWalletStore } from '@/packs/stellar-wallet/store'
 
 interface DonorEntry {
   rank: number
@@ -102,7 +102,7 @@ function StatsPage() {
   const [donationsData, setDonationsData] = useState<DonationsData | null>(null)
   const [gameStats, setGameStats] = useState<GameStatsData | null>(null)
   const [topHolders, setTopHolders] = useState<LeaderboardEntry[]>([])
-  const currentAddress = useWalletStore((s) => s.stellarAddress)
+  const currentAddress = useStellarWalletStore((s) => s.stellarAddress)
   const [error, setError] = useState<string | null>(null)
   const showContent = useMinLoader(!!data)
 

@@ -5,7 +5,7 @@ import { useTelegramBack } from "@/hooks/useTelegramBack";
 import BottomNav from "@/components/BottomNav";
 import WalletGuard from "@/components/WalletGuard";
 import PageLoader, { useMinLoader } from "@/components/PageLoader";
-import { useWalletStore } from "@/hooks/useStore";
+import { useStellarWalletStore } from "./store";
 import { getTierForBalance, getNextTier } from "@/config/tiers";
 import {
   PRIMARY_CUSTOM_ASSET_LABEL,
@@ -31,8 +31,8 @@ function BuyPage() {
   const router = useRouter();
   useTelegramBack(() => router.back());
   const ready = useMinLoader(true);
-  const tokenBalance = useWalletStore((s) => s.tokenBalance);
-  const stellarAddress = useWalletStore((s) => s.stellarAddress);
+  const tokenBalance = useStellarWalletStore((s) => s.tokenBalance);
+  const stellarAddress = useStellarWalletStore((s) => s.stellarAddress);
   const balance = parseFloat(tokenBalance) || 0;
   const currentTier = getTierForBalance(balance);
   const nextTier = getNextTier(currentTier);

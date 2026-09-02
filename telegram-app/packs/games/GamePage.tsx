@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useTelegramBack } from "@/hooks/useTelegramBack";
 import { haptic } from "@/lib/telegram-ui";
 import { getTelegramInitData } from "@/lib/telegram";
-import { useWalletStore } from "@/hooks/useStore";
+import { useStellarWalletStore } from "@/packs/stellar-wallet/store";
 import { getTierForBalance } from "@/config/tiers";
 import {
   PRIMARY_CUSTOM_ASSET_CODE,
@@ -1244,9 +1244,9 @@ function GamePage() {
   const router = useRouter();
   const [view, setView] = useState<GameView>("hub");
 
-  const tokenBalance = useWalletStore((s) => s.tokenBalance);
-  const stellarAddress = useWalletStore((s) => s.stellarAddress);
-  const setBalances = useWalletStore((s) => s.setBalances);
+  const tokenBalance = useStellarWalletStore((s) => s.tokenBalance);
+  const stellarAddress = useStellarWalletStore((s) => s.stellarAddress);
+  const setBalances = useStellarWalletStore((s) => s.setBalances);
 
   // Re-verify balance on mount and bfcache restore
   useEffect(() => {

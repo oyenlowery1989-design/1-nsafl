@@ -8,7 +8,8 @@ import WalletGuard from "@/components/WalletGuard";
 import Header from "@/components/Header";
 import TierBadge from "@/components/TierBadge";
 import PageLoader, { useMinLoader } from "@/components/PageLoader";
-import { useWalletStore } from "@/hooks/useStore";
+import { useIdentityStore } from "@/hooks/useStore";
+import { useStellarWalletStore } from "@/packs/stellar-wallet/store";
 import { ALL_CLUBS } from "@/config/afl";
 import { PARTNER_CLUB } from "@/config/partnerClub";
 import { TIERS, getTierForBalance } from "@/config/tiers";
@@ -203,9 +204,9 @@ function LeaderboardPage() {
   const router = useRouter();
   useTelegramBack(() => router.back());
 
-  const currentAddress  = useWalletStore((s) => s.stellarAddress);
-  const tokenBalance    = useWalletStore((s) => s.tokenBalance);
-  const telegramUserId  = useWalletStore((s) => s.telegramUserId);
+  const currentAddress = useStellarWalletStore((s) => s.stellarAddress);
+  const tokenBalance = useStellarWalletStore((s) => s.tokenBalance);
+  const telegramUserId = useIdentityStore((s) => s.telegramUserId);
   const currentTier    = getTierForBalance(parseFloat(tokenBalance) || 0);
   const myXlmRefundPct = currentTier.rewards?.xlmRefundPct ?? 20;
 

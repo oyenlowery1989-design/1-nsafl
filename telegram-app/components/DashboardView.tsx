@@ -8,7 +8,8 @@ import { PRIMARY_CUSTOM_ASSET_CODE, PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/con
 import { BRANDING } from '@/config/branding'
 import { PARTNER_CLUB, PARTNER_SQUAD } from '@/config/partnerClub'
 import { getTierForBalance, getNextTier } from '@/config/tiers'
-import { useWalletStore } from '@/hooks/useStore'
+import { useIdentityStore } from '@/hooks/useStore'
+import { useStellarWalletStore } from '@/packs/stellar-wallet/store'
 import { getTelegramInitData, buildReferralLink, shareReferralLink } from '@/lib/telegram'
 import { toast } from './Toast'
 import { haptic } from '@/lib/telegram-ui'
@@ -82,10 +83,10 @@ function WalletTierCard({ balance, address, xlmBalance }: { balance: string; add
 
 export default function DashboardView({ address, balance, referralShareText }: Props) {
   const router = useRouter()
-  const xlmBalance = useWalletStore((s) => s.xlmBalance)
-  const setBalances = useWalletStore((s) => s.setBalances)
-  const telegramUserId = useWalletStore((s) => s.telegramUserId)
-  const tokenBalance   = useWalletStore((s) => s.tokenBalance)
+  const xlmBalance = useStellarWalletStore((s) => s.xlmBalance)
+  const setBalances = useStellarWalletStore((s) => s.setBalances)
+  const telegramUserId = useIdentityStore((s) => s.telegramUserId)
+  const tokenBalance = useStellarWalletStore((s) => s.tokenBalance)
   const myXlmRefundPct = getTierForBalance(parseFloat(tokenBalance) || 0).rewards?.xlmRefundPct ?? 20
 
   const [balanceReady, setBalanceReady] = useState(false)
