@@ -5,6 +5,7 @@ import { verifyAdminToken } from '@/app/api/admin/route'
 import { createStellarWalletRepository } from '@/packs/stellar-wallet/repository'
 import { createSportsRepository } from '@/packs/sports/repository'
 import { createGamesRepository } from '@/packs/games/repository'
+import { createDonationsRepository } from '@/packs/donations/repository'
 
 type Ctx = { params: Promise<{ telegramId: string }> }
 
@@ -24,7 +25,7 @@ export async function DELETE(req: NextRequest, ctx: Ctx) {
   const walletIds = await wallets.getWalletIds(telegramId)
   if (walletIds) {
     if (walletIds.length > 0) {
-      await supabase.from('donations').delete().in('wallet_id', walletIds)
+      await createDonationsRepository(supabase).removeForWallets(walletIds)
       await wallets.removePurchases(walletIds)
       await wallets.removeWallets(telegramId)
     }
