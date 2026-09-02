@@ -10,13 +10,16 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-31-universal-template-design.md`
 
-## Continuation Status — paused 2026-08-31
+## Continuation Status — paused 2026-09-02
 
-- Task 1 complete: `6f4ad10 refactor: compose complete pack manifests`; review clean; 65 tests passed.
-- Task 2 implementation complete: `d928e10 refactor: add neutral app shell`; TypeScript passed, lint had 0 errors/63 existing warnings, and 66 tests passed.
-- Tasks 1–3 and Task 4A are implemented; Task 4A is paused before its mandatory review.
-- Resume with Task 4A review: base `ecd55f6`, head `d0a826a`, report `.superpowers/sdd/2026-08-31-universal-template-migration/task-4a-report.md`.
-- Do not begin Task 4B until that review is clean or its findings are resolved.
+- Tasks 1–4 are implemented and their slice reviews are clean through `5ebfdb7`.
+- Fresh verification at pause: TypeScript passed; lint had 0 errors and 62 warnings; all 94 tests passed; `git diff --check` passed; worktree was clean.
+- Final whole-branch review found unresolved P1 boundary leaks. Do not merge or claim the migration complete until these are fixed and re-reviewed:
+  - `app/api/admin/user/[telegramId]/route.ts` accesses/mutates Stellar wallet, donations, games, and sports data even when those packs are disabled.
+  - `components/guards/TelegramGuard.tsx` imports and resets Stellar/sports state on every load; core must not depend on domain packs.
+  - `app/api/auth/session/route.ts` unconditionally queries the Stellar wallet repository.
+  - `app/profile/page.tsx` still owns wallet/sports/rewards/donations UI rather than obtaining it from enabled pack contributions.
+- Resume with failing tests for each disabled-pack path, then make the smallest pack-owned extraction/guard fix and repeat the full review and release gates.
 
 ## Global Constraints
 
