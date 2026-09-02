@@ -2,7 +2,10 @@ import { beforeEach, expect, it, vi } from 'vitest'
 
 const { from } = vi.hoisted(() => ({ from: vi.fn() }))
 
-vi.mock('@/config/app', () => ({ isPackEnabled: () => false }))
+vi.mock('@/config/app', () => ({
+  isPackEnabled: () => false,
+  getAdminDataContributions: () => [],
+}))
 vi.mock('@/lib/supabase-server', () => ({ createServiceClient: () => ({ from }) }))
 
 function query() {

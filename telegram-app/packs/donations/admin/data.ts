@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/supabase-server'
+import type { AdminDataContribution } from '@/packs/types'
 
 type AdminClient = ReturnType<typeof createServiceClient>
 
@@ -9,4 +10,9 @@ export async function getDonationsAdminData(supabase: AdminClient) {
     .order('created_at', { ascending: false })
 
   return { donations: donations ?? [] }
+}
+
+export async function getDonationsAdminContribution(supabase: AdminClient): Promise<AdminDataContribution> {
+  const donationsData = await getDonationsAdminData(supabase)
+  return { data: { donations: donationsData.donations } }
 }

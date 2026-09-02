@@ -31,7 +31,10 @@ it('guards every pack-owned admin page at the original URL', () => {
 })
 
 it('blocks the games admin route before authentication when games are disabled', async () => {
-  vi.doMock('@/config/app', () => ({ isPackEnabled: () => false }))
+  vi.doMock('@/config/app', () => ({
+    isPackEnabled: () => false,
+    getAdminDataContributions: () => [],
+  }))
   const { GET } = await import('@/app/api/admin/wins/route')
   const response = await GET(new Request('https://example.test/api/admin/wins') as never)
 
@@ -65,4 +68,51 @@ it('blocks each pack-owned admin workflow when its pack is disabled', async () =
     headers: { 'x-admin-pack': 'donations' },
     body: '{',
   }) as never)).resolves.toMatchObject({ status: 404 })
+})
+
+it('does not serve disabled pack fields from the core admin aggregate', async () => {
+  vi.resetModules()
+  vi.doMock('@/config/app', () => ({
+    isPackEnabled: () => false,
+    getAdminDataContributions: () => [],
+  }))
+  vi.doMock('@/lib/supabase-server', () => {
+    const query = (data: unknown[]) => {
+      const result = { data, error: null }
+      const chain = {
+        select: () => chain,
+        order: () => chain,
+        limit: () => chain,
+        then: (resolve: (value: typeof result) => unknown) => Promise.resolve(result).then(resolve),
+      }
+      return chain
+    }
+    return {
+      createServiceClient: () => ({
+        from: (table: string) => query(table === 'users' ? [{
+          id: 'user-id', telegram_id: 7, telegram_username: 'admin', telegram_first_name: 'Admin',
+          telegram_photo_url: null, telegram_phone: null, display_preference: 'first_name',
+          opt_in_telegram_notifications: true, is_blocked: false, created_at: '2026-01-01', updated_at: '2026-01-01',
+        }] : []),
+      }),
+    }
+  })
+  process.env.ADMIN_SECRET_TOKEN = 'test-token'
+
+  const { GET } = await import('@/app/api/admin/route')
+  const response = await GET(new Request('https://example.test/api/admin', {
+    headers: { 'x-admin-token': 'test-token' },
+  }) as never)
+
+  await expect(response.json()).resolves.toEqual({
+    success: true,
+    data: {
+      users: [{
+        telegram_id: 7, telegram_username: 'admin', telegram_first_name: 'Admin', telegram_photo_url: null,
+        telegram_phone: null, display_preference: 'first_name', opt_in_telegram_notifications: true,
+        is_blocked: false, created_at: '2026-01-01', updated_at: '2026-01-01',
+      }],
+      accessAttempts: [],
+    },
+  })
 })

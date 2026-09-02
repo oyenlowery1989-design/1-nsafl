@@ -3,12 +3,7 @@ import { NextRequest } from 'next/server'
 import { ok, fail } from '@/lib/api-response'
 import { createServiceClient } from '@/lib/supabase-server'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { isPackEnabled } from '@/config/app'
-import { getDonationsAdminData } from '@/packs/donations/admin/data'
-import { getGamesAdminData } from '@/packs/games/admin/data'
-import { getLeaderboardAdminData } from '@/packs/leaderboard/admin/data'
-import { getSportsAdminData } from '@/packs/sports/admin/data'
-import { getWalletAdminData } from '@/packs/stellar-wallet/admin/data'
+import { getAdminDataContributions } from '@/config/app'
 
 export function verifyAdminToken(req: NextRequest): boolean {
   if (checkRateLimit(req, 30, `admin:${req.headers.get('x-forwarded-for') ?? 'local'}`)) return false
@@ -42,61 +37,15 @@ export async function GET(req: NextRequest) {
   ])
 
   const allUsers = users ?? []
-  const [walletData, sportsData, gamesData, donationsData, leaderboardData] = await Promise.all([
-    isPackEnabled('stellar-wallet') ? getWalletAdminData(supabase) : null,
-    isPackEnabled('sports') ? getSportsAdminData(supabase) : null,
-    isPackEnabled('games') ? getGamesAdminData(supabase) : null,
-    isPackEnabled('donations') ? getDonationsAdminData(supabase) : null,
-    isPackEnabled('leaderboard') ? getLeaderboardAdminData(supabase) : null,
-  ])
-
-  const referred = leaderboardData?.referredUsers ?? []
-  const referredByTelegramId = new Map(referred.map((user) => [user.telegram_id, user.referred_by]))
-
-  // Group referred users by their referrer
-  const referrerMap = new Map<number, { count: number; lastAt: string }>()
-  for (const r of referred) {
-    if (!r.referred_by) continue
-    const existing = referrerMap.get(r.referred_by)
-    if (existing) {
-      existing.count++
-      if ((r.created_at ?? '') > existing.lastAt) existing.lastAt = r.created_at ?? ''
-    } else {
-      referrerMap.set(r.referred_by, { count: 1, lastAt: r.created_at ?? '' })
-    }
-  }
-
-  const referralStats = Array.from(referrerMap.entries()).map(([referrerId, stats]) => {
-    const referrer = allUsers.find((u) => u.telegram_id === referrerId)
-    return {
-      referrer_id: referrerId,
-      referrer_name: referrer?.telegram_first_name ?? null,
-      referrer_username: referrer?.telegram_username ?? null,
-      referral_count: stats.count,
-      last_referral_at: stats.lastAt,
-    }
-  }).sort((a, b) => b.referral_count - a.referral_count)
-
+  const contributions = await getAdminDataContributions(supabase, allUsers)
   const adminUsers = allUsers.map(({ id, ...user }) => ({
     ...user,
-    favorite_team: sportsData?.teamsByTelegramId.get(user.telegram_id) ?? null,
-    referred_by: referredByTelegramId.get(user.telegram_id) ?? null,
-    bonus_balls: gamesData?.bonusesByTelegramId.get(user.telegram_id)?.bonus_balls ?? 0,
-    bonus_spins: gamesData?.bonusesByTelegramId.get(user.telegram_id)?.bonus_spins ?? 0,
-    wallets: walletData?.walletsByUserId.get(id) ?? [],
+    ...Object.assign({}, ...contributions.map((contribution) => contribution.getUserFields?.({ id, ...user }) ?? {})),
   }))
 
   return ok({
     users: adminUsers,
-    teamRequests: sportsData?.teamRequests ?? [],
-    gameSessions: gamesData?.gameSessions ?? [],
-    donations: donationsData?.donations ?? [],
-    purchases: walletData?.purchases ?? [],
     accessAttempts: accessAttempts ?? [],
-    referralStats,
-    referredUsers: referred,
-    trustlineSubmissions: walletData?.trustlineSubmissions ?? [],
-    totalNsafl: walletData?.totalNsafl,
-    totalXlm: walletData?.totalXlm,
+    ...Object.assign({}, ...contributions.map((contribution) => contribution.data)),
   })
 }

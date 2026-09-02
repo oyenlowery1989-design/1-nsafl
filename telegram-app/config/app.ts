@@ -7,7 +7,8 @@ import { rewardsPack } from '@/packs/rewards/manifest'
 import { sportsPack } from '@/packs/sports/manifest'
 import { stellarWalletPack } from '@/packs/stellar-wallet/manifest'
 import type { ComponentType } from 'react'
-import type { NavigationItem, PackId, PackManifest } from '@/packs/types'
+import type { AdminUser, NavigationItem, PackId, PackManifest } from '@/packs/types'
+import type { createServiceClient } from '@/lib/supabase-server'
 
 export type AppFeature = PackId
 
@@ -61,6 +62,16 @@ export function getNavigationItems(features: FeatureConfig = APP_CONFIG.features
 
 export function getAdminNavigationItems(features: FeatureConfig = APP_CONFIG.features) {
   return Object.values(APP_CONFIG.packs).flatMap((pack) => features[pack.id] ? (pack.admin ?? []) : [])
+}
+
+export function getAdminDataContributions(
+  supabase: ReturnType<typeof createServiceClient>,
+  users: readonly AdminUser[],
+  features: FeatureConfig = APP_CONFIG.features,
+) {
+  return Promise.all(Object.values(APP_CONFIG.packs).flatMap((pack) =>
+    features[pack.id] && pack.adminData ? [pack.adminData(supabase, users)] : [],
+  ))
 }
 
 export function getCenterAction(features: FeatureConfig = APP_CONFIG.features) {

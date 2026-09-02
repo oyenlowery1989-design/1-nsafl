@@ -13,3 +13,10 @@ Verification: focused tests (4 passing); `npx tsc --noEmit --incremental false`;
 - `/api/admin/verify` dispatches by an explicit pack header before JSON parsing; the donation and purchase mutations are pack-owned handlers.
 
 Verification: focused tests (5 passing); `npx tsc --noEmit --incremental false`; `npm run lint` (0 errors, 63 existing warnings); `npm test` (19 files, 78 tests passing); `git diff --check`.
+
+## Review round 2
+
+- Pack manifests now contribute admin aggregate data and per-user fields; the core admin route composes only enabled contributions.
+- With all packs disabled, `/api/admin` serves only core identity and access records. Donation and wallet verification remain in their pack-owned handlers, which guard before parsing.
+
+Verification: focused tests (6 passing); `npx tsc --noEmit --incremental false`; `npm run lint` (0 errors, 63 existing warnings); `npm test` (19 files, 79 tests passing); `git diff --check`.

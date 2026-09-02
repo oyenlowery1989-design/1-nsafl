@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/supabase-server'
+import type { AdminDataContribution } from '@/packs/types'
 
 type AdminClient = ReturnType<typeof createServiceClient>
 
@@ -15,5 +16,16 @@ export async function getGamesAdminData(supabase: AdminClient) {
   return {
     gameSessions: gameSessions ?? [],
     bonusesByTelegramId: new Map((users ?? []).map((user) => [user.telegram_id, user])),
+  }
+}
+
+export async function getGamesAdminContribution(supabase: AdminClient): Promise<AdminDataContribution> {
+  const gamesData = await getGamesAdminData(supabase)
+  return {
+    data: { gameSessions: gamesData.gameSessions },
+    getUserFields: (user) => ({
+      bonus_balls: gamesData.bonusesByTelegramId.get(user.telegram_id)?.bonus_balls ?? 0,
+      bonus_spins: gamesData.bonusesByTelegramId.get(user.telegram_id)?.bonus_spins ?? 0,
+    }),
   }
 }

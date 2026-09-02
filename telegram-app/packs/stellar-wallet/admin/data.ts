@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/supabase-server'
+import type { AdminDataContribution } from '@/packs/types'
 
 type AdminClient = ReturnType<typeof createServiceClient>
 
@@ -30,5 +31,18 @@ export async function getWalletAdminData(supabase: AdminClient) {
     trustlineSubmissions: trustlineSubmissions ?? [],
     totalNsafl: (balances ?? []).reduce((sum, balance) => sum + Number(balance.primary_asset_balance ?? 0), 0),
     totalXlm: (balances ?? []).reduce((sum, balance) => sum + Number(balance.xlm_balance ?? 0), 0),
+  }
+}
+
+export async function getWalletAdminContribution(supabase: AdminClient): Promise<AdminDataContribution> {
+  const walletData = await getWalletAdminData(supabase)
+  return {
+    data: {
+      purchases: walletData.purchases,
+      trustlineSubmissions: walletData.trustlineSubmissions,
+      totalNsafl: walletData.totalNsafl,
+      totalXlm: walletData.totalXlm,
+    },
+    getUserFields: (user) => ({ wallets: walletData.walletsByUserId.get(user.id) ?? [] }),
   }
 }
