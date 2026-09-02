@@ -14,8 +14,9 @@
 
 - Task 1 complete: `6f4ad10 refactor: compose complete pack manifests`; review clean; 65 tests passed.
 - Task 2 implementation complete: `d928e10 refactor: add neutral app shell`; TypeScript passed, lint had 0 errors/63 existing warnings, and 66 tests passed.
-- Resume with the required Task 2 review. Use base `6f4ad103fb602ca224a92bce6052721c506a277e`, head `d928e10`, and `.superpowers/sdd/2026-08-31-universal-template-migration/task-2-report.md`.
-- Do not begin Task 3 until that review is clean or its findings are resolved.
+- Tasks 1–3 and Task 4A are implemented; Task 4A is paused before its mandatory review.
+- Resume with Task 4A review: base `ecd55f6`, head `d0a826a`, report `.superpowers/sdd/2026-08-31-universal-template-migration/task-4a-report.md`.
+- Do not begin Task 4B until that review is clean or its findings are resolved.
 
 ## Global Constraints
 
