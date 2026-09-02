@@ -9,6 +9,7 @@ import { ok, fail } from '@/lib/api-response'
 import { verifyAdminToken } from '@/app/api/admin/route'
 import { createStellarWalletRepository } from '@/packs/stellar-wallet/repository'
 import { createGamesRepository } from '@/packs/games/repository'
+import { createLeaderboardRepository } from '@/packs/leaderboard/repository'
 
 export async function GET(req: NextRequest) {
   if (!verifyAdminToken(req)) return fail('Forbidden', 'FORBIDDEN', 403)
@@ -19,6 +20,7 @@ export async function GET(req: NextRequest) {
   const supabase = createServiceClient()
   const wallets = createStellarWalletRepository(supabase)
   const games = createGamesRepository(supabase)
+  const leaderboard = createLeaderboardRepository(supabase)
 
   // Build query — numeric = search by telegram_id, otherwise by username
   const isNumeric = /^\d+$/.test(q)
@@ -43,16 +45,13 @@ export async function GET(req: NextRequest) {
     const winCount = await games.countWins(u.telegram_id)
 
     // Referral count
-    const { count: refCount } = await supabase
-      .from('users')
-      .select('telegram_id', { count: 'exact', head: true })
-      .eq('referred_by', u.telegram_id)
+    const refCount = await leaderboard.countReferrals(u.telegram_id)
 
     return {
       ...u,
       wallets: userWallets,
       winCount,
-      referralCount: refCount ?? 0,
+      referralCount: refCount,
     }
   }))
 
