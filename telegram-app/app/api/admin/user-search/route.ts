@@ -7,6 +7,7 @@ import { NextRequest } from 'next/server'
 import { createServiceClient } from '@/lib/supabase-server'
 import { ok, fail } from '@/lib/api-response'
 import { verifyAdminToken } from '@/app/api/admin/route'
+import { createStellarWalletRepository } from '@/packs/stellar-wallet/repository'
 
 export async function GET(req: NextRequest) {
   if (!verifyAdminToken(req)) return fail('Forbidden', 'FORBIDDEN', 403)
@@ -15,6 +16,7 @@ export async function GET(req: NextRequest) {
   if (!q) return fail('q is required', 'BAD_REQUEST', 400)
 
   const supabase = createServiceClient()
+  const wallets = createStellarWalletRepository(supabase)
 
   // Build query — numeric = search by telegram_id, otherwise by username
   const isNumeric = /^\d+$/.test(q)
@@ -33,14 +35,7 @@ export async function GET(req: NextRequest) {
   // Enrich each user with wallet, balance, win count, referral count
   const enriched = await Promise.all(users.map(async (u) => {
     // Wallets + balances
-    const { data: idRow } = await supabase.from('users').select('id').eq('telegram_id', u.telegram_id).single()
-    const { data: wallets } = idRow
-      ? await supabase
-          .from('wallets')
-          .select('id, stellar_address, is_primary, label, wallet_balances(primary_asset_balance, xlm_balance, last_synced_at)')
-          .eq('user_id', idRow.id)
-          .limit(5)
-      : { data: [] }
+    const userWallets = await wallets.listWallets(u.telegram_id)
 
     // Win count
     const { count: winCount } = await supabase
@@ -57,7 +52,7 @@ export async function GET(req: NextRequest) {
 
     return {
       ...u,
-      wallets: wallets ?? [],
+      wallets: userWallets,
       winCount: winCount ?? 0,
       referralCount: refCount ?? 0,
     }

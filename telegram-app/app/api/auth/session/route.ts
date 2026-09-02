@@ -3,6 +3,7 @@ import { ok, fail } from '@/lib/api-response'
 import { createServiceClient } from '@/lib/supabase-server'
 import { validateTelegramInitData, TelegramUser } from '@/lib/telegram'
 import { resolveIpLocation } from '@/lib/geo'
+import { createStellarWalletRepository } from '@/packs/stellar-wallet/repository'
 
 const isDev =
   process.env.NODE_ENV !== 'production' &&
@@ -84,10 +85,9 @@ export async function POST(req: NextRequest) {
   if (upserted?.is_blocked) return fail('Account blocked', 'BLOCKED', 403)
 
   // 4. Check if user has any wallets (used by client to detect server-side logout)
-  const { count: walletCount } = await supabase
-    .from('wallets')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', upserted?.id ?? '')
+  const hasWallet = upserted
+    ? await createStellarWalletRepository(supabase).hasWallet(upserted.id)
+    : false
 
   // 5. Log this session — skip if same user + IP already recorded in the last 24h
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
@@ -115,5 +115,5 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  return ok({ recorded: true, telegramId: telegramUser.id, hasWallet: (walletCount ?? 0) > 0 })
+  return ok({ recorded: true, telegramId: telegramUser.id, hasWallet })
 }

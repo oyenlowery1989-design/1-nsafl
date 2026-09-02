@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { ok, fail } from '@/lib/api-response'
 import { createServiceClient } from '@/lib/supabase-server'
 import { verifyAdminToken } from '@/app/api/admin/route'
+import { createStellarWalletRepository } from '@/packs/stellar-wallet/repository'
 
 type Ctx = { params: Promise<{ telegramId: string }> }
 
@@ -17,29 +18,13 @@ export async function DELETE(req: NextRequest, ctx: Ctx) {
   if (adminId && telegramId === adminId) return fail('Cannot perform this action on the admin account', 'FORBIDDEN', 403)
 
   const supabase = createServiceClient()
-
-  // 1. Get user row to find internal id
-  const { data: user } = await supabase
-    .from('users')
-    .select('id')
-    .eq('telegram_id', telegramId)
-    .single()
-
-  if (user) {
-    // 2. Get all wallet ids for this user
-    const { data: wallets } = await supabase
-      .from('wallets')
-      .select('id')
-      .eq('user_id', user.id)
-
-    const walletIds = (wallets ?? []).map((w) => w.id)
-
-    // 3. Delete wallet-dependent data
+  const wallets = createStellarWalletRepository(supabase)
+  const walletIds = await wallets.getWalletIds(telegramId)
+  if (walletIds) {
     if (walletIds.length > 0) {
-      await supabase.from('wallet_balances').delete().in('wallet_id', walletIds)
       await supabase.from('donations').delete().in('wallet_id', walletIds)
-      await supabase.from('purchases').delete().in('wallet_id', walletIds)
-      await supabase.from('wallets').delete().eq('user_id', user.id)
+      await wallets.removePurchases(walletIds)
+      await wallets.removeWallets(telegramId)
     }
 
     // 4. Delete telegram-id-keyed data
@@ -69,15 +54,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   // Logout action — remove all wallet connections, keep user row
   if (body.action === 'logout') {
     const supabase = createServiceClient()
-    const { data: user } = await supabase.from('users').select('id').eq('telegram_id', telegramId).single()
-    if (user) {
-      const { data: wallets } = await supabase.from('wallets').select('id').eq('user_id', user.id)
-      const walletIds = (wallets ?? []).map((w) => w.id)
-      if (walletIds.length > 0) {
-        await supabase.from('wallet_balances').delete().in('wallet_id', walletIds)
-        await supabase.from('wallets').delete().eq('user_id', user.id)
-      }
-    }
+    await createStellarWalletRepository(supabase).removeWallets(telegramId)
     return ok({ telegramId, action: 'logout' })
   }
 
