@@ -4,8 +4,12 @@ import { checkRateLimit } from '@/lib/rate-limit'
 import { fetchAllShownBalances, hasPrimaryAssetTrustline, isValidStellarAddress } from '@/lib/stellar'
 import { PRIMARY_CUSTOM_ASSET_CODE, PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
 import { createServiceClient } from '@/lib/supabase-server'
+import { requirePack } from '@/lib/feature-gate'
 
 export async function GET(req: NextRequest) {
+  const disabled = requirePack('stellar-wallet')
+  if (disabled) return disabled
+
   const rateLimitError = checkRateLimit(req)
   if (rateLimitError) return rateLimitError
 

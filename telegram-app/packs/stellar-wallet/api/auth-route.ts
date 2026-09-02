@@ -5,12 +5,16 @@ import { createServiceClient } from '@/lib/supabase-server'
 import { validateTelegramInitData, TelegramUser } from '@/lib/telegram'
 import { isValidStellarAddress, fetchAllShownBalances } from '@/lib/stellar'
 import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
+import { requirePack } from '@/lib/feature-gate'
 
 const isDev =
   process.env.NODE_ENV !== 'production' &&
   process.env.NEXT_PUBLIC_DEV_BYPASS === 'true'
 
 export async function POST(req: NextRequest) {
+  const disabled = requirePack('stellar-wallet')
+  if (disabled) return disabled
+
   const rateLimitError = checkRateLimit(req, 20) // stricter: 20/min for auth
   if (rateLimitError) return rateLimitError
 

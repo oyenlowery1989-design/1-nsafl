@@ -2,12 +2,16 @@ import { NextRequest } from 'next/server'
 import { ok, fail } from '@/lib/api-response'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { createServiceClient } from '@/lib/supabase-server'
+import { requirePack } from '@/lib/feature-gate'
 
 const HORIZON_URL = process.env.NEXT_PUBLIC_HORIZON_URL ?? 'https://horizon.stellar.org'
 
 // Proxy a signed XDR transaction to Horizon — the secret key never touches this server.
 // Also accepts pre-submission failure logs (no xdr) so every attempt is recorded.
 export async function POST(req: NextRequest) {
+  const disabled = requirePack('stellar-wallet')
+  if (disabled) return disabled
+
   const rateLimitErr = checkRateLimit(req, 10)
   if (rateLimitErr) return rateLimitErr
 

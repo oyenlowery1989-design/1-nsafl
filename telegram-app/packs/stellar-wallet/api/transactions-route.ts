@@ -2,10 +2,14 @@ import { NextRequest } from 'next/server'
 import { ok, fail } from '@/lib/api-response'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { isValidStellarAddress, HorizonPayment } from '@/lib/stellar'
+import { requirePack } from '@/lib/feature-gate'
 
 const HORIZON_URL = process.env.NEXT_PUBLIC_HORIZON_URL ?? 'https://horizon.stellar.org'
 
 export async function GET(req: NextRequest) {
+  const disabled = requirePack('stellar-wallet')
+  if (disabled) return disabled
+
   const rateLimitError = checkRateLimit(req, 120)
   if (rateLimitError) return rateLimitError
 
