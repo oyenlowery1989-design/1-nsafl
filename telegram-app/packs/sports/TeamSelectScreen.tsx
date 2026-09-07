@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import Image from 'next/image'
 import { AFL_CLUBS, WAFL_CLUBS, type AflClub } from '@/config/afl'
 import { PARTNER_CLUB, PARTNER_SQUAD } from '@/config/partnerClub'
 import { haptic } from '@/lib/telegram-ui'
@@ -33,7 +34,7 @@ function WhipLash347Card({ selected, onSelect }: { selected: boolean; onSelect: 
 
       {/* Logo */}
       <div className="relative shrink-0">
-        <img
+        <Image
           src={PARTNER_CLUB.logo}
           alt={PARTNER_CLUB.name}
           width={56}
@@ -67,13 +68,12 @@ function WhipLash347Card({ selected, onSelect }: { selected: boolean; onSelect: 
 function ClubLogo({ club, size = 52 }: { club: AflClub; size?: number }) {
   if (club.logo) {
     return (
-      <img
+      <Image
         src={club.logo}
         alt={club.name}
         width={size}
         height={size}
         className="object-contain drop-shadow-md"
-        loading="lazy"
       />
     )
   }

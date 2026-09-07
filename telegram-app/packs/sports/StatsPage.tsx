@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { useTelegramBack } from '@/hooks/useTelegramBack'
 import BottomNav from '@/components/BottomNav'
 import FeatureRedirect from '@/components/FeatureRedirect'
@@ -335,7 +336,7 @@ function StatsPage() {
                       return (
                         <div key={teamId} className="flex items-center space-x-2">
                           {club!.logo
-                            ? <img src={club!.logo} alt={club!.shortName} width={22} height={22} className="object-contain flex-shrink-0" />
+                            ? <Image src={club!.logo} alt={club!.shortName} width={22} height={22} className="object-contain flex-shrink-0" />
                             : <div className="w-[22px] h-[22px] rounded-full flex-shrink-0 flex items-center justify-center text-white text-[7px] font-bold" style={{ background: club!.color }}>{club!.shortName.slice(0, 2)}</div>
                           }
                           <span className="text-[11px] text-gray-300 w-24 truncate">{club!.name}</span>
@@ -381,14 +382,14 @@ function StatsPage() {
                       <div>
                         <div className="h-px mb-3" style={{ background: 'rgba(232,25,44,0.2)' }} />
                         <div className="flex items-center gap-1.5 mb-2">
-                          <img src={PARTNER_CLUB.logo} alt="" width={12} height={12} className="rounded-full object-cover" style={{ boxShadow: '0 0 4px rgba(232,25,44,0.7)' }} />
+                          <Image src={PARTNER_CLUB.logo} alt="" width={12} height={12} className="rounded-full object-cover" style={{ boxShadow: '0 0 4px rgba(232,25,44,0.7)' }} />
                           <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: PARTNER_CLUB.color }}>⚡ {PARTNER_CLUB.partnerTeamLabel}</p>
                         </div>
                         {partnerEntries.map(({ teamId, count, club }) => {
                           const pct = totalFans > 0 ? Math.round((count / totalFans) * 100) : 0
                           return (
                             <div key={teamId} className="flex items-center space-x-2">
-                              <img src={club!.logo} alt={club!.shortName} width={22} height={22} className="rounded-full object-cover flex-shrink-0" style={{ boxShadow: '0 0 6px rgba(232,25,44,0.5)' }} />
+                              <Image src={club!.logo} alt={club!.shortName} width={22} height={22} className="rounded-full object-cover flex-shrink-0" style={{ boxShadow: '0 0 6px rgba(232,25,44,0.5)' }} />
                               <span className="text-[11px] text-gray-300 w-24 truncate">{club!.name}</span>
                               <div className="flex-1 rounded-full h-1.5" style={{ background: 'rgba(255,255,255,0.05)' }}>
                                 <div className="h-1.5 rounded-full transition-all duration-700" style={{ width: `${Math.max(pct, 3)}%`, background: `linear-gradient(90deg, ${PARTNER_CLUB.color}, ${PARTNER_CLUB.secondaryColor})` }} />
@@ -430,7 +431,7 @@ function StatsPage() {
                           {'label' in m && <span className="text-[8px] font-bold text-gray-600 w-6 flex-shrink-0">{(m as typeof m & { label: string }).label}</span>}
                           <div className="flex items-center space-x-2 w-24">
                             {homeLogo ? (
-                              <img src={homeLogo} alt={m.home} width={20} height={20} className="object-contain flex-shrink-0" loading="lazy" />
+                              <Image src={homeLogo} alt={m.home} width={20} height={20} className="object-contain flex-shrink-0" />
                             ) : (
                               <div className="w-5 h-5 rounded-full bg-white/10 flex-shrink-0" />
                             )}
@@ -444,7 +445,7 @@ function StatsPage() {
                           <div className="flex items-center justify-end space-x-2 w-24">
                             <span className={`text-xs font-bold ${!homeWon ? 'text-white' : 'text-gray-500'}`}>{m.away}</span>
                             {awayLogo ? (
-                              <img src={awayLogo} alt={m.away} width={20} height={20} className="object-contain flex-shrink-0" loading="lazy" />
+                              <Image src={awayLogo} alt={m.away} width={20} height={20} className="object-contain flex-shrink-0" />
                             ) : (
                               <div className="w-5 h-5 rounded-full bg-white/10 flex-shrink-0" />
                             )}
@@ -570,7 +571,7 @@ function StatsPage() {
                                 const teamClub = teamMatch ? ALL_CLUBS.find((c) => c.id === teamMatch[1]) : null
                                 return (
                                   <span key={i} className="inline-flex items-center space-x-1 text-[9px] text-primary/70">
-                                    {teamClub && <img src={teamClub.logo} alt="" width={12} height={12} className="object-contain" />}
+                                    {teamClub && <Image src={teamClub.logo} alt="" width={12} height={12} className="object-contain" />}
                                     <span>{teamClub ? teamClub.shortName : cause}</span>
                                     {i < d.causes!.length - 1 && <span className="text-gray-600 ml-0.5">·</span>}
                                   </span>

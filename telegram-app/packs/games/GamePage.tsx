@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useTelegramBack } from "@/hooks/useTelegramBack";
 import { haptic } from "@/lib/telegram-ui";
 import { getTelegramInitData } from "@/lib/telegram";
@@ -880,7 +881,7 @@ function HubView({
             style={{ background: 'linear-gradient(90deg, rgba(232,25,44,0.10) 0%, rgba(0,212,255,0.05) 100%)', border: '1px solid rgba(232,25,44,0.30)' }}
           >
             <div className="absolute top-0 left-0 right-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${PARTNER_CLUB.color}, ${PARTNER_CLUB.secondaryColor}, transparent)` }} />
-            <img src={PARTNER_CLUB.logo} alt={PARTNER_CLUB.name} width={36} height={36} className="rounded-full object-cover shrink-0" style={{ boxShadow: '0 0 10px rgba(232,25,44,0.60)' }} />
+            <Image src={PARTNER_CLUB.logo} alt={PARTNER_CLUB.name} width={36} height={36} className="rounded-full object-cover shrink-0" style={{ boxShadow: '0 0 10px rgba(232,25,44,0.60)' }} />
             <div className="flex-1 min-w-0">
               <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: PARTNER_CLUB.color }}>⚡ {PARTNER_CLUB.gamesSponsorLabel}</p>
               <p className="text-sm font-bold text-white leading-tight">{PARTNER_CLUB.name}</p>

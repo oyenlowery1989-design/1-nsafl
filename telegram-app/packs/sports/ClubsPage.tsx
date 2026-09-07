@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import BottomNav from "@/components/BottomNav";
 import FeatureRedirect from '@/components/FeatureRedirect'
 import WalletGuard from "@/components/WalletGuard";
@@ -301,13 +302,12 @@ function FixtureCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-2">
               {getClubLogo(f.homeTeam) && (
-                <img
+                <Image
                   src={getClubLogo(f.homeTeam)!}
                   alt=""
                   width={28}
                   height={28}
                   className="object-contain flex-shrink-0"
-                  loading="lazy"
                 />
               )}
               <div className="min-w-0">
@@ -370,13 +370,12 @@ function FixtureCard({
                 )}
               </div>
               {getClubLogo(f.awayTeam) && (
-                <img
+                <Image
                   src={getClubLogo(f.awayTeam)!}
                   alt=""
                   width={28}
                   height={28}
                   className="object-contain flex-shrink-0"
-                  loading="lazy"
                 />
               )}
             </div>
@@ -499,13 +498,12 @@ function ClubGrid({
               className={`w-14 h-14 flex items-center justify-center mb-2 rounded-xl ${isFavorite ? "bg-primary/10" : "bg-white/3"}`}
             >
               {club.logo ? (
-                <img
+                <Image
                   src={club.logo}
                   alt={club.name}
                   width={52}
                   height={52}
                   className="object-contain"
-                  loading="lazy"
                 />
               ) : (
                 <div
@@ -627,7 +625,7 @@ function WhipLash347Tab({
         <div className="relative z-[1] flex items-center gap-4 px-4 py-5">
           <div className="relative flex-shrink-0">
             <div className="absolute inset-0 rounded-full blur-xl opacity-70" style={{ background: PARTNER_CLUB.color }} />
-            <img src={PARTNER_CLUB.logo} alt={PARTNER_CLUB.name} width={80} height={80}
+            <Image src={PARTNER_CLUB.logo} alt={PARTNER_CLUB.name} width={80} height={80}
               className="relative rounded-full object-cover"
               style={{ border: `2px solid ${PARTNER_CLUB.color}`, boxShadow: '0 0 20px rgba(232,25,44,0.6)' }} />
           </div>
@@ -674,7 +672,7 @@ function WhipLash347Tab({
               </div>
               <p className="text-base font-black text-white leading-tight">{captain.name}</p>
               <div className="flex items-center gap-1.5 mt-0.5">
-                {wceClub?.logo && <img src={wceClub.logo} alt="WCE" width={14} height={14} className="object-contain opacity-70" />}
+                {wceClub?.logo && <Image src={wceClub.logo} alt="WCE" width={14} height={14} className="object-contain opacity-70" />}
                 <span className="text-[10px] text-gray-400">{captain.club}</span>
               </div>
             </div>
@@ -690,7 +688,7 @@ function WhipLash347Tab({
         <div key={label}>
           {/* Section header */}
           <div className="flex items-center gap-2 mb-2 px-1">
-            {club?.logo && <img src={club.logo} alt={abbr} width={22} height={22} className="object-contain" />}
+            {club?.logo && <Image src={club.logo} alt={abbr} width={22} height={22} className="object-contain" />}
             <span className="text-xs font-black text-white tracking-tight">{label}</span>
             <span className="ml-auto text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${accentColor}44`, color: 'rgba(255,255,255,0.6)', border: `1px solid ${accentColor}66` }}>{players.length} picks</span>
           </div>
@@ -828,7 +826,7 @@ function FanHubTab({
         {myClub && (
           <div className="flex items-center space-x-2">
             {myClub.logo ? (
-              <img
+              <Image
                 src={myClub.logo}
                 alt={myClub.shortName}
                 width={24}
