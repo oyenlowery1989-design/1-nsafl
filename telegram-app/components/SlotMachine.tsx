@@ -92,7 +92,7 @@ function ReelColumn({ strip, stripRef }: {
       style={{
         width: 84,
         height: SYM_SIZE * 3,
-        background: 'rgba(10,14,26,0.85)',
+        background: BRANDING.colors.surface,
         boxShadow: 'inset 0 2px 16px rgba(0,0,0,0.6)',
         flexShrink: 0,
       }}
@@ -391,7 +391,7 @@ export default function SlotMachine({
       <div className="flex-shrink-0 flex flex-col items-center py-4 px-4">
         <div className="rounded-3xl p-5 w-full max-w-xs"
           style={{
-            background: 'linear-gradient(160deg, rgba(212,175,55,0.1) 0%, rgba(10,14,26,0.97) 60%)',
+            background: `linear-gradient(160deg, rgba(212,175,55,0.1) 0%, ${BRANDING.colors.surface} 60%)`,
             border: '1px solid rgba(212,175,55,0.28)',
             boxShadow: spinning ? '0 0 40px rgba(212,175,55,0.12)' : '0 0 20px rgba(0,0,0,0.5)',
           }}>

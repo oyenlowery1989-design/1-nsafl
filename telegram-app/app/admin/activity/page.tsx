@@ -53,7 +53,7 @@ function ActivityContent() {
           <span className="text-sm">Loading…</span>
         </div>
       ) : (
-        <div className="bg-[#0d1424] border border-white/8 rounded-xl overflow-hidden">
+        <div className="bg-surface border border-white/8 rounded-xl overflow-hidden">
           <table className="w-full">
             <thead className="bg-white/3 border-b border-white/8">
               <tr>{['ID', 'User', 'Prize', 'Paid by', 'TX Hash', 'When'].map(h => (

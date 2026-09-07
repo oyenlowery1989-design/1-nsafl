@@ -300,9 +300,9 @@ function UsersPageInner() {
   )
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] text-gray-100">
+    <div className="min-h-screen bg-background-dark text-gray-100">
       {/* Header */}
-      <header className="bg-[#0d1424] border-b border-white/8 px-6 py-4 flex items-center justify-between gap-4 sticky top-0 z-20">
+      <header className="bg-surface border-b border-white/8 px-6 py-4 flex items-center justify-between gap-4 sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <Icon name="group" className="text-xl text-primary" />
           <h1 className="text-lg font-bold text-white">Users</h1>

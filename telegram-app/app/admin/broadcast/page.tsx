@@ -46,7 +46,7 @@ function BroadcastContent() {
         <Icon name="campaign" className="text-primary text-xl" />
         Broadcast Message
       </h2>
-      <div className="bg-[#0d1424] border border-white/8 rounded-xl p-5 space-y-4">
+      <div className="bg-surface border border-white/8 rounded-xl p-5 space-y-4">
         <div>
           <label className="block text-xs text-gray-400 mb-1.5">Quick Templates</label>
           <select

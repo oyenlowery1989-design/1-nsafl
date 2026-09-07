@@ -84,9 +84,9 @@ function AdminShellInner({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] text-gray-100">
+    <div className="min-h-screen bg-background-dark text-gray-100">
       {/* Header */}
-      <header className="bg-[#0d1424] border-b border-white/8 px-6 py-3 flex items-center justify-between sticky top-0 z-20">
+      <header className="bg-surface border-b border-white/8 px-6 py-3 flex items-center justify-between sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setSidebarOpen(o => !o)}
@@ -122,7 +122,7 @@ function AdminShellInner({ children }: { children: React.ReactNode }) {
       {sidebarOpen && (
         <div className="fixed inset-0 z-30 md:hidden" onClick={() => setSidebarOpen(false)}>
           <div className="absolute inset-0 bg-black/60" />
-          <aside className="absolute left-0 top-[57px] bottom-0 w-64 bg-[#0d1424] border-r border-white/8 overflow-y-auto flex flex-col" onClick={e => e.stopPropagation()}>
+          <aside className="absolute left-0 top-[57px] bottom-0 w-64 bg-surface border-r border-white/8 overflow-y-auto flex flex-col" onClick={e => e.stopPropagation()}>
             <nav className="p-3 space-y-5 pt-4">
               {NAV_GROUPS.map(group => (
                 <div key={group.label}>
@@ -153,7 +153,7 @@ function AdminShellInner({ children }: { children: React.ReactNode }) {
 
       <div className="flex">
         {/* Sidebar */}
-        <aside className="hidden md:flex flex-col w-52 shrink-0 bg-[#0d1424] border-r border-white/8 min-h-screen sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto">
+        <aside className="hidden md:flex flex-col w-52 shrink-0 bg-surface border-r border-white/8 min-h-screen sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto">
           <nav className="p-3 space-y-5 pt-4">
             {NAV_GROUPS.map(group => (
               <div key={group.label}>

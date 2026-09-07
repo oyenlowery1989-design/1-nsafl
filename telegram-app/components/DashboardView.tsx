@@ -408,7 +408,7 @@ export default function DashboardView({ address, balance, referralShareText }: P
           <div
             className="w-full rounded-t-3xl overflow-hidden relative"
             style={{
-              background: `linear-gradient(170deg, #0d0a0f 0%, ${BRANDING.colors.background} 60%)`,
+              background: `linear-gradient(170deg, ${BRANDING.colors.surfaceRaised} 0%, ${BRANDING.colors.background} 60%)`,
               border: '1px solid rgba(232,25,44,0.45)',
               borderBottom: 'none',
               boxShadow: '0 -20px 80px rgba(232,25,44,0.20), 0 -4px 40px rgba(0,212,255,0.08)',

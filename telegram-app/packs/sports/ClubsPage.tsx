@@ -617,7 +617,7 @@ function WhipLash347Tab({
     <div className="space-y-4">
 
       {/* ── Hero banner ─────────────────────────────────────────── */}
-      <div className="rounded-2xl relative overflow-hidden" style={{ background: '#0d0608' }}>
+      <div className="rounded-2xl relative overflow-hidden" style={{ background: BRANDING.colors.surface }}>
         {/* colour streaks */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -left-10 top-0 bottom-0 w-32 opacity-40" style={{ background: `linear-gradient(90deg, ${PARTNER_CLUB.color}, transparent)` }} />
@@ -711,7 +711,7 @@ function WhipLash347Tab({
       ))}
 
       {/* ── Fan Leaderboard ─────────────────────────────────────── */}
-      <div className="rounded-2xl overflow-hidden" style={{ background: '#0d0608', border: '1px solid rgba(232,25,44,0.25)' }}>
+      <div className="rounded-2xl overflow-hidden" style={{ background: BRANDING.colors.surface, border: '1px solid rgba(232,25,44,0.25)' }}>
         <div className="flex items-center gap-2 px-4 py-3" style={{ background: 'rgba(232,25,44,0.08)', borderBottom: '1px solid rgba(232,25,44,0.15)' }}>
           <span className="material-symbols-outlined text-sm" style={{ color: PARTNER_CLUB.color, fontVariationSettings: "'FILL' 1" }}>leaderboard</span>
           <span className="text-xs font-black text-white">Top {PRIMARY_CUSTOM_ASSET_LABEL} Holders</span>

@@ -212,7 +212,7 @@ function OverviewContent() {
           {/* Sparklines */}
           {stats && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-[#0d1424] border border-white/8 rounded-xl p-4">
+              <div className="bg-surface border border-white/8 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-xs font-semibold text-gray-300">New Users (7 days)</p>
                   <TrendBadge today={stats.sparklines.users.today} yesterday={stats.sparklines.users.yesterday} />
@@ -220,7 +220,7 @@ function OverviewContent() {
                 <p className="text-2xl font-bold text-blue-400">{stats.sparklines.users.today} <span className="text-sm font-normal text-gray-500">today</span></p>
                 <Sparkline days={stats.sparklines.users.days} labels={stats.sparklines.users.labels} color="bg-blue-500" />
               </div>
-              <div className="bg-[#0d1424] border border-white/8 rounded-xl p-4">
+              <div className="bg-surface border border-white/8 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-xs font-semibold text-gray-300">Wins (7 days)</p>
                   <TrendBadge today={stats.sparklines.wins.today} yesterday={stats.sparklines.wins.yesterday} />
@@ -255,7 +255,7 @@ function OverviewContent() {
 
           {/* Reward wallet balances */}
           {stats?.rewardAssets && stats.rewardAssets.some(a => a.balance !== null) && (
-            <div className="bg-[#0d1424] border border-white/8 rounded-xl p-4">
+            <div className="bg-surface border border-white/8 rounded-xl p-4">
               <p className="text-xs font-semibold text-gray-300 mb-3 flex items-center gap-2">
                 <Icon name="account_balance_wallet" className="text-sm text-primary" />
                 Reward Wallet Balances

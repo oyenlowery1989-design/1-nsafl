@@ -187,7 +187,7 @@ export function UserDetail({ u, data, token, onBack, onAction, onDeleteAccess, d
       )}
 
       {/* Header */}
-      <header className="bg-[#0d1424] border-b border-white/8 px-6 py-3 flex items-center gap-4 sticky top-0 z-20">
+      <header className="bg-surface border-b border-white/8 px-6 py-3 flex items-center gap-4 sticky top-0 z-20">
         <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition">
           ← Back
         </button>

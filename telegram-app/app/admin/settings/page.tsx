@@ -65,7 +65,7 @@ function SettingsContent() {
       </h2>
 
       {/* Reward wallet config */}
-      {hasRewards && <div className="bg-[#0d1424] border border-white/8 rounded-xl p-5 space-y-4">
+      {hasRewards && <div className="bg-surface border border-white/8 rounded-xl p-5 space-y-4">
         <h3 className="text-sm font-semibold text-gray-200 flex items-center gap-2">
           <Icon name="account_balance_wallet" className="text-sm text-primary" />
           Reward Wallet
@@ -93,7 +93,7 @@ function SettingsContent() {
       </div>}
 
       {/* Game config */}
-      {hasGames && <div className="bg-[#0d1424] border border-white/8 rounded-xl p-5 space-y-4">
+      {hasGames && <div className="bg-surface border border-white/8 rounded-xl p-5 space-y-4">
         <h3 className="text-sm font-semibold text-gray-200 flex items-center gap-2">
           <Icon name="sports_esports" className="text-sm text-primary" />
           Game Limits
@@ -115,7 +115,7 @@ function SettingsContent() {
       </div>}
 
       {/* Env vars */}
-      <div className="bg-[#0d1424] border border-white/8 rounded-xl p-5 space-y-3">
+      <div className="bg-surface border border-white/8 rounded-xl p-5 space-y-3">
         <h3 className="text-sm font-semibold text-gray-200 flex items-center gap-2">
           <Icon name="key" className="text-sm text-primary" />
           Environment Variables
