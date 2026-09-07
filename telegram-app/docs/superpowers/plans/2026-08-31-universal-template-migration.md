@@ -10,16 +10,13 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-31-universal-template-design.md`
 
-## Continuation Status — paused 2026-09-02
+## Completion Status — 2026-09-07
 
-- Tasks 1–4 are implemented and their slice reviews are clean through `5ebfdb7`.
-- Fresh verification at pause: TypeScript passed; lint had 0 errors and 62 warnings; all 94 tests passed; `git diff --check` passed; worktree was clean.
-- Final whole-branch review found unresolved P1 boundary leaks. Do not merge or claim the migration complete until these are fixed and re-reviewed:
-  - `app/api/admin/user/[telegramId]/route.ts` accesses/mutates Stellar wallet, donations, games, and sports data even when those packs are disabled.
-  - `components/guards/TelegramGuard.tsx` imports and resets Stellar/sports state on every load; core must not depend on domain packs.
-  - `app/api/auth/session/route.ts` unconditionally queries the Stellar wallet repository.
-  - `app/profile/page.tsx` still owns wallet/sports/rewards/donations UI rather than obtaining it from enabled pack contributions.
-- Resume with failing tests for each disabled-pack path, then make the smallest pack-owned extraction/guard fix and repeat the full review and release gates.
+- Tasks 1–4 are implemented, reviewed, and extended through commits `4016dfd`, `4a74c23`, `f61bb97`, and `9e5cdbd`.
+- The four final boundary blockers are fixed: admin mutations guard disabled packs, TelegramGuard is core-only, auth session delegates optional pack data, and profile UI is composed from pack contributions.
+- Theme consistency is improved across core, pack, and admin screens using shared surface/text/border tokens. Required background and gold values remain unchanged.
+- Final verification: TypeScript passed; 32 test files / 101 tests passed; lint had 0 errors and 62 existing warnings; `git diff --check` passed; worktree clean after the documentation checkpoint.
+- Remaining before production: manual Telegram/browser smoke testing, deployment configuration, and optional cleanup of the 62 existing lint warnings. No planned migration implementation remains.
 
 ## Global Constraints
 
