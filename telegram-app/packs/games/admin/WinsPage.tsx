@@ -493,10 +493,10 @@ function WinsPageInner() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] text-gray-100" style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div className="min-h-screen bg-background-dark text-gray-100" style={{ fontFamily: 'Inter, sans-serif' }}>
 
       {/* ── Header ── */}
-      <header className="bg-[#0d1424] border-b border-white/8 px-6 py-3 flex items-center gap-4 sticky top-0 z-20">
+      <header className="bg-surface border-b border-white/8 px-6 py-3 flex items-center gap-4 sticky top-0 z-20">
         <Link
           href="/admin"
           className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition shrink-0"
@@ -539,7 +539,7 @@ function WinsPageInner() {
 
         {/* ── Send All Pending ── */}
         {counts.pending > 0 && (
-          <div className="bg-[#0d1424] border border-primary/20 rounded-xl px-4 py-3 flex flex-wrap items-center gap-3">
+          <div className="bg-surface border border-primary/20 rounded-xl px-4 py-3 flex flex-wrap items-center gap-3">
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-white">
                 {counts.pending} pending reward{counts.pending !== 1 ? 's' : ''} waiting
@@ -585,7 +585,7 @@ function WinsPageInner() {
 
         {/* ── Sender wallet balances + low-balance alert ── */}
         {Object.keys(senderBalances).length > 0 && (
-          <div className="bg-[#0d1424] border border-white/8 rounded-xl px-4 py-3 space-y-2">
+          <div className="bg-surface border border-white/8 rounded-xl px-4 py-3 space-y-2">
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-[11px] text-gray-500 uppercase font-medium mr-1">Sender Wallet</span>
               {REWARD_ASSETS.filter(a => senderBalances[a.code] !== undefined).map(a => {
@@ -642,7 +642,7 @@ function WinsPageInner() {
           const sorted = Object.entries(breakdown).sort((a, b) => b[1] - a[1])
           const max = sorted[0]?.[1] ?? 1
           return (
-            <div className="bg-[#0d1424] border border-white/8 rounded-xl px-4 py-3">
+            <div className="bg-surface border border-white/8 rounded-xl px-4 py-3">
               <p className="text-[11px] text-gray-500 uppercase font-medium mb-3">Prize Breakdown (this page)</p>
               <div className="space-y-1.5">
                 {sorted.map(([prize, count]) => (
@@ -666,7 +666,7 @@ function WinsPageInner() {
         <SecretKeyChecker token={token} />
 
         {/* ── Filter bar ── */}
-        <div className="bg-[#0d1424] border border-white/8 rounded-xl px-4 py-3 flex flex-wrap items-center gap-3">
+        <div className="bg-surface border border-white/8 rounded-xl px-4 py-3 flex flex-wrap items-center gap-3">
           {/* Status dropdown */}
           <div className="flex items-center gap-2">
             <label className="text-[11px] text-gray-500 uppercase font-medium">Status</label>
@@ -757,7 +757,7 @@ function WinsPageInner() {
         )}
 
         {/* ── Table ── */}
-        <div className="bg-[#0d1424] border border-white/8 rounded-xl overflow-hidden">
+        <div className="bg-surface border border-white/8 rounded-xl overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-16 text-gray-600 gap-3">
               <Icon name="progress_activity" className="text-2xl animate-spin" />
@@ -898,7 +898,7 @@ function SecretKeyChecker({ token }: { token: string }) {
   }
 
   return (
-    <div className="bg-[#0d1424] border border-white/8 rounded-xl overflow-hidden">
+    <div className="bg-surface border border-white/8 rounded-xl overflow-hidden">
       <button
         onClick={() => { setOpen(p => !p); setResult(null); setErr(''); setSecretInput('') }}
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/3 transition text-left"
@@ -1381,7 +1381,7 @@ function WinTableRow({
 export default function WinsPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center text-gray-600 gap-3">
+      <div className="min-h-screen bg-background-dark flex items-center justify-center text-gray-600 gap-3">
         <span className="material-symbols-outlined animate-spin text-2xl leading-none">progress_activity</span>
         <span className="text-sm">Loading…</span>
       </div>

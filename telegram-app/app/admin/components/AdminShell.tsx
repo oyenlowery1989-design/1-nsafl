@@ -75,7 +75,7 @@ function AdminShellInner({ children }: { children: React.ReactNode }) {
   if (pathname === '/admin') return <>{children}</>
   // Still loading token
   if (token === null) return (
-    <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center text-gray-600 text-sm">Loading…</div>
+    <div className="min-h-screen bg-background-dark flex items-center justify-center text-gray-600 text-sm">Loading…</div>
   )
 
   function logout() {

@@ -248,16 +248,16 @@ function UsersPageInner() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   // Auth gate
-  if (token === null) return <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center"><span className="text-gray-500 text-sm">Loading...</span></div>
+  if (token === null) return <div className="min-h-screen bg-background-dark flex items-center justify-center"><span className="text-gray-500 text-sm">Loading...</span></div>
   if (token === '') return (
-    <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
+    <div className="min-h-screen bg-background-dark flex items-center justify-center">
       <p className="text-red-400 text-sm">No admin token. Log in via <a href="/admin" className="underline">/admin</a>.</p>
     </div>
   )
 
   // Loading
   if (loading && !data) return (
-    <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
+    <div className="min-h-screen bg-background-dark flex items-center justify-center">
       <div className="flex items-center gap-3 text-gray-400 text-sm">
         <Icon name="sync" className="text-lg animate-spin" /> Loading users...
       </div>
@@ -266,7 +266,7 @@ function UsersPageInner() {
 
   // Error
   if (error) return (
-    <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
+    <div className="min-h-screen bg-background-dark flex items-center justify-center">
       <div className="text-center space-y-3">
         <p className="text-red-400 text-sm">{error}</p>
         <button onClick={fetchData} className="text-xs bg-white/10 text-gray-300 px-4 py-2 rounded-lg hover:bg-white/15 transition">Retry</button>
@@ -500,7 +500,7 @@ function UsersPageInner() {
 export default function UsersPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
+      <div className="min-h-screen bg-background-dark flex items-center justify-center">
         <span className="text-gray-500 text-sm">Loading...</span>
       </div>
     }>

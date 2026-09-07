@@ -79,7 +79,7 @@ function GamePageInner() {
   const maxCount = prizeList[0]?.[1] ?? 1
 
   return (
-    <div className="space-y-6 p-4 sm:p-6 min-h-screen bg-[#0a0f1e]">
+    <div className="space-y-6 p-4 sm:p-6 min-h-screen bg-background-dark">
       <div className="flex items-center gap-2 mb-2">
         <Icon name="sports_esports" className="text-xl text-primary" />
         <h1 className="text-lg font-bold text-white">Game Analytics</h1>
@@ -178,7 +178,7 @@ function GamePageInner() {
 
 export default function GamePage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh] bg-[#0a0f1e]"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh] bg-background-dark"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>}>
       <GamePageInner />
     </Suspense>
   )

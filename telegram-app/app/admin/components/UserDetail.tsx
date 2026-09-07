@@ -179,7 +179,7 @@ export function UserDetail({ u, data, token, onBack, onAction, onDeleteAccess, d
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] text-gray-100">
+    <div className="min-h-screen bg-background-dark text-gray-100">
       {editToast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[300] bg-[#1a2235] border border-white/10 text-white text-sm px-5 py-3 rounded-xl shadow-2xl backdrop-blur-sm">
           {editToast}

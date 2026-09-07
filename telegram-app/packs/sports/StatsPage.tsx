@@ -161,7 +161,7 @@ function StatsPage() {
               const toNextMilestone = Math.max(0, nextMilestone - raised)
               const milestoneLabel = nextMilestone >= 1000 ? `${nextMilestone / 1000}k` : nextMilestone.toString()
               return (
-                <div className="rounded-2xl overflow-hidden border border-primary/25" style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, rgba(10,14,26,0.95) 60%)', boxShadow: '0 0 40px rgba(212,175,55,0.1)' }}>
+                <div className="rounded-2xl overflow-hidden border border-primary/25" style={{ background: `linear-gradient(135deg, rgba(212,175,55,0.08) 0%, ${BRANDING.colors.surface} 60%)`, boxShadow: '0 0 40px rgba(212,175,55,0.1)' }}>
                   {/* Header */}
                   <div className="px-4 pt-4 pb-3">
                     <div className="flex items-start justify-between gap-3">

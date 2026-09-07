@@ -106,10 +106,10 @@ function ReelColumn({ strip, stripRef }: {
       }} />
       {/* top fade */}
       <div className="absolute inset-x-0 top-0 pointer-events-none z-20"
-        style={{ height: SYM_SIZE * 0.8, background: 'linear-gradient(to bottom, rgba(10,14,26,0.88), transparent)' }} />
+        style={{ height: SYM_SIZE * 0.8, background: `linear-gradient(to bottom, ${BRANDING.colors.surfaceRaised}, transparent)` }} />
       {/* bottom fade */}
       <div className="absolute inset-x-0 bottom-0 pointer-events-none z-20"
-        style={{ height: SYM_SIZE * 0.8, background: 'linear-gradient(to top, rgba(10,14,26,0.88), transparent)' }} />
+        style={{ height: SYM_SIZE * 0.8, background: `linear-gradient(to top, ${BRANDING.colors.surfaceRaised}, transparent)` }} />
 
       {/* symbol strip — initial transform set inline so there's zero flash before useEffect */}
       <div ref={stripRef} style={{ willChange: 'transform', transform: `translateY(${INIT_Y}px)` }}>

@@ -782,7 +782,7 @@ function HubView({
       <div
         className="sticky top-0 z-40 px-4 pt-3 pb-2 border-b border-white/5"
         style={{
-          background: "rgba(10,14,26,0.95)",
+          background: BRANDING.colors.surface,
           backdropFilter: "blur(20px)",
         }}
       >

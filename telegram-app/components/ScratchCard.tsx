@@ -468,7 +468,7 @@ export default function ScratchCard({
           /* Active card */
           <div className="w-full max-w-xs rounded-3xl p-5 border border-primary/25"
             style={{
-              background: 'linear-gradient(160deg, rgba(212,175,55,0.09) 0%, rgba(10,14,26,0.97) 70%)',
+              background: `linear-gradient(160deg, rgba(212,175,55,0.09) 0%, ${BRANDING.colors.surface} 70%)`,
               animation: 'card-deal 0.35s cubic-bezier(0.34,1.56,0.64,1)',
             }}>
 

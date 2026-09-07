@@ -35,7 +35,7 @@ function ReferralsPageInner() {
   const pct = data.users.length > 0 ? Math.round((totalReferred / data.users.length) * 100) : 0
 
   return (
-    <div className="space-y-6 p-4 sm:p-6 min-h-screen bg-[#0a0f1e]">
+    <div className="space-y-6 p-4 sm:p-6 min-h-screen bg-background-dark">
       <div className="flex items-center gap-2 mb-2">
         <Icon name="group_add" className="text-xl text-primary" />
         <h1 className="text-lg font-bold text-white">Referrals</h1>
@@ -115,7 +115,7 @@ function ReferralsPageInner() {
 
 export default function ReferralsPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh] bg-[#0a0f1e]"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh] bg-background-dark"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>}>
       <ReferralsPageInner />
     </Suspense>
   )
