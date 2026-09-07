@@ -249,7 +249,7 @@ function LeaderboardPage() {
   const showContent = useMinLoader(loaded);
 
   // load() flips loading state synchronously on purpose (fetch-on-mount pattern)
-  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/set-state-in-effect
 
   const myEntry = currentAddress
     ? entries.find((e) => e.stellarAddress.toLowerCase() === currentAddress.toLowerCase()) ?? null

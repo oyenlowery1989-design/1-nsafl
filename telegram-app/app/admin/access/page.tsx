@@ -307,7 +307,11 @@ function AccessPageInner() {
                                     <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 font-bold">BLOCKED</span>
                                   )}
                                   <button
-                                    onClick={(e) => { e.stopPropagation(); blockedIps.has(a.ip!) ? unblockIp(a.ip!) : blockIp(a.ip!) }}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      if (blockedIps.has(a.ip!)) unblockIp(a.ip!)
+                                      else blockIp(a.ip!)
+                                    }}
                                     disabled={blockingIp === a.ip}
                                     className={`ml-2 text-[10px] px-2 py-0.5 rounded transition disabled:opacity-40 ${
                                       blockedIps.has(a.ip)

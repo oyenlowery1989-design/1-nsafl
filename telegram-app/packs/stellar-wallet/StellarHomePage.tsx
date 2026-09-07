@@ -54,7 +54,6 @@ export default function StellarHomePage() {
   }, [referrerId, hasSeenOnboarding])
 
   const [inputAddress, setInputAddress] = useState('')
-  const [pendingAddress, setPendingAddress] = useState('')   // address waiting on trustline
   const [error, setError] = useState('')
   const [celebrationBalance, setCelebrationBalance] = useState('0.00')
 
@@ -73,7 +72,6 @@ export default function StellarHomePage() {
       const trustlineOk = await hasPrimaryAssetTrustline(addr).catch(() => false)
       if (!trustlineOk) {
         haptic.error()
-        setPendingAddress(addr)
         setPhase('no-trustline')
         return
       }
@@ -146,15 +144,9 @@ export default function StellarHomePage() {
   if (phase === 'no-trustline') {
     return (
       <div className="min-h-screen bg-background-dark flex flex-col items-center justify-center px-6 py-12">
-        <NoTrustlineHelp
-          onTrustlineAdded={() => {
-            setInputAddress(pendingAddress)
-            // Let React flush the state update, then go back to gate and auto-connect
-            setTimeout(() => setPhase('gate'), 100)
-          }}
-        />
+        <NoTrustlineHelp />
         <button
-          onClick={() => { setPendingAddress(''); setPhase('gate') }}
+          onClick={() => setPhase('gate')}
           className="mt-6 text-xs text-gray-500 hover:text-gray-300 transition"
         >
           ← Back

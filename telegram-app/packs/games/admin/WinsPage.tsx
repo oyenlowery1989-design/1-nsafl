@@ -58,7 +58,6 @@ const ago = (iso: string) => {
   if (s < 86400) return `${Math.floor(s / 3600)}h ago`
   return `${Math.floor(s / 86400)}d ago`
 }
-const dt = (iso: string) => new Date(iso).toLocaleString()
 const shortStr = (s: string, n = 8) =>
   s.length <= n ? s : `${s.slice(0, 4)}…${s.slice(-4)}`
 

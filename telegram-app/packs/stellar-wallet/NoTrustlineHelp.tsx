@@ -5,11 +5,7 @@ import {
 } from "@/lib/constants";
 import { haptic } from "@/lib/telegram-ui";
 
-interface Props {
-  onTrustlineAdded: () => void; // called after successful auto-add — parent retries connect
-}
-
-export default function NoTrustlineHelp({ onTrustlineAdded: _onTrustlineAdded }: Props) {
+export default function NoTrustlineHelp() {
   const lobstrUrl = `https://lobstr.co/assets/${PRIMARY_CUSTOM_ASSET_CODE}:${PRIMARY_CUSTOM_ASSET_ISSUER}`;
   const scopulyUrl = `https://scopuly.com/trade/${PRIMARY_CUSTOM_ASSET_CODE}-XLM/${PRIMARY_CUSTOM_ASSET_ISSUER}/native`;
 

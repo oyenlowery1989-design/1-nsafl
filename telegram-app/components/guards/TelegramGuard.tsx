@@ -77,7 +77,6 @@ function startDevToolsWatch(tgUser?: TelegramUser | null) {
     },
   });
   devtoolsInterval = setInterval(() => {
-    // eslint-disable-next-line no-console
     console.log("%c", el);
   }, 3000);
 }

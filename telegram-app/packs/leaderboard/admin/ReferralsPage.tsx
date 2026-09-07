@@ -1,9 +1,9 @@
 'use client'
 import { useEffect, useState, Suspense } from 'react'
 import { useAdminToken } from '@/app/admin/hooks/useAdminToken'
-import { Badge, Card, Th, Td, StatTile, SectionTitle, Icon } from '@/app/admin/components/ui'
-import { ago, num } from '@/app/admin/utils'
-import type { AdminData, ReferralStat, ReferredUser } from '@/app/admin/types'
+import { Card, Th, Td, StatTile, SectionTitle, Icon } from '@/app/admin/components/ui'
+import { ago } from '@/app/admin/utils'
+import type { AdminData } from '@/app/admin/types'
 
 function ReferralsPageInner() {
   const token = useAdminToken()

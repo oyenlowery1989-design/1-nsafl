@@ -3,7 +3,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { useAdminToken } from '@/app/admin/hooks/useAdminToken'
 import { Badge, Card, Th, Td, Icon } from '@/app/admin/components/ui'
 import { dt } from '@/app/admin/utils'
-import type { AdminData, TrustlineSubmission } from '@/app/admin/types'
+import type { AdminData } from '@/app/admin/types'
 
 function TrustlinePageInner() {
   const token = useAdminToken()

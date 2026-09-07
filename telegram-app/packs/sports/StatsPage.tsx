@@ -12,7 +12,7 @@ import { PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/constants'
 import { BRANDING } from '@/config/branding'
 import { sportsCopy } from './copy'
 import { PARTNER_CLUB } from '@/config/partnerClub'
-import { ALL_CLUBS, AFL_CLUBS, WAFL_CLUBS } from "@/config/afl"
+import { ALL_CLUBS } from "@/config/afl"
 import { getTelegramInitData } from '@/lib/telegram'
 import { TIERS, formatReward } from '@/config/tiers'
 import ErrorCard from '@/components/ErrorCard'

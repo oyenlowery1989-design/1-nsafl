@@ -251,7 +251,8 @@ function FullProfilePage() {
     async (cursor?: string): Promise<number> => {
       if (!stellarAddress) return 0;
       const isFirst = !cursor;
-      isFirst ? setLoading(true) : setLoadingMore(true);
+      if (isFirst) setLoading(true);
+      else setLoadingMore(true);
       try {
         const cursorParam = cursor ? `&cursor=${cursor}` : "";
         const res = await fetch(
@@ -269,7 +270,8 @@ function FullProfilePage() {
           return mapped.filter((t) => !t.isSpam).length;
         }
       } finally {
-        isFirst ? setLoading(false) : setLoadingMore(false);
+        if (isFirst) setLoading(false);
+        else setLoadingMore(false);
       }
       return 0;
     },
@@ -337,7 +339,7 @@ function FullProfilePage() {
     } finally {
       setIsRefreshing(false);
     }
-  }, [stellarAddress, isRefreshing, loadTxns, loadDonations, loadReferrals]);
+  }, [stellarAddress, isRefreshing, loadTxns, loadDonations, loadReferrals, checkTrustlines]);
 
   const handleLoadMore = useCallback(async () => {
     if (!nextCursor) return;

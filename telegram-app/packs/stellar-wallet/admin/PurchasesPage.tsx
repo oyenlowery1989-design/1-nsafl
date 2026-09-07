@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useMemo, Suspense } from 'react'
 import { useAdminToken } from '@/app/admin/hooks/useAdminToken'
-import { Card, Th, Td } from '@/app/admin/components/ui'
+import { Th, Td } from '@/app/admin/components/ui'
 import { dt, num, shortAddr } from '@/app/admin/utils'
 import type { AdminData, WalletRef } from '@/app/admin/types'
 import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'

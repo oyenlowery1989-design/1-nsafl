@@ -2,7 +2,6 @@
 import { useEffect, useState, Suspense } from 'react'
 import { Icon } from '../components/ui'
 import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
-import { REWARD_ASSETS } from '@/lib/rewardAssets'
 import { useAdminToken } from '../hooks/useAdminToken'
 import { isPackEnabled } from '@/config/app'
 

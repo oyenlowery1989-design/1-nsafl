@@ -32,7 +32,6 @@ function BuyPage() {
   useTelegramBack(() => router.back());
   const ready = useMinLoader(true);
   const tokenBalance = useStellarWalletStore((s) => s.tokenBalance);
-  const stellarAddress = useStellarWalletStore((s) => s.stellarAddress);
   const balance = parseFloat(tokenBalance) || 0;
   const currentTier = getTierForBalance(balance);
   const nextTier = getNextTier(currentTier);
@@ -45,11 +44,6 @@ function BuyPage() {
   const calculatedTokens = xlmAmount
     ? (parseFloat(xlmAmount) * XLM_TO_TOKEN_RATE).toFixed(2)
     : "0.00";
-
-  const truncatedAddress =
-    DIRECT_BUY_ADDRESS.length > 12
-      ? `${DIRECT_BUY_ADDRESS.slice(0, 6)}...${DIRECT_BUY_ADDRESS.slice(-6)}`
-      : DIRECT_BUY_ADDRESS;
 
   const handleCopy = async () => {
     try {

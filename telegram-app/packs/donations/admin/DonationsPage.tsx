@@ -1,9 +1,9 @@
 'use client'
 import { useEffect, useState, useMemo, Suspense } from 'react'
 import { useAdminToken } from '@/app/admin/hooks/useAdminToken'
-import { Card, Th, Td, Icon } from '@/app/admin/components/ui'
+import { Card, Th, Td } from '@/app/admin/components/ui'
 import { dt, num, shortAddr } from '@/app/admin/utils'
-import type { AdminData, Donation, WalletRef } from '@/app/admin/types'
+import type { AdminData, WalletRef } from '@/app/admin/types'
 
 function DonationTypeBadge({ type }: { type: string }) {
   const map: Record<string, string> = {
