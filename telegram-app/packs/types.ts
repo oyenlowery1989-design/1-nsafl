@@ -26,12 +26,19 @@ export type AdminDataLoader = (
   users: readonly AdminUser[],
 ) => Promise<AdminDataContribution>
 
+export type SessionDataLoader = (
+  supabase: ReturnType<typeof createServiceClient>,
+  userId: string,
+) => Promise<Readonly<Record<string, unknown>>>
+
 export type PackManifest = Readonly<{
   id: PackId
   home?: ComponentType
+  profile?: ComponentType
   navigation?: readonly NavigationItem[]
   centerAction?: NavigationItem
   admin?: readonly NavigationItem[]
   adminData?: AdminDataLoader
+  sessionData?: SessionDataLoader
   copy?: Readonly<Record<string, unknown>>
 }>

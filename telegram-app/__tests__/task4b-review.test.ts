@@ -2,7 +2,9 @@ import { NextRequest } from 'next/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/lib/feature-gate', () => ({
-  requirePack: () => Response.json({ success: false, code: 'FEATURE_DISABLED' }, { status: 404 }),
+  requirePack: (pack: string) => pack === 'leaderboard'
+    ? Response.json({ success: false, code: 'FEATURE_DISABLED' }, { status: 404 })
+    : null,
 }))
 
 import { GET as referrals } from '@/packs/leaderboard/api/referrals-route'

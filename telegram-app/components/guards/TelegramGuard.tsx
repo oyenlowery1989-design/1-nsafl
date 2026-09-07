@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import type { TelegramUser } from "@/lib/telegram";
 import { getTelegramInitData } from "@/lib/telegram";
 import {
@@ -7,8 +7,6 @@ import {
   ACCESS_RECORDED_STORAGE_KEY,
 } from "@/lib/constants";
 import { useIdentityStore } from "@/hooks/useStore";
-import { useSportsStore } from "@/packs/sports/store";
-import { useStellarWalletStore } from "@/packs/stellar-wallet/store";
 
 type TelegramWebApp = {
   initData?: string;
@@ -129,13 +127,6 @@ export default function TelegramGuard({
   const [state, setState] = useState<GuardState>("pending");
   const resetIdentity = useIdentityStore((s) => s.resetIdentity);
   const setTelegramUserId = useIdentityStore((s) => s.setTelegramUserId);
-  const disconnectWallet = useStellarWalletStore((s) => s.disconnect);
-  const resetTeams = useSportsStore((s) => s.resetTeams);
-  const disconnect = useCallback(() => {
-    disconnectWallet();
-    resetTeams();
-    resetIdentity();
-  }, [disconnectWallet, resetIdentity, resetTeams]);
 
   useEffect(() => {
     const check = async () => {
@@ -146,7 +137,7 @@ export default function TelegramGuard({
       }
       if (isDev) {
         const { hasWallet } = await recordSession();
-        if (!hasWallet) disconnect();
+        if (!hasWallet) resetIdentity();
         setState("allowed");
         return;
       }
@@ -190,7 +181,7 @@ export default function TelegramGuard({
           return;
         }
         // If admin logged the user out server-side, clear local wallet state
-        if (!hasWallet) disconnect();
+        if (!hasWallet) resetIdentity();
         startDevToolsWatch(tg.initDataUnsafe?.user ?? null);
         setState("allowed");
       } else {
@@ -203,7 +194,7 @@ export default function TelegramGuard({
       clearTimeout(t);
       stopDevToolsWatch();
     };
-  }, [disconnect, setTelegramUserId]);
+  }, [resetIdentity, setTelegramUserId]);
 
   // Dismiss the inline loader once guard resolves AND Material Symbols font is loaded.
   // Uses document.fonts.load() to explicitly wait for the icon font — document.fonts.ready

@@ -6,8 +6,18 @@ import { createStellarWalletRepository } from '@/packs/stellar-wallet/repository
 import { createSportsRepository } from '@/packs/sports/repository'
 import { createGamesRepository } from '@/packs/games/repository'
 import { createDonationsRepository } from '@/packs/donations/repository'
+import { requirePack } from '@/lib/feature-gate'
+import type { PackId } from '@/packs/types'
 
 type Ctx = { params: Promise<{ telegramId: string }> }
+
+function disabledPackResponse(...packs: PackId[]) {
+  for (const pack of packs) {
+    const disabled = requirePack(pack)
+    if (disabled) return disabled
+  }
+  return null
+}
 
 // DELETE — wipe all data for this user. They can return as a fresh user (not blocked).
 export async function DELETE(req: NextRequest, ctx: Ctx) {
@@ -19,6 +29,9 @@ export async function DELETE(req: NextRequest, ctx: Ctx) {
 
   const adminId = process.env.ADMIN_TELEGRAM_ID ? parseInt(process.env.ADMIN_TELEGRAM_ID, 10) : null
   if (adminId && telegramId === adminId) return fail('Cannot perform this action on the admin account', 'FORBIDDEN', 403)
+
+  const disabled = disabledPackResponse('stellar-wallet', 'donations', 'games', 'sports')
+  if (disabled) return disabled
 
   const supabase = createServiceClient()
   const wallets = createStellarWalletRepository(supabase)
@@ -56,6 +69,8 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
   // Logout action — remove all wallet connections, keep user row
   if (body.action === 'logout') {
+    const disabled = disabledPackResponse('stellar-wallet')
+    if (disabled) return disabled
     const supabase = createServiceClient()
     await createStellarWalletRepository(supabase).removeWallets(telegramId)
     return ok({ telegramId, action: 'logout' })
@@ -65,6 +80,11 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
   // Edit user fields (favorite_team, display_preference, bonus_balls, bonus_spins)
   if (body.favorite_team !== undefined || body.display_preference !== undefined || body.bonus_balls !== undefined || body.bonus_spins !== undefined) {
+    const disabled = disabledPackResponse(
+      ...(body.favorite_team !== undefined ? ['sports' as const] : []),
+      ...(body.bonus_balls !== undefined || body.bonus_spins !== undefined ? ['games' as const] : []),
+    )
+    if (disabled) return disabled
     const updatePayload: Record<string, unknown> = {}
     if (body.display_preference !== undefined) updatePayload.display_preference = body.display_preference
     const bonusPool = {
