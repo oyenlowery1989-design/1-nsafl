@@ -109,7 +109,7 @@ export default function NotificationDrawer({ open, onClose }: Props) {
       <div
         className="fixed top-[72px] left-0 right-0 z-50 mx-4 rounded-2xl shadow-2xl overflow-hidden"
         style={{
-          background: BRANDING.colors.background,
+          background: BRANDING.colors.surface,
           border: '1px solid rgba(255,255,255,0.1)',
           animation: 'notifSlideDown 0.22s cubic-bezier(0.16,1,0.3,1) both',
         }}

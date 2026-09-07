@@ -42,7 +42,7 @@ function TierCard({ tier, status, balance, nextTier, progressPct, onBuy, claimSt
     <div
       className={`rounded-xl p-3 relative overflow-hidden${isLocked ? ' opacity-40' : ''}`}
       style={{
-        background: isCurrent ? `linear-gradient(135deg, ${tier.color}18, ${BRANDING.colors.background})` : 'rgba(255,255,255,0.02)',
+        background: isCurrent ? `linear-gradient(135deg, ${tier.color}18, ${BRANDING.colors.surface})` : 'rgba(255,255,255,0.02)',
         border: isCurrent ? `1px solid ${tier.color}66` : isNext ? '1px solid rgba(245,158,11,0.3)' : '1px solid rgba(255,255,255,0.06)',
         boxShadow: isCurrent ? `0 0 20px ${tier.color}22` : 'none',
       }}

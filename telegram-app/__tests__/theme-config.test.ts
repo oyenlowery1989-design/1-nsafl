@@ -7,4 +7,6 @@ it('maps semantic theme colors to brand CSS variables', () => {
 
   expect(css).toContain('--color-primary: var(--brand-primary)')
   expect(css).toContain('--color-background-dark: var(--brand-background)')
+  expect(css).toContain('--color-surface: var(--brand-surface)')
+  expect(css).toContain('color: var(--brand-text)')
 })

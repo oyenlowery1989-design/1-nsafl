@@ -46,6 +46,12 @@ export default function RootLayout({
         style={{
           '--brand-primary': BRANDING.colors.primary,
           '--brand-background': BRANDING.colors.background,
+          '--brand-surface': BRANDING.colors.surface,
+          '--brand-surface-raised': BRANDING.colors.surfaceRaised,
+          '--brand-border': BRANDING.colors.border,
+          '--brand-text': BRANDING.colors.text,
+          '--brand-muted-text': BRANDING.colors.mutedText,
+          '--brand-primary-foreground': BRANDING.colors.primaryForeground,
         } as React.CSSProperties}
       >
         <ErrorBoundary>

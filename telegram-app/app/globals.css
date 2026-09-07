@@ -3,6 +3,8 @@
 @theme {
   --color-primary: var(--brand-primary);
   --color-background-dark: var(--brand-background);
+  --color-surface: var(--brand-surface);
+  --color-surface-raised: var(--brand-surface-raised);
   --font-sans: 'Inter', sans-serif;
   --font-serif: 'Playfair Display', serif;
 }
@@ -10,7 +12,7 @@
 body {
   font-family: var(--font-sans);
   background-color: var(--brand-background);
-  color: #E2E8F0;
+  color: var(--brand-text);
   min-height: max(884px, 100dvh);
 }
 
@@ -19,10 +21,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.03);
+  background: color-mix(in srgb, var(--brand-surface) 82%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--brand-border);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
 

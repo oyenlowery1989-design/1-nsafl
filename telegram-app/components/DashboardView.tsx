@@ -44,7 +44,7 @@ function WalletTierCard({ balance, address, xlmBalance }: { balance: string; add
   const toNext = nextTier ? Math.max(0, nextTier.minBalance - numericBalance) : 0
 
   return (
-    <div className="glass-card rounded-2xl p-3 relative overflow-hidden border" style={{ borderColor: `${currentTier.color}4D`, background: BRANDING.colors.background }}>
+    <div className="glass-card rounded-2xl p-3 relative overflow-hidden border" style={{ borderColor: `${currentTier.color}4D`, background: BRANDING.colors.surface }}>
       <div className="absolute -right-6 -top-6 w-28 h-28 rounded-full blur-3xl pointer-events-none" style={{ background: currentTier.glowColor }} />
       <div className="relative z-10 flex items-center gap-3">
         {/* Left — balance */}
@@ -458,7 +458,7 @@ export default function DashboardView({ address, balance, referralShareText }: P
                 { value: String(PARTNER_CLUB.sourceClubs.length), label: 'AFL Clubs', icon: 'stadium' },
                 { value: '#1', label: 'Partner Rank',     icon: 'workspace_premium' },
               ].map(({ value, label, icon }) => (
-                <div key={label} className="flex flex-col items-center py-3 text-center" style={{ background: BRANDING.colors.background }}>
+                <div key={label} className="flex flex-col items-center py-3 text-center" style={{ background: BRANDING.colors.surface }}>
                   <span className="material-symbols-outlined text-lg mb-0.5" style={{ color: PARTNER_CLUB.color, fontVariationSettings: "'FILL' 1" }}>{icon}</span>
                   <p className="text-lg font-bold text-white leading-none">{value}</p>
                   <p className="text-[9px] text-gray-500 mt-0.5 leading-tight">{label}</p>

@@ -141,7 +141,7 @@ export default function BottomNav() {
               key={item.href}
               href={item.href}
               className={`flex flex-col items-center space-y-0.5 transition ${
-                isActive ? 'text-primary' : 'text-gray-500 hover:text-primary'
+                isActive ? 'text-primary' : 'text-[var(--brand-muted-text)] hover:text-primary'
               }`}
             >
               <span className="material-symbols-outlined text-xl">{item.icon}</span>

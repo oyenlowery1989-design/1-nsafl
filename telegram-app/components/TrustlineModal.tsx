@@ -263,7 +263,7 @@ export default function TrustlineModal({
       <div
         className="w-full max-w-lg rounded-t-3xl overflow-y-auto"
         style={{
-          background: BRANDING.colors.background,
+          background: BRANDING.colors.surface,
           border: "1px solid rgba(255,255,255,0.08)",
           borderBottom: "none",
           maxHeight: "90dvh",

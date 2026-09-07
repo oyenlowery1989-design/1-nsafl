@@ -7,7 +7,7 @@ export function NeutralHome() {
       <section className="glass-card rounded-2xl p-8 max-w-sm text-center space-y-3">
         <span className="material-symbols-outlined text-4xl text-primary">apps</span>
         <h1 className="text-3xl text-white">{BRANDING.appName}</h1>
-        <p className="text-sm text-gray-400">Choose domain packs in config/app.ts to build this app.</p>
+        <p className="text-sm text-[var(--brand-muted-text)]">Choose domain packs in config/app.ts to build this app.</p>
       </section>
     </main>
   )
