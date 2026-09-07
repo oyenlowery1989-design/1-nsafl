@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import BottomNav from './BottomNav'
 import PageLoader, { useMinLoader } from './PageLoader'
 import NotificationDrawer from './NotificationDrawer'
@@ -258,7 +259,7 @@ export default function DashboardView({ address, balance, referralShareText }: P
           className="flex items-center justify-center gap-2 py-1.5 border-b border-white/5"
           style={{ background: 'linear-gradient(90deg, rgba(232,25,44,0.08) 0%, rgba(0,212,255,0.04) 100%)' }}
         >
-          <img src={PARTNER_CLUB.logo} alt="" width={14} height={14} className="rounded-full object-cover" style={{ boxShadow: '0 0 6px rgba(232,25,44,0.7)' }} />
+          <Image unoptimized src={PARTNER_CLUB.logo} alt="" width={14} height={14} className="rounded-full object-cover" style={{ boxShadow: '0 0 6px rgba(232,25,44,0.7)' }} />
           <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: PARTNER_CLUB.color, opacity: 0.85 }}>⚡ {PARTNER_CLUB.sponsorLabel}</span>
         </div>
       )}
@@ -435,7 +436,8 @@ export default function DashboardView({ address, balance, referralShareText }: P
             {/* Logo + name */}
             <div className="flex flex-col items-center px-6 pb-4">
               <div className="relative mb-4">
-                <img
+                <Image
+                  unoptimized
                   src={PARTNER_CLUB.logo}
                   alt={PARTNER_CLUB.name}
                   width={96}
@@ -470,7 +472,7 @@ export default function DashboardView({ address, balance, referralShareText }: P
             <div className="flex items-center justify-center gap-3 mx-4 mb-4 py-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
               {PARTNER_CLUB.sourceClubs.map(({ logo, name }) => (
                 <div key={name} className="flex items-center gap-2">
-                  <img src={logo} alt={name} width={28} height={28} className="object-contain" />
+                  <Image unoptimized src={logo} alt={name} width={28} height={28} className="object-contain" />
                   <span className="text-[11px] text-gray-300 font-semibold">{name}</span>
                 </div>
               ))}
@@ -489,7 +491,7 @@ export default function DashboardView({ address, balance, referralShareText }: P
                   color: '#fff',
                 }}
               >
-                <img src={PARTNER_CLUB.logo} alt="" width={20} height={20} className="rounded-full object-cover" />
+                <Image unoptimized src={PARTNER_CLUB.logo} alt="" width={20} height={20} className="rounded-full object-cover" />
                 View {PARTNER_CLUB.name} Team
                 <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
               </button>

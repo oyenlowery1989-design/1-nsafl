@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import Image from 'next/image'
 import { Badge, Card, Th, Td, StatTile, SectionTitle, Icon, CopyAddressRow, DonationTypeBadge } from './ui'
 import { ActivityTimeline } from './ActivityTimeline'
 import { ago, dt, num, teamName } from '../utils'
@@ -194,7 +195,7 @@ export function UserDetail({ u, data, token, onBack, onAction, onDeleteAccess, d
         <div className="w-px h-5 bg-white/10" />
         <div className="flex items-center gap-3 flex-1 min-w-0">
           {u.telegram_photo_url
-            ? <img src={u.telegram_photo_url} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
+            ? <Image unoptimized src={u.telegram_photo_url} width={32} height={32} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
             : <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm shrink-0">{(u.telegram_first_name ?? '?')[0]}</div>
           }
           <div className="min-w-0">
@@ -248,7 +249,7 @@ export function UserDetail({ u, data, token, onBack, onAction, onDeleteAccess, d
         <div className="bg-[#111827] border border-white/8 rounded-2xl p-6">
           <div className="flex items-start gap-5">
             {u.telegram_photo_url
-              ? <img src={u.telegram_photo_url} className="w-16 h-16 rounded-2xl object-cover shrink-0" alt="" />
+              ? <Image unoptimized src={u.telegram_photo_url} width={64} height={64} className="w-16 h-16 rounded-2xl object-cover shrink-0" alt="" />
               : <div className="w-16 h-16 rounded-2xl bg-primary/15 flex items-center justify-center text-primary font-bold text-2xl shrink-0">{(u.telegram_first_name ?? '?')[0]}</div>
             }
             <div className="flex-1 min-w-0">

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useTelegramBack } from "@/hooks/useTelegramBack";
 import BottomNav from "@/components/BottomNav";
 import FeatureRedirect from '@/components/FeatureRedirect'
@@ -36,7 +37,7 @@ function TeamLogo({ teamId, size = 20 }: { teamId: string | null; size?: number 
   if (!club) return <div style={{ width: size, height: size }} className="flex-shrink-0" />;
   if (club.logo) {
     return (
-      <img src={club.logo} alt={club.shortName} width={size} height={size}
+      <Image unoptimized src={club.logo} alt={club.shortName} width={size} height={size}
         className="object-contain flex-shrink-0" loading="lazy" />
     );
   }
@@ -290,7 +291,7 @@ function LeaderboardPage() {
       {/* Partner club sponsor strip */}
       {PARTNER_CLUB.enabled && (
         <div className="flex items-center justify-center gap-2 py-2 border-b border-white/6" style={{ background: 'linear-gradient(90deg, rgba(232,25,44,0.06) 0%, rgba(0,212,255,0.03) 100%)' }}>
-          <img src={PARTNER_CLUB.logo} alt={PARTNER_CLUB.name} width={16} height={16} className="rounded-full object-cover" style={{ boxShadow: '0 0 6px rgba(232,25,44,0.6)' }} />
+          <Image unoptimized src={PARTNER_CLUB.logo} alt={PARTNER_CLUB.name} width={16} height={16} className="rounded-full object-cover" style={{ boxShadow: '0 0 6px rgba(232,25,44,0.6)' }} />
           <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: `${PARTNER_CLUB.color}CC` }}>⚡ {PARTNER_CLUB.sponsorLabel}</span>
         </div>
       )}

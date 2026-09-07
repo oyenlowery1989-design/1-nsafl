@@ -33,6 +33,7 @@ import { ALL_CLUBS } from "@/config/afl";
 import { REWARD_ASSETS } from "@/lib/rewardAssets";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useTelegramBack } from "@/hooks/useTelegramBack";
 import { haptic } from "@/lib/telegram-ui";
 import TeamSelectScreen from "@/components/TeamSelectScreen";
@@ -130,7 +131,8 @@ function TelegramAvatar({
   const initial = name?.[0]?.toUpperCase() ?? "?";
   if (photoUrl) {
     return (
-      <img
+      <Image
+        unoptimized
         src={photoUrl}
         alt={name}
         width={size}
@@ -663,7 +665,7 @@ function FullProfilePage() {
                           </span>
                           {PARTNER_CLUB.enabled && favoriteTeam === PARTNER_CLUB.id && (
                             <span className="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase" style={{ background: 'rgba(232,25,44,0.15)', color: PARTNER_CLUB.color, border: '1px solid rgba(232,25,44,0.35)' }}>
-                              <img src={PARTNER_CLUB.logo} alt="" width={10} height={10} className="rounded-full object-cover" />
+                              <Image unoptimized src={PARTNER_CLUB.logo} alt="" width={10} height={10} className="rounded-full object-cover" />
                               {PARTNER_CLUB.shortName}
                             </span>
                           )}
@@ -691,7 +693,7 @@ function FullProfilePage() {
                   <div className="flex items-center gap-1.5">
                     {club ? (
                       <div className="flex flex-col items-center" style={{ minWidth: 44 }}>
-                        <img src={club.logo} alt={club.name} width={36} height={36} className="object-contain" />
+                        <Image unoptimized src={club.logo} alt={club.name} width={36} height={36} className="object-contain" />
                         <p className="text-[8px] font-semibold text-gray-300 text-center mt-0.5 leading-tight" style={{ maxWidth: 44 }}>{club.shortName}</p>
                         <span className="text-[7px] text-primary font-bold uppercase">AFL</span>
                       </div>
@@ -708,7 +710,7 @@ function FullProfilePage() {
                       return waflClub ? (
                         <div className="flex flex-col items-center" style={{ minWidth: 44 }}>
                           {waflClub.logo ? (
-                            <img src={waflClub.logo} alt={waflClub.name} width={36} height={36} className="object-contain" />
+                            <Image unoptimized src={waflClub.logo} alt={waflClub.name} width={36} height={36} className="object-contain" />
                           ) : (
                             <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-[9px]" style={{ background: waflClub.color }}>{waflClub.shortName}</div>
                           )}

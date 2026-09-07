@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback, useMemo, Suspense } from 'react'
+import Image from 'next/image'
 import { useAdminToken } from '../hooks/useAdminToken'
 import { Badge, Card, Th, Td, Icon, StatTile } from '../components/ui'
 import { UserDetail } from '../components/UserDetail'
@@ -426,7 +427,7 @@ function UsersPageInner() {
                       <Td>
                         <div className="flex items-center gap-2">
                           {u.telegram_photo_url
-                            ? <img src={u.telegram_photo_url} className="w-7 h-7 rounded-full object-cover shrink-0" alt="" />
+                            ? <Image unoptimized src={u.telegram_photo_url} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" alt="" />
                             : <div className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center text-primary font-bold text-xs shrink-0">{(u.telegram_first_name ?? '?')[0]}</div>
                           }
                           <div className="min-w-0">
