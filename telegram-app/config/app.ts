@@ -74,12 +74,27 @@ export function getAdminDataContributions(
   ))
 }
 
+export async function getSessionData(
+  supabase: ReturnType<typeof createServiceClient>,
+  userId: string,
+  features: FeatureConfig = APP_CONFIG.features,
+) {
+  const contributions = await Promise.all(Object.values(APP_CONFIG.packs).flatMap((pack) =>
+    features[pack.id] && pack.sessionData ? [pack.sessionData(supabase, userId)] : [],
+  ))
+  return Object.assign({}, ...contributions)
+}
+
 export function getCenterAction(features: FeatureConfig = APP_CONFIG.features) {
   return Object.values(APP_CONFIG.packs).find((pack) => features[pack.id] && pack.centerAction)?.centerAction ?? null
 }
 
 export function getHomeContribution(features: FeatureConfig = APP_CONFIG.features): ComponentType | null {
   return Object.values(APP_CONFIG.packs).find((pack) => features[pack.id] && pack.home)?.home ?? null
+}
+
+export function getProfileContribution(features: FeatureConfig = APP_CONFIG.features): ComponentType | null {
+  return Object.values(APP_CONFIG.packs).find((pack) => features[pack.id] && pack.profile)?.profile ?? null
 }
 
 export function getPackCopy<T>(key: string, features: FeatureConfig = APP_CONFIG.features): T | null {

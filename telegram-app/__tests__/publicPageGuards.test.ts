@@ -16,6 +16,7 @@ vi.mock('@/config/app', () => ({
   getCenterAction: () => null,
   getNavigationItems: () => [],
   getPackCopy: () => null,
+  getProfileContribution: () => enabledPacks.has('sports') ? (() => null) : null,
   isPackEnabled: (pack: string) => enabledPacks.has(pack),
 }))
 
