@@ -12,6 +12,7 @@
 body {
   font-family: var(--font-sans);
   background-color: var(--brand-background);
+  background-image: radial-gradient(circle at 50% -10%, color-mix(in srgb, var(--brand-primary) 10%, transparent), transparent 42%);
   color: var(--brand-text);
   min-height: max(884px, 100dvh);
 }

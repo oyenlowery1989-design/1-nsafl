@@ -88,7 +88,7 @@ export default function BottomNav() {
   const ringSize = 48 + charge * 32
 
   return (
-    <nav className="fixed bottom-0 w-full bg-background-dark/90 backdrop-blur-xl border-t border-white/10 pb-safe pt-2 px-4 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+    <nav className="fixed bottom-0 w-full bg-surface/95 backdrop-blur-xl border-t border-white/10 pb-safe pt-2 px-4 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.35)]">
       <div className="flex justify-between items-center pb-2">
         {getNavigationItems().map((item) => {
           const isActive = pathname === item.href

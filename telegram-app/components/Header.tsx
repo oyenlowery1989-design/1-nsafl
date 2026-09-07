@@ -26,7 +26,7 @@ export default function Header({
   const zClass = zIndex === 30 ? 'z-30' : zIndex === 20 ? 'z-20' : 'z-10'
 
   return (
-    <header className={`pt-3 pb-2 px-4 sticky top-0 ${zClass} bg-background-dark border-b border-white/10`}>
+    <header className={`pt-3 pb-2 px-4 sticky top-0 ${zClass} bg-surface/95 backdrop-blur-xl border-b border-white/10`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           {onBack && backStyle === 'glass' && (
