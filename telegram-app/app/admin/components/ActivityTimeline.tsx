@@ -114,7 +114,7 @@ export function ActivityTimeline({ u, userSessions, userDonations, userPurchases
       <div className="relative pl-6 border-l-2 border-white/10 space-y-0">
         {visible.map((item, tIdx) => (
           <div key={tIdx} className="relative pb-5">
-            <span className={`absolute -left-[25px] top-1 w-3 h-3 rounded-full border-2 border-[#0a0f1e] ${item.isAlert ? 'bg-red-500' : TIMELINE_DOT[item.type]}`} />
+            <span className={`absolute -left-[25px] top-1 w-3 h-3 rounded-full border-2 border-background-dark ${item.isAlert ? 'bg-red-500' : TIMELINE_DOT[item.type]}`} />
             <div className="ml-2">
               <div className="flex items-baseline gap-2 flex-wrap">
                 <span className={`text-sm font-medium ${item.isAlert ? 'text-red-300' : 'text-gray-200'}`}>{item.label}</span>

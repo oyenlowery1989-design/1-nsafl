@@ -2,7 +2,7 @@
 import { useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { NAV_ITEMS } from '@/lib/constants'
+import { getCenterAction, getNavigationItems } from '@/config/app'
 import { haptic } from '@/lib/telegram-ui'
 
 const LONG_PRESS_MS = 1500
@@ -10,6 +10,7 @@ const LONG_PRESS_MS = 1500
 export default function BottomNav() {
   const pathname = usePathname()
   const router = useRouter()
+  const centerAction = getCenterAction()
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const rafRef = useRef<number>(0)
   const pressStartRef = useRef(0)
@@ -55,7 +56,7 @@ export default function BottomNav() {
       cancelAnimationFrame(rafRef.current)
       setCharge(1)
     }, LONG_PRESS_MS)
-  }, [router])
+  }, [])
 
   const endPress = useCallback(() => {
     cancelAnimationFrame(rafRef.current)
@@ -63,15 +64,14 @@ export default function BottomNav() {
     if (firedRef.current) return
     firedRef.current = true
     if (longPressReadyRef.current) {
-      // long press completed — navigate to game
-      router.push('/game')
+      router.push(centerAction?.href ?? '/')
     } else {
       // short press — go home
       setCharge(0)
       setLaunched(false)
       router.push('/')
     }
-  }, [router])
+  }, [centerAction, router])
 
   const cancelPress = useCallback(() => {
     cancelAnimationFrame(rafRef.current)
@@ -88,11 +88,11 @@ export default function BottomNav() {
   const ringSize = 48 + charge * 32
 
   return (
-    <nav className="fixed bottom-0 w-full bg-background-dark/90 backdrop-blur-xl border-t border-white/10 pb-safe pt-2 px-4 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+    <nav className="fixed bottom-0 w-full bg-surface/95 backdrop-blur-xl border-t border-white/10 pb-safe pt-2 px-4 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.35)]">
       <div className="flex justify-between items-center pb-2">
-        {NAV_ITEMS.map((item) => {
+        {getNavigationItems().map((item) => {
           const isActive = pathname === item.href
-          if (item.isCenter) {
+          if (item.href === '/' && centerAction) {
             return (
               <div key={item.href} className="relative -top-5 flex flex-col items-center justify-center">
                 {/* expanding ring */}
@@ -114,7 +114,7 @@ export default function BottomNav() {
                     touchAction: 'none',
                     transform: `scale(${scale})`,
                     transition: launched ? 'transform 0.18s ease-out' : 'none',
-                    boxShadow: `0 0 ${glowPx}px rgba(212,175,55,0.85)`,
+                    boxShadow: `0 0 ${glowPx}px color-mix(in srgb, var(--brand-primary) 85%, transparent)`,
                     willChange: 'transform',
                   }}
                   className="w-12 h-12 bg-primary text-black rounded-full flex items-center justify-center border-4 border-background-dark select-none"
@@ -123,15 +123,15 @@ export default function BottomNav() {
                     className="material-symbols-outlined text-2xl"
                     style={{
                       animation: charge > 0
-                        ? `spin ${Math.max(0.15, 0.6 - charge * 0.45)}s linear infinite`
-                        : 'ball-pulse 2s ease-in-out infinite',
+                        ? `loader-spin ${Math.max(0.15, 0.6 - charge * 0.45)}s linear infinite`
+                        : 'center-action-pulse 2s ease-in-out infinite',
                     }}
                   >
-                    sports_football
+                    {centerAction.icon}
                   </span>
                 </button>
                 <span className="text-[8px] text-primary/60 font-semibold tracking-wide mt-1 select-none">
-                  {charge > 0 ? 'release!' : 'hold to play'}
+                  {charge > 0 ? 'release!' : `hold to ${centerAction.label.toLowerCase()}`}
                 </span>
               </div>
             )
@@ -141,7 +141,7 @@ export default function BottomNav() {
               key={item.href}
               href={item.href}
               className={`flex flex-col items-center space-y-0.5 transition ${
-                isActive ? 'text-primary' : 'text-gray-500 hover:text-primary'
+                isActive ? 'text-primary' : 'text-[var(--brand-muted-text)] hover:text-primary'
               }`}
             >
               <span className="material-symbols-outlined text-xl">{item.icon}</span>

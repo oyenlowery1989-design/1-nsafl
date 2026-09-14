@@ -3,6 +3,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { haptic } from '@/lib/telegram-ui'
 import { getTelegramInitData, openTelegramLink, buildBotStartLink } from '@/lib/telegram'
 import { BRANDING } from '@/config/branding'
+import { GAME_PRIZE_DEFINITIONS, type GamePrizeDefinition } from '@/lib/rewardAssets'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const SYM_SIZE = 64       // px per symbol cell
@@ -12,32 +13,17 @@ const INIT_IDX = 13       // which symbol is centred at startup (midpoint)
 const INIT_Y = (1 - INIT_IDX) * SYM_SIZE    // -768px
 
 // ── Prize table ────────────────────────────────────────────────────────────────
-interface SlotPrize {
-  label: string
+interface SlotPrize extends GamePrizeDefinition {
   symbol: string
-  weight: number
-  isAsset?: boolean
-  isWXLM?: boolean
-  isWNSAFL?: boolean
-  isWXRP?: boolean
-  isWUSDC?: boolean
-  amount?: number
 }
 
 // Client-side reel rendering ONLY (labels/symbols) — the server (lib/gamePool.ts
 // PRIZE_TABLES.slot_machine) rolls the prize and returns its index. This array's order MUST
 // match PRIZE_TABLES.slot_machine exactly so `prizeIndex` from the server maps to the right prize.
-export const SLOT_PRIZES: SlotPrize[] = [
-  { label: '100 wXLM',    symbol: '💎', weight: 10,  isAsset: true, isWXLM: true,   amount: 100  },
-  { label: '5000 wNSAFL', symbol: '🏆', weight: 15,  isAsset: true, isWNSAFL: true, amount: 5000 },
-  { label: '2500 wNSAFL', symbol: '🥇', weight: 25,  isAsset: true, isWNSAFL: true, amount: 2500 },
-  { label: '1000 wNSAFL', symbol: '⭐', weight: 50,  isAsset: true, isWNSAFL: true, amount: 1000 },
-  { label: '50 wXRP',     symbol: '🔷', weight: 50,  isAsset: true, isWXRP: true,   amount: 50   },
-  { label: '100 wUSDC',   symbol: '💵', weight: 50,  isAsset: true, isWUSDC: true,  amount: 100  },
-  { label: '+2 Spins',    symbol: '🎱', weight: 50  },
-  { label: 'Free Spin',   symbol: '🔄', weight: 250 },
-  { label: 'Better Luck', symbol: '💨', weight: 450 },
-]
+export const SLOT_PRIZES = GAME_PRIZE_DEFINITIONS.slot_machine.map((prize, index) => ({
+  ...prize,
+  symbol: ['💎', '🏆', '🥇', '⭐', '🔷', '💵', '🎱', '🔄', '💨'][index],
+})) as SlotPrize[]
 
 const SYMBOLS = SLOT_PRIZES.map(p => p.symbol)
 
@@ -54,10 +40,7 @@ interface SpinResult {
 }
 
 function getAssetLabel(p: SlotPrize): string {
-  if (p.isWXLM) return 'wXLM'
-  if (p.isWNSAFL) return 'wNSAFL'
-  if (p.isWXRP) return 'wXRP'
-  return 'wUSDC'
+  return p.label.trim().split(/\s+/).at(-1) ?? ''
 }
 
 /** Build a shuffled strip of STRIP_COUNT symbols (each of 9 symbols appearing 3×). */
@@ -109,7 +92,7 @@ function ReelColumn({ strip, stripRef }: {
       style={{
         width: 84,
         height: SYM_SIZE * 3,
-        background: 'rgba(10,14,26,0.85)',
+        background: BRANDING.colors.surface,
         boxShadow: 'inset 0 2px 16px rgba(0,0,0,0.6)',
         flexShrink: 0,
       }}
@@ -123,10 +106,10 @@ function ReelColumn({ strip, stripRef }: {
       }} />
       {/* top fade */}
       <div className="absolute inset-x-0 top-0 pointer-events-none z-20"
-        style={{ height: SYM_SIZE * 0.8, background: 'linear-gradient(to bottom, rgba(10,14,26,0.88), transparent)' }} />
+        style={{ height: SYM_SIZE * 0.8, background: `linear-gradient(to bottom, ${BRANDING.colors.surfaceRaised}, transparent)` }} />
       {/* bottom fade */}
       <div className="absolute inset-x-0 bottom-0 pointer-events-none z-20"
-        style={{ height: SYM_SIZE * 0.8, background: 'linear-gradient(to top, rgba(10,14,26,0.88), transparent)' }} />
+        style={{ height: SYM_SIZE * 0.8, background: `linear-gradient(to top, ${BRANDING.colors.surfaceRaised}, transparent)` }} />
 
       {/* symbol strip — initial transform set inline so there's zero flash before useEffect */}
       <div ref={stripRef} style={{ willChange: 'transform', transform: `translateY(${INIT_Y}px)` }}>
@@ -408,7 +391,7 @@ export default function SlotMachine({
       <div className="flex-shrink-0 flex flex-col items-center py-4 px-4">
         <div className="rounded-3xl p-5 w-full max-w-xs"
           style={{
-            background: 'linear-gradient(160deg, rgba(212,175,55,0.1) 0%, rgba(10,14,26,0.97) 60%)',
+            background: `linear-gradient(160deg, rgba(212,175,55,0.1) 0%, ${BRANDING.colors.surface} 60%)`,
             border: '1px solid rgba(212,175,55,0.28)',
             boxShadow: spinning ? '0 0 40px rgba(212,175,55,0.12)' : '0 0 20px rgba(0,0,0,0.5)',
           }}>

@@ -3,6 +3,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
+import { getAdminNavigationItems, isPackEnabled } from '@/config/app'
 import { Icon } from './ui'
 
 const NAV_GROUPS = [
@@ -16,8 +17,6 @@ const NAV_GROUPS = [
     label: 'Data',
     items: [
       { href: '/admin/users',      label: 'Users',         icon: 'group' },
-      { href: '/admin/donations',  label: 'Donations',     icon: 'volunteer_activism' },
-      { href: '/admin/purchases',  label: 'Purchases',     icon: 'shopping_cart' },
     ],
   },
   {
@@ -31,15 +30,11 @@ const NAV_GROUPS = [
   {
     label: 'Activity',
     items: [
-      { href: '/admin/game',       label: 'Game',          icon: 'sports_esports' },
-      { href: '/admin/wins',       label: 'Wins',          icon: 'emoji_events' },
-      { href: '/admin/rewards-claims', label: 'Reward Claims', icon: 'diamond' },
       { href: '/admin/access',     label: 'Access',        icon: 'manage_search' },
-      { href: '/admin/referrals',  label: 'Referrals',     icon: 'group_add' },
-      { href: '/admin/trustline',  label: 'Trustlines',    icon: 'add_link' },
       { href: '/admin/activity',   label: 'Activity Log',  icon: 'history' },
     ],
   },
+  { label: 'Packs', items: getAdminNavigationItems() },
 ]
 
 function AdminShellInner({ children }: { children: React.ReactNode }) {
@@ -63,7 +58,7 @@ function AdminShellInner({ children }: { children: React.ReactNode }) {
 
   // Poll pending wins badge
   useEffect(() => {
-    if (!token) return
+    if (!token || !isPackEnabled('games')) return
     const poll = async () => {
       try {
         const res = await fetch('/api/admin/wins?status=pending&limit=1', { headers: { 'x-admin-token': token } })
@@ -80,7 +75,7 @@ function AdminShellInner({ children }: { children: React.ReactNode }) {
   if (pathname === '/admin') return <>{children}</>
   // Still loading token
   if (token === null) return (
-    <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center text-gray-600 text-sm">Loading…</div>
+    <div className="min-h-screen bg-background-dark flex items-center justify-center text-gray-600 text-sm">Loading…</div>
   )
 
   function logout() {
@@ -89,9 +84,9 @@ function AdminShellInner({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] text-gray-100">
+    <div className="min-h-screen bg-background-dark text-gray-100">
       {/* Header */}
-      <header className="bg-[#0d1424] border-b border-white/8 px-6 py-3 flex items-center justify-between sticky top-0 z-20">
+      <header className="bg-surface border-b border-white/8 px-6 py-3 flex items-center justify-between sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setSidebarOpen(o => !o)}
@@ -127,7 +122,7 @@ function AdminShellInner({ children }: { children: React.ReactNode }) {
       {sidebarOpen && (
         <div className="fixed inset-0 z-30 md:hidden" onClick={() => setSidebarOpen(false)}>
           <div className="absolute inset-0 bg-black/60" />
-          <aside className="absolute left-0 top-[57px] bottom-0 w-64 bg-[#0d1424] border-r border-white/8 overflow-y-auto flex flex-col" onClick={e => e.stopPropagation()}>
+          <aside className="absolute left-0 top-[57px] bottom-0 w-64 bg-surface border-r border-white/8 overflow-y-auto flex flex-col" onClick={e => e.stopPropagation()}>
             <nav className="p-3 space-y-5 pt-4">
               {NAV_GROUPS.map(group => (
                 <div key={group.label}>
@@ -158,7 +153,7 @@ function AdminShellInner({ children }: { children: React.ReactNode }) {
 
       <div className="flex">
         {/* Sidebar */}
-        <aside className="hidden md:flex flex-col w-52 shrink-0 bg-[#0d1424] border-r border-white/8 min-h-screen sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto">
+        <aside className="hidden md:flex flex-col w-52 shrink-0 bg-surface border-r border-white/8 min-h-screen sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto">
           <nav className="p-3 space-y-5 pt-4">
             {NAV_GROUPS.map(group => (
               <div key={group.label}>

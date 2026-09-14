@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import Image from 'next/image'
 import { Badge, Card, Th, Td, StatTile, SectionTitle, Icon, CopyAddressRow, DonationTypeBadge } from './ui'
 import { ActivityTimeline } from './ActivityTimeline'
 import { ago, dt, num, teamName } from '../utils'
@@ -7,6 +8,7 @@ import type { User, AdminData } from '../types'
 import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
 import { getTierForBalance } from '@/config/tiers'
 import { ALL_CLUBS } from '@/config/afl'
+import { isPackEnabled } from '@/config/app'
 
 interface Props {
   u: User
@@ -20,6 +22,7 @@ interface Props {
 }
 
 export function UserDetail({ u, data, token, onBack, onAction, onDeleteAccess, deletingAccessId, onUserUpdated }: Props) {
+  const hasWallet = isPackEnabled('stellar-wallet')
   const walletIds     = new Set(u.wallets.map(w => w.id))
   const userAccess    = data.accessAttempts.filter(a => a.telegram_id === u.telegram_id)
   const userSessions  = data.gameSessions.filter(g => g.telegram_id === u.telegram_id)
@@ -54,6 +57,7 @@ export function UserDetail({ u, data, token, onBack, onAction, onDeleteAccess, d
   }
 
   async function refreshBalance() {
+    if (!hasWallet) return
     setRefreshing(true)
     setRefreshToast(null)
     try {
@@ -176,7 +180,7 @@ export function UserDetail({ u, data, token, onBack, onAction, onDeleteAccess, d
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] text-gray-100">
+    <div className="min-h-screen bg-background-dark text-gray-100">
       {editToast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[300] bg-[#1a2235] border border-white/10 text-white text-sm px-5 py-3 rounded-xl shadow-2xl backdrop-blur-sm">
           {editToast}
@@ -184,14 +188,14 @@ export function UserDetail({ u, data, token, onBack, onAction, onDeleteAccess, d
       )}
 
       {/* Header */}
-      <header className="bg-[#0d1424] border-b border-white/8 px-6 py-3 flex items-center gap-4 sticky top-0 z-20">
+      <header className="bg-surface border-b border-white/8 px-6 py-3 flex items-center gap-4 sticky top-0 z-20">
         <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition">
           ← Back
         </button>
         <div className="w-px h-5 bg-white/10" />
         <div className="flex items-center gap-3 flex-1 min-w-0">
           {u.telegram_photo_url
-            ? <img src={u.telegram_photo_url} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
+            ? <Image unoptimized src={u.telegram_photo_url} width={32} height={32} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
             : <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm shrink-0">{(u.telegram_first_name ?? '?')[0]}</div>
           }
           <div className="min-w-0">
@@ -245,7 +249,7 @@ export function UserDetail({ u, data, token, onBack, onAction, onDeleteAccess, d
         <div className="bg-[#111827] border border-white/8 rounded-2xl p-6">
           <div className="flex items-start gap-5">
             {u.telegram_photo_url
-              ? <img src={u.telegram_photo_url} className="w-16 h-16 rounded-2xl object-cover shrink-0" alt="" />
+              ? <Image unoptimized src={u.telegram_photo_url} width={64} height={64} className="w-16 h-16 rounded-2xl object-cover shrink-0" alt="" />
               : <div className="w-16 h-16 rounded-2xl bg-primary/15 flex items-center justify-center text-primary font-bold text-2xl shrink-0">{(u.telegram_first_name ?? '?')[0]}</div>
             }
             <div className="flex-1 min-w-0">

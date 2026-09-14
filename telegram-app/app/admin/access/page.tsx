@@ -157,7 +157,7 @@ function AccessPageInner() {
   // ── Render ──
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center text-gray-600 gap-3">
+      <div className="min-h-screen bg-background-dark flex items-center justify-center text-gray-600 gap-3">
         <span className="material-symbols-outlined animate-spin text-2xl leading-none">progress_activity</span>
         <span className="text-sm">Loading...</span>
       </div>
@@ -166,7 +166,7 @@ function AccessPageInner() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
+      <div className="min-h-screen bg-background-dark flex items-center justify-center">
         <div className="text-center">
           <Icon name="error" className="text-4xl text-red-400 mb-2" />
           <p className="text-red-400 text-sm">{error}</p>
@@ -177,9 +177,9 @@ function AccessPageInner() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] text-gray-200">
+    <div className="min-h-screen bg-background-dark text-gray-200">
       {/* Header */}
-      <div className="border-b border-white/8 bg-[#0a0f1e]/80 backdrop-blur-xl sticky top-0 z-30">
+      <div className="border-b border-white/8 bg-background-dark/80 backdrop-blur-xl sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/admin" className="text-gray-500 hover:text-white transition">
@@ -307,7 +307,11 @@ function AccessPageInner() {
                                     <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 font-bold">BLOCKED</span>
                                   )}
                                   <button
-                                    onClick={(e) => { e.stopPropagation(); blockedIps.has(a.ip!) ? unblockIp(a.ip!) : blockIp(a.ip!) }}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      if (blockedIps.has(a.ip!)) unblockIp(a.ip!)
+                                      else blockIp(a.ip!)
+                                    }}
                                     disabled={blockingIp === a.ip}
                                     className={`ml-2 text-[10px] px-2 py-0.5 rounded transition disabled:opacity-40 ${
                                       blockedIps.has(a.ip)
@@ -418,7 +422,7 @@ function Detail({ label, value, mono, highlight, className = '' }: {
 export default function AccessPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center text-gray-600 gap-3">
+      <div className="min-h-screen bg-background-dark flex items-center justify-center text-gray-600 gap-3">
         <span className="material-symbols-outlined animate-spin text-2xl leading-none">progress_activity</span>
         <span className="text-sm">Loading...</span>
       </div>

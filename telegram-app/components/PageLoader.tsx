@@ -25,26 +25,19 @@ export function useMinLoader(ready: boolean): boolean {
   return ready && elapsed
 }
 
-// Full-page loading state — football thrown edge-to-edge with arc trajectory.
 export default function PageLoader({ label = 'Loading…' }: { label?: string }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60dvh] space-y-6">
-      <div className="relative w-60 h-24 flex items-center justify-center">
-        {/* Shadow on the ground */}
-        <div
-          className="absolute bottom-2 w-10 h-2 rounded-full bg-primary/20"
-          style={{ animation: 'football-shadow 1.4s ease-in-out infinite' }}
-        />
-        {/* Flying football */}
+      <div className="w-12 h-12 flex items-center justify-center">
         <span
-          className="material-symbols-outlined text-primary drop-shadow-[0_0_12px_rgba(212,175,55,0.6)]"
+          className="material-symbols-outlined text-primary"
           style={{
             fontSize: 44,
             fontVariationSettings: "'FILL' 1",
-            animation: 'football-throw 1.4s ease-in-out infinite',
+            animation: 'loader-spin 1.1s linear infinite',
           }}
         >
-          sports_football
+          progress_activity
         </span>
       </div>
       <p className="text-sm text-gray-500 font-medium">{label}</p>

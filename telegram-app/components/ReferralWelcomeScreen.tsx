@@ -1,14 +1,14 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { getTelegramInitData } from '@/lib/telegram'
-import { BRANDING } from '@/config/branding'
 
 interface Props {
   referrerId: number
   onContinue: () => void
+  description: string
 }
 
-export default function ReferralWelcomeScreen({ referrerId, onContinue }: Props) {
+export default function ReferralWelcomeScreen({ referrerId, onContinue, description }: Props) {
   const [name, setName] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -59,7 +59,7 @@ export default function ReferralWelcomeScreen({ referrerId, onContinue }: Props)
         {displayName}
       </h1>
       <p className="text-sm text-gray-400 max-w-[260px] leading-relaxed mb-10">
-        Welcome to the {BRANDING.appName} — the home of Australian football on Stellar.
+        {description}
       </p>
 
       {/* CTA */}

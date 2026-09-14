@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { PRIZE_TABLES } from '@/lib/gamePool'
+import { GAME_PRIZE_DEFINITIONS } from '@/lib/rewardAssets'
 import { PRIZES } from '@/app/game/page'
 import { SLOT_PRIZES } from '@/components/SlotMachine'
 import { SCRATCH_PRIZES } from '@/components/ScratchCard'
@@ -8,6 +9,10 @@ import { SCRATCH_PRIZES } from '@/components/ScratchCard'
 // `prizeIndex`; each client display array must be in the exact same order or the
 // client renders the wrong prize for the index it's given.
 describe('client prize display arrays match server PRIZE_TABLES order', () => {
+  it('uses the shared definitions as the server prize tables', () => {
+    expect(PRIZE_TABLES).toBe(GAME_PRIZE_DEFINITIONS)
+  })
+
   it('lucky_draw: PRIZES labels match PRIZE_TABLES.lucky_draw', () => {
     expect(PRIZES.map((p) => p.label)).toEqual(PRIZE_TABLES.lucky_draw.map((p) => p.label))
   })

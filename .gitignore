@@ -9,6 +9,7 @@ Thumbs.db
 
 MEMORY/
 .claude/worktrees/
+.worktrees/
 .playwright-mcp/
 
 # accidentally committed once (1.19GB), broke every push until history was rewritten — never again

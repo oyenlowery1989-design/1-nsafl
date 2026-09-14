@@ -1,13 +1,15 @@
 'use client'
 import { useEffect, useState, useCallback, useMemo, Suspense } from 'react'
+import Image from 'next/image'
 import { useAdminToken } from '../hooks/useAdminToken'
 import { Badge, Card, Th, Td, Icon, StatTile } from '../components/ui'
 import { UserDetail } from '../components/UserDetail'
 import { ConfirmModal } from '../components/ConfirmModal'
-import { ago, num, teamName, shortAddr, dt } from '../utils'
+import { ago, num, teamName, shortAddr } from '../utils'
 import type { AdminData, User, ConfirmAction } from '../types'
 import { PRIMARY_CUSTOM_ASSET_CODE } from '@/lib/constants'
 import { ALL_CLUBS } from '@/config/afl'
+import { isPackEnabled } from '@/config/app'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -49,6 +51,8 @@ type StatusFilter = 'all' | 'active' | 'blocked'
 // ── Inner page ───────────────────────────────────────────────────────────────
 
 function UsersPageInner() {
+  const hasGames = isPackEnabled('games')
+  const hasWallet = isPackEnabled('stellar-wallet')
   // Auth
   const token = useAdminToken()
 
@@ -79,7 +83,7 @@ function UsersPageInner() {
     try {
       const [adminRes, winsRes] = await Promise.all([
         fetch('/api/admin', { headers: { 'x-admin-token': token } }),
-        fetch('/api/admin/wins?limit=1000', { headers: { 'x-admin-token': token } }),
+        hasGames ? fetch('/api/admin/wins?limit=1000', { headers: { 'x-admin-token': token } }) : null,
       ])
       if (!adminRes.ok) throw new Error(`Admin API ${adminRes.status}`)
       const adminJson = await adminRes.json()
@@ -87,7 +91,7 @@ function UsersPageInner() {
       setData(adminJson.data)
 
       // Build win counts per telegram_id
-      if (winsRes.ok) {
+      if (winsRes?.ok) {
         const winsJson = await winsRes.json()
         const wins: { telegram_id: number }[] = winsJson.data?.wins ?? winsJson.wins ?? []
         const counts: Record<number, number> = {}
@@ -101,7 +105,7 @@ function UsersPageInner() {
     } finally {
       setLoading(false)
     }
-  }, [token])
+  }, [hasGames, token])
 
   useEffect(() => { if (token) fetchData() }, [token, fetchData])
 
@@ -161,6 +165,7 @@ function UsersPageInner() {
 
   // Sync all balances
   async function syncAllBalances() {
+    if (!hasWallet) return
     setSyncing(true)
     try {
       const res = await fetch('/api/admin/sync-missing-balances', {
@@ -244,16 +249,16 @@ function UsersPageInner() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   // Auth gate
-  if (token === null) return <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center"><span className="text-gray-500 text-sm">Loading...</span></div>
+  if (token === null) return <div className="min-h-screen bg-background-dark flex items-center justify-center"><span className="text-gray-500 text-sm">Loading...</span></div>
   if (token === '') return (
-    <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
+    <div className="min-h-screen bg-background-dark flex items-center justify-center">
       <p className="text-red-400 text-sm">No admin token. Log in via <a href="/admin" className="underline">/admin</a>.</p>
     </div>
   )
 
   // Loading
   if (loading && !data) return (
-    <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
+    <div className="min-h-screen bg-background-dark flex items-center justify-center">
       <div className="flex items-center gap-3 text-gray-400 text-sm">
         <Icon name="sync" className="text-lg animate-spin" /> Loading users...
       </div>
@@ -262,7 +267,7 @@ function UsersPageInner() {
 
   // Error
   if (error) return (
-    <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
+    <div className="min-h-screen bg-background-dark flex items-center justify-center">
       <div className="text-center space-y-3">
         <p className="text-red-400 text-sm">{error}</p>
         <button onClick={fetchData} className="text-xs bg-white/10 text-gray-300 px-4 py-2 rounded-lg hover:bg-white/15 transition">Retry</button>
@@ -296,9 +301,9 @@ function UsersPageInner() {
   )
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] text-gray-100">
+    <div className="min-h-screen bg-background-dark text-gray-100">
       {/* Header */}
-      <header className="bg-[#0d1424] border-b border-white/8 px-6 py-4 flex items-center justify-between gap-4 sticky top-0 z-20">
+      <header className="bg-surface border-b border-white/8 px-6 py-4 flex items-center justify-between gap-4 sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <Icon name="group" className="text-xl text-primary" />
           <h1 className="text-lg font-bold text-white">Users</h1>
@@ -422,7 +427,7 @@ function UsersPageInner() {
                       <Td>
                         <div className="flex items-center gap-2">
                           {u.telegram_photo_url
-                            ? <img src={u.telegram_photo_url} className="w-7 h-7 rounded-full object-cover shrink-0" alt="" />
+                            ? <Image unoptimized src={u.telegram_photo_url} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" alt="" />
                             : <div className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center text-primary font-bold text-xs shrink-0">{(u.telegram_first_name ?? '?')[0]}</div>
                           }
                           <div className="min-w-0">
@@ -496,7 +501,7 @@ function UsersPageInner() {
 export default function UsersPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
+      <div className="min-h-screen bg-background-dark flex items-center justify-center">
         <span className="text-gray-500 text-sm">Loading...</span>
       </div>
     }>

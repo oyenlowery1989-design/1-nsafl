@@ -38,7 +38,7 @@ function fakeSupabase(initialRow: Record<string, unknown>) {
       eq(col: string, val: unknown) {
         return makeBuilder(patch, [...filters, [col, val]])
       },
-      async select(_cols?: string) {
+      async select() {
         const matched = await apply()
         return { data: matched ? [{ ...row }] : [], error: null }
       },
@@ -49,7 +49,7 @@ function fakeSupabase(initialRow: Record<string, unknown>) {
   }
 
   return {
-    from: (_table: string) => ({ update: (patch: Record<string, unknown>) => makeBuilder(patch, []) }),
+    from: () => ({ update: (patch: Record<string, unknown>) => makeBuilder(patch, []) }),
     getRow: () => row,
   }
 }

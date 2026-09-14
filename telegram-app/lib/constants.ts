@@ -51,11 +51,3 @@ export const SHOWN_ASSET_CONFIGS: AssetConfig[] = (
       label: cleanCode === 'XLM' ? 'XLM' : `$${cleanCode}`,
     }
   })
-
-export const NAV_ITEMS = [
-  { href: '/stats',      label: 'Stats',      icon: 'query_stats',   isCenter: false },
-  { href: '/clubs',      label: 'Clubs',      icon: 'stadium',       isCenter: false },
-  { href: '/',           label: 'Home',       icon: 'sports_football', isCenter: true },
-  { href: '/rewards',    label: 'Rewards',    icon: 'redeem',        isCenter: false },
-  { href: '/profile',    label: 'Profile',    icon: 'person',        isCenter: false },
-] as const

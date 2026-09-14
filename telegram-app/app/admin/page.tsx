@@ -27,11 +27,11 @@ function AdminLoginContent() {
   }
 
   if (!checked) return (
-    <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center text-gray-600 text-sm">Loading…</div>
+    <div className="min-h-screen bg-background-dark flex items-center justify-center text-gray-600 text-sm">Loading…</div>
   )
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
+    <div className="min-h-screen bg-background-dark flex items-center justify-center">
       <div className="bg-[#111827] border border-white/10 rounded-2xl p-8 w-full max-w-sm shadow-2xl space-y-5">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">

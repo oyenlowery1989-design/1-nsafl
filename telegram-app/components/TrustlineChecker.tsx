@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { REWARD_ASSETS, RewardAsset } from "@/lib/rewardAssets";
 import { HORIZON_URL } from "@/lib/constants";
-import { useWalletStore } from "@/hooks/useStore";
+import { useIdentityStore } from "@/hooks/useStore";
 import TrustlineModal from "@/components/TrustlineModal";
 
 interface Props {
@@ -18,7 +18,7 @@ interface TrustlineStatus {
 }
 
 export default function TrustlineChecker({ stellarAddress, requiredCodes, onAllAdded }: Props) {
-  const telegramUser = useWalletStore(s => s.telegramUser)
+  const telegramUser = useIdentityStore(s => s.telegramUser)
   const required = REWARD_ASSETS.filter(a => requiredCodes.includes(a.code) && a.issuer);
 
   const [statuses, setStatuses] = useState<TrustlineStatus[]>(

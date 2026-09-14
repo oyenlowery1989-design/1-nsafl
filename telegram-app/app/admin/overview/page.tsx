@@ -8,6 +8,7 @@ import { num, ago, teamName } from '../utils'
 import type { AdminData, User } from '../types'
 import { UserDetail } from '../components/UserDetail'
 import { ConfirmModal } from '../components/ConfirmModal'
+import { isPackEnabled } from '@/config/app'
 
 // ── Sparkline bar chart ───────────────────────────────────────────────────────
 function Sparkline({ days, labels, color }: { days: number[]; labels: string[]; color: string }) {
@@ -38,6 +39,8 @@ function TrendBadge({ today, yesterday }: { today: number; yesterday: number }) 
 }
 
 function OverviewContent() {
+  const hasGames = isPackEnabled('games')
+  const hasRewards = isPackEnabled('rewards')
   const token = useAdminToken() ?? ''
   const [data, setData] = useState<AdminData | null>(null)
   const [winStats, setWinStats] = useState({ total: 0, pending: 0 })
@@ -60,26 +63,26 @@ function OverviewContent() {
     if (!t) return
     const [adminRes, winsRes, statsRes] = await Promise.all([
       fetch('/api/admin', { headers: { 'x-admin-token': t } }),
-      fetch('/api/admin/wins?status=pending&limit=1', { headers: { 'x-admin-token': t } }),
-      fetch('/api/admin/overview-stats', { headers: { 'x-admin-token': t } }),
+      hasGames ? fetch('/api/admin/wins?status=pending&limit=1', { headers: { 'x-admin-token': t } }) : null,
+      hasRewards ? fetch('/api/admin/overview-stats', { headers: { 'x-admin-token': t } }) : null,
     ])
-    const [adminJ, winsJ, statsJ] = await Promise.all([adminRes.json(), winsRes.json(), statsRes.json()])
+    const [adminJ, winsJ, statsJ] = await Promise.all([adminRes.json(), winsRes?.json(), statsRes?.json()])
     if (adminJ.success) setData(adminJ.data)
-    if (winsJ.success) {
+    if (winsJ?.success) {
       const pending = winsJ.data.counts?.pending ?? 0
       setWinStats({ total: winsJ.data.total ?? 0, pending })
       if (prevPending !== null && pending > prevPending) setNewPendingToast(true)
       setPrevPending(pending)
     }
-    if (statsJ.success) setStats(statsJ.data)
+    if (statsJ?.success) setStats(statsJ.data)
     setLoading(false)
-  }, [prevPending])
+  }, [hasGames, hasRewards, prevPending])
 
   useEffect(() => { if (token) fetchAll(token) }, [token, fetchAll])
 
   // Poll for new pending wins
   useEffect(() => {
-    if (!token) return
+    if (!token || !hasGames) return
     const id = setInterval(async () => {
       try {
         const res = await fetch('/api/admin/wins?status=pending&limit=1', { headers: { 'x-admin-token': token } })
@@ -95,7 +98,7 @@ function OverviewContent() {
       } catch { /* ignore */ }
     }, 60_000)
     return () => clearInterval(id)
-  }, [token])
+  }, [hasGames, token])
 
   async function executeUserAction() {
     if (!userAction) return
@@ -209,7 +212,7 @@ function OverviewContent() {
           {/* Sparklines */}
           {stats && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-[#0d1424] border border-white/8 rounded-xl p-4">
+              <div className="bg-surface border border-white/8 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-xs font-semibold text-gray-300">New Users (7 days)</p>
                   <TrendBadge today={stats.sparklines.users.today} yesterday={stats.sparklines.users.yesterday} />
@@ -217,7 +220,7 @@ function OverviewContent() {
                 <p className="text-2xl font-bold text-blue-400">{stats.sparklines.users.today} <span className="text-sm font-normal text-gray-500">today</span></p>
                 <Sparkline days={stats.sparklines.users.days} labels={stats.sparklines.users.labels} color="bg-blue-500" />
               </div>
-              <div className="bg-[#0d1424] border border-white/8 rounded-xl p-4">
+              <div className="bg-surface border border-white/8 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-xs font-semibold text-gray-300">Wins (7 days)</p>
                   <TrendBadge today={stats.sparklines.wins.today} yesterday={stats.sparklines.wins.yesterday} />
@@ -252,7 +255,7 @@ function OverviewContent() {
 
           {/* Reward wallet balances */}
           {stats?.rewardAssets && stats.rewardAssets.some(a => a.balance !== null) && (
-            <div className="bg-[#0d1424] border border-white/8 rounded-xl p-4">
+            <div className="bg-surface border border-white/8 rounded-xl p-4">
               <p className="text-xs font-semibold text-gray-300 mb-3 flex items-center gap-2">
                 <Icon name="account_balance_wallet" className="text-sm text-primary" />
                 Reward Wallet Balances

@@ -3,34 +3,20 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { haptic } from '@/lib/telegram-ui'
 import { getTelegramInitData, openTelegramLink, buildBotStartLink } from '@/lib/telegram'
 import { BRANDING } from '@/config/branding'
+import { GAME_PRIZE_DEFINITIONS, type GamePrizeDefinition } from '@/lib/rewardAssets'
 
 // ── Prize table ────────────────────────────────────────────────────────────────
-interface ScratchPrize {
-  label: string
+interface ScratchPrize extends GamePrizeDefinition {
   emoji: string
-  weight: number
-  isAsset?: boolean
-  isWXLM?: boolean
-  isWNSAFL?: boolean
-  isWXRP?: boolean
-  isWUSDC?: boolean
-  amount?: number
-  isMiss?: boolean
 }
 
 // Client-side grid rendering ONLY (labels/emoji) — the server (lib/gamePool.ts
 // PRIZE_TABLES.scratch_card) rolls the prize and returns its index. This array's order MUST
 // match PRIZE_TABLES.scratch_card exactly so `prizeIndex` from the server maps to the right prize.
-export const SCRATCH_PRIZES: ScratchPrize[] = [
-  { label: '100 wXLM',    emoji: '💎', weight: 8,   isAsset: true, isWXLM: true,   amount: 100  },
-  { label: '5000 wNSAFL', emoji: '🏆', weight: 12,  isAsset: true, isWNSAFL: true, amount: 5000 },
-  { label: '2500 wNSAFL', emoji: '🥇', weight: 20,  isAsset: true, isWNSAFL: true, amount: 2500 },
-  { label: '1000 wNSAFL', emoji: '⭐', weight: 40,  isAsset: true, isWNSAFL: true, amount: 1000 },
-  { label: '50 wXRP',     emoji: '🔷', weight: 40,  isAsset: true, isWXRP: true,   amount: 50   },
-  { label: '100 wUSDC',   emoji: '💵', weight: 40,  isAsset: true, isWUSDC: true,  amount: 100  },
-  { label: '+2 Cards',    emoji: '🃏', weight: 60  },
-  { label: 'Better Luck', emoji: '💨', weight: 780, isMiss: true  },
-]
+export const SCRATCH_PRIZES = GAME_PRIZE_DEFINITIONS.scratch_card.map((prize, index) => ({
+  ...prize,
+  emoji: ['💎', '🏆', '🥇', '⭐', '🔷', '💵', '🃏', '💨'][index],
+})) as ScratchPrize[]
 const WIN_PRIZES = SCRATCH_PRIZES.filter(p => !p.isMiss)
 const ALL_EMOJIS = SCRATCH_PRIZES.map(p => p.emoji)
 
@@ -46,10 +32,7 @@ interface ScratchResult {
 }
 
 function getAssetLabel(p: ScratchPrize): string {
-  if (p.isWXLM) return 'wXLM'
-  if (p.isWNSAFL) return 'wNSAFL'
-  if (p.isWXRP) return 'wXRP'
-  return 'wUSDC'
+  return p.label.trim().split(/\s+/).at(-1) ?? ''
 }
 
 function buildGrid(prizeIdx: number): string[] {
@@ -485,7 +468,7 @@ export default function ScratchCard({
           /* Active card */
           <div className="w-full max-w-xs rounded-3xl p-5 border border-primary/25"
             style={{
-              background: 'linear-gradient(160deg, rgba(212,175,55,0.09) 0%, rgba(10,14,26,0.97) 70%)',
+              background: `linear-gradient(160deg, rgba(212,175,55,0.09) 0%, ${BRANDING.colors.surface} 70%)`,
               animation: 'card-deal 0.35s cubic-bezier(0.34,1.56,0.64,1)',
             }}>
 

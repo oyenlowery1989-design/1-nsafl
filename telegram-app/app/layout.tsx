@@ -4,12 +4,11 @@ import "./globals.css";
 import TelegramGuard from "@/components/guards/TelegramGuard";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ToastContainer } from "@/components/Toast";
-import { PRIMARY_CUSTOM_ASSET_CODE } from "@/lib/constants";
 import { BRANDING } from "@/config/branding";
 
 export const metadata: Metadata = {
   title: BRANDING.appName,
-  description: `${PRIMARY_CUSTOM_ASSET_CODE} — ${BRANDING.appName} Telegram Mini App`,
+  description: BRANDING.description,
 };
 
 export default function RootLayout({
@@ -20,17 +19,20 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* eslint-disable-next-line @next/next/no-page-custom-font -- App Router has no pages/_document.js */}
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional"
         />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font -- App Router has no pages/_document.js */}
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=optional"
         />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font -- App Router has no pages/_document.js */}
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=optional"
         />
         <Script
           src="https://telegram.org/js/telegram-web-app.js"
@@ -38,11 +40,23 @@ export default function RootLayout({
         />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){var d=document,l=d.createElement('div');l.id='app-loader';l.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:${BRANDING.colors.background}';var s=d.createElement('div');s.style.cssText='width:48px;height:48px;border:3px solid rgba(212,175,55,0.2);border-top-color:${BRANDING.colors.primary};border-radius:50%;animation:loader-spin .8s linear infinite';l.appendChild(s);var st=d.createElement('style');st.textContent='@keyframes loader-spin{to{transform:rotate(360deg)}}';l.appendChild(st);d.currentScript.after(l)})()`,
+            __html: `(function(){var d=document,l=d.createElement('div');l.id='app-loader';l.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:${BRANDING.colors.background}';var s=d.createElement('div');s.style.cssText='width:48px;height:48px;border:3px solid color-mix(in srgb,${BRANDING.colors.primary} 20%,transparent);border-top-color:${BRANDING.colors.primary};border-radius:50%;animation:loader-spin .8s linear infinite';l.appendChild(s);var st=d.createElement('style');st.textContent='@keyframes loader-spin{to{transform:rotate(360deg)}}';l.appendChild(st);d.currentScript.after(l)})()`,
           }}
         />
       </head>
-      <body className="antialiased">
+      <body
+        className="antialiased"
+        style={{
+          '--brand-primary': BRANDING.colors.primary,
+          '--brand-background': BRANDING.colors.background,
+          '--brand-surface': BRANDING.colors.surface,
+          '--brand-surface-raised': BRANDING.colors.surfaceRaised,
+          '--brand-border': BRANDING.colors.border,
+          '--brand-text': BRANDING.colors.text,
+          '--brand-muted-text': BRANDING.colors.mutedText,
+          '--brand-primary-foreground': BRANDING.colors.primaryForeground,
+        } as React.CSSProperties}
+      >
         <ErrorBoundary>
           <TelegramGuard>{children}</TelegramGuard>
         </ErrorBoundary>

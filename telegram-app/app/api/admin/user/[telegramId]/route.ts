@@ -2,8 +2,22 @@ import { NextRequest } from 'next/server'
 import { ok, fail } from '@/lib/api-response'
 import { createServiceClient } from '@/lib/supabase-server'
 import { verifyAdminToken } from '@/app/api/admin/route'
+import { createStellarWalletRepository } from '@/packs/stellar-wallet/repository'
+import { createSportsRepository } from '@/packs/sports/repository'
+import { createGamesRepository } from '@/packs/games/repository'
+import { createDonationsRepository } from '@/packs/donations/repository'
+import { requirePack } from '@/lib/feature-gate'
+import type { PackId } from '@/packs/types'
 
 type Ctx = { params: Promise<{ telegramId: string }> }
+
+function disabledPackResponse(...packs: PackId[]) {
+  for (const pack of packs) {
+    const disabled = requirePack(pack)
+    if (disabled) return disabled
+  }
+  return null
+}
 
 // DELETE — wipe all data for this user. They can return as a fresh user (not blocked).
 export async function DELETE(req: NextRequest, ctx: Ctx) {
@@ -16,35 +30,22 @@ export async function DELETE(req: NextRequest, ctx: Ctx) {
   const adminId = process.env.ADMIN_TELEGRAM_ID ? parseInt(process.env.ADMIN_TELEGRAM_ID, 10) : null
   if (adminId && telegramId === adminId) return fail('Cannot perform this action on the admin account', 'FORBIDDEN', 403)
 
+  const disabled = disabledPackResponse('stellar-wallet', 'donations', 'games', 'sports')
+  if (disabled) return disabled
+
   const supabase = createServiceClient()
-
-  // 1. Get user row to find internal id
-  const { data: user } = await supabase
-    .from('users')
-    .select('id')
-    .eq('telegram_id', telegramId)
-    .single()
-
-  if (user) {
-    // 2. Get all wallet ids for this user
-    const { data: wallets } = await supabase
-      .from('wallets')
-      .select('id')
-      .eq('user_id', user.id)
-
-    const walletIds = (wallets ?? []).map((w) => w.id)
-
-    // 3. Delete wallet-dependent data
+  const wallets = createStellarWalletRepository(supabase)
+  const walletIds = await wallets.getWalletIds(telegramId)
+  if (walletIds) {
     if (walletIds.length > 0) {
-      await supabase.from('wallet_balances').delete().in('wallet_id', walletIds)
-      await supabase.from('donations').delete().in('wallet_id', walletIds)
-      await supabase.from('purchases').delete().in('wallet_id', walletIds)
-      await supabase.from('wallets').delete().eq('user_id', user.id)
+      await createDonationsRepository(supabase).removeForWallets(walletIds)
+      await wallets.removePurchases(walletIds)
+      await wallets.removeWallets(telegramId)
     }
 
     // 4. Delete telegram-id-keyed data
-    await supabase.from('game_sessions').delete().eq('telegram_id', telegramId)
-    await supabase.from('team_change_requests').delete().eq('telegram_id', telegramId)
+    await createGamesRepository(supabase).removeSessions(telegramId)
+    await createSportsRepository(supabase).removeTeamRequests(telegramId)
 
     // 5. Delete user row — they can return fresh on next open (not blocked)
     await supabase.from('users').delete().eq('telegram_id', telegramId)
@@ -68,16 +69,10 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
   // Logout action — remove all wallet connections, keep user row
   if (body.action === 'logout') {
+    const disabled = disabledPackResponse('stellar-wallet')
+    if (disabled) return disabled
     const supabase = createServiceClient()
-    const { data: user } = await supabase.from('users').select('id').eq('telegram_id', telegramId).single()
-    if (user) {
-      const { data: wallets } = await supabase.from('wallets').select('id').eq('user_id', user.id)
-      const walletIds = (wallets ?? []).map((w) => w.id)
-      if (walletIds.length > 0) {
-        await supabase.from('wallet_balances').delete().in('wallet_id', walletIds)
-        await supabase.from('wallets').delete().eq('user_id', user.id)
-      }
-    }
+    await createStellarWalletRepository(supabase).removeWallets(telegramId)
     return ok({ telegramId, action: 'logout' })
   }
 
@@ -85,14 +80,30 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
   // Edit user fields (favorite_team, display_preference, bonus_balls, bonus_spins)
   if (body.favorite_team !== undefined || body.display_preference !== undefined || body.bonus_balls !== undefined || body.bonus_spins !== undefined) {
+    const disabled = disabledPackResponse(
+      ...(body.favorite_team !== undefined ? ['sports' as const] : []),
+      ...(body.bonus_balls !== undefined || body.bonus_spins !== undefined ? ['games' as const] : []),
+    )
+    if (disabled) return disabled
     const updatePayload: Record<string, unknown> = {}
-    if (body.favorite_team !== undefined) updatePayload.favorite_team = body.favorite_team
     if (body.display_preference !== undefined) updatePayload.display_preference = body.display_preference
-    if (typeof body.bonus_balls === 'number' && body.bonus_balls >= 0) updatePayload.bonus_balls = body.bonus_balls
-    if (typeof body.bonus_spins === 'number' && body.bonus_spins >= 0) updatePayload.bonus_spins = body.bonus_spins
-    const { error } = await supabase.from('users').update(updatePayload).eq('telegram_id', telegramId)
+    const bonusPool = {
+      ...(typeof body.bonus_balls === 'number' && body.bonus_balls >= 0 ? { bonus_balls: body.bonus_balls } : {}),
+      ...(typeof body.bonus_spins === 'number' && body.bonus_spins >= 0 ? { bonus_spins: body.bonus_spins } : {}),
+    }
+    const { error } = body.favorite_team !== undefined
+      ? await createSportsRepository(supabase).setFavoriteTeam(telegramId, body.favorite_team)
+      : { error: null }
     if (error) return fail('Failed to update user', 'DB_ERROR', 500)
-    return ok({ telegramId, updated: updatePayload })
+    if (Object.keys(updatePayload).length) {
+      const { error: updateError } = await supabase.from('users').update(updatePayload).eq('telegram_id', telegramId)
+      if (updateError) return fail('Failed to update user', 'DB_ERROR', 500)
+    }
+    if (Object.keys(bonusPool).length) {
+      const { error: bonusError } = await createGamesRepository(supabase).setBonusPool(telegramId, bonusPool)
+      if (bonusError) return fail('Failed to update user', 'DB_ERROR', 500)
+    }
+    return ok({ telegramId, updated: { ...updatePayload, ...bonusPool, ...(body.favorite_team !== undefined ? { favorite_team: body.favorite_team } : {}) } })
   }
 
   await supabase

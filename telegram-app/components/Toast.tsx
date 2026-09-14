@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning'

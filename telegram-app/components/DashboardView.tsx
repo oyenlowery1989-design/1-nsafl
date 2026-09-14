@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import BottomNav from './BottomNav'
 import PageLoader, { useMinLoader } from './PageLoader'
 import NotificationDrawer from './NotificationDrawer'
@@ -8,7 +9,8 @@ import { PRIMARY_CUSTOM_ASSET_CODE, PRIMARY_CUSTOM_ASSET_LABEL } from '@/lib/con
 import { BRANDING } from '@/config/branding'
 import { PARTNER_CLUB, PARTNER_SQUAD } from '@/config/partnerClub'
 import { getTierForBalance, getNextTier } from '@/config/tiers'
-import { useWalletStore } from '@/hooks/useStore'
+import { useIdentityStore } from '@/hooks/useStore'
+import { useStellarWalletStore } from '@/packs/stellar-wallet/store'
 import { getTelegramInitData, buildReferralLink, shareReferralLink } from '@/lib/telegram'
 import { toast } from './Toast'
 import { haptic } from '@/lib/telegram-ui'
@@ -16,6 +18,7 @@ import { haptic } from '@/lib/telegram-ui'
 interface Props {
   address: string
   balance: string
+  referralShareText: string
 }
 
 interface LiveStats {
@@ -42,7 +45,7 @@ function WalletTierCard({ balance, address, xlmBalance }: { balance: string; add
   const toNext = nextTier ? Math.max(0, nextTier.minBalance - numericBalance) : 0
 
   return (
-    <div className="glass-card rounded-2xl p-3 relative overflow-hidden border" style={{ borderColor: `${currentTier.color}4D`, background: BRANDING.colors.background }}>
+    <div className="glass-card rounded-2xl p-3 relative overflow-hidden border" style={{ borderColor: `${currentTier.color}4D`, background: BRANDING.colors.surface }}>
       <div className="absolute -right-6 -top-6 w-28 h-28 rounded-full blur-3xl pointer-events-none" style={{ background: currentTier.glowColor }} />
       <div className="relative z-10 flex items-center gap-3">
         {/* Left — balance */}
@@ -79,12 +82,12 @@ function WalletTierCard({ balance, address, xlmBalance }: { balance: string; add
   )
 }
 
-export default function DashboardView({ address, balance }: Props) {
+export default function DashboardView({ address, balance, referralShareText }: Props) {
   const router = useRouter()
-  const xlmBalance = useWalletStore((s) => s.xlmBalance)
-  const setBalances = useWalletStore((s) => s.setBalances)
-  const telegramUserId = useWalletStore((s) => s.telegramUserId)
-  const tokenBalance   = useWalletStore((s) => s.tokenBalance)
+  const xlmBalance = useStellarWalletStore((s) => s.xlmBalance)
+  const setBalances = useStellarWalletStore((s) => s.setBalances)
+  const telegramUserId = useIdentityStore((s) => s.telegramUserId)
+  const tokenBalance = useStellarWalletStore((s) => s.tokenBalance)
   const myXlmRefundPct = getTierForBalance(parseFloat(tokenBalance) || 0).rewards?.xlmRefundPct ?? 20
 
   const [balanceReady, setBalanceReady] = useState(false)
@@ -256,7 +259,7 @@ export default function DashboardView({ address, balance }: Props) {
           className="flex items-center justify-center gap-2 py-1.5 border-b border-white/5"
           style={{ background: 'linear-gradient(90deg, rgba(232,25,44,0.08) 0%, rgba(0,212,255,0.04) 100%)' }}
         >
-          <img src={PARTNER_CLUB.logo} alt="" width={14} height={14} className="rounded-full object-cover" style={{ boxShadow: '0 0 6px rgba(232,25,44,0.7)' }} />
+          <Image unoptimized src={PARTNER_CLUB.logo} alt="" width={14} height={14} className="rounded-full object-cover" style={{ boxShadow: '0 0 6px rgba(232,25,44,0.7)' }} />
           <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: PARTNER_CLUB.color, opacity: 0.85 }}>⚡ {PARTNER_CLUB.sponsorLabel}</span>
         </div>
       )}
@@ -365,7 +368,7 @@ export default function DashboardView({ address, balance }: Props) {
                 <p className="text-[10px] text-gray-400 leading-tight">+{myXlmRefundPct}% XLM refund · bonus spins · bigger rewards</p>
               </div>
               <button
-                onClick={() => shareReferralLink(buildReferralLink(telegramUserId))}
+                onClick={() => shareReferralLink(buildReferralLink(telegramUserId), referralShareText)}
                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-blue-500/40 bg-blue-500/15 text-blue-300 font-bold text-[11px] flex-shrink-0 active:scale-[0.97] transition"
               >
                 <span className="material-symbols-outlined text-[13px]">share</span>
@@ -406,7 +409,7 @@ export default function DashboardView({ address, balance }: Props) {
           <div
             className="w-full rounded-t-3xl overflow-hidden relative"
             style={{
-              background: `linear-gradient(170deg, #0d0a0f 0%, ${BRANDING.colors.background} 60%)`,
+              background: `linear-gradient(170deg, ${BRANDING.colors.surfaceRaised} 0%, ${BRANDING.colors.background} 60%)`,
               border: '1px solid rgba(232,25,44,0.45)',
               borderBottom: 'none',
               boxShadow: '0 -20px 80px rgba(232,25,44,0.20), 0 -4px 40px rgba(0,212,255,0.08)',
@@ -433,7 +436,8 @@ export default function DashboardView({ address, balance }: Props) {
             {/* Logo + name */}
             <div className="flex flex-col items-center px-6 pb-4">
               <div className="relative mb-4">
-                <img
+                <Image
+                  unoptimized
                   src={PARTNER_CLUB.logo}
                   alt={PARTNER_CLUB.name}
                   width={96}
@@ -456,7 +460,7 @@ export default function DashboardView({ address, balance }: Props) {
                 { value: String(PARTNER_CLUB.sourceClubs.length), label: 'AFL Clubs', icon: 'stadium' },
                 { value: '#1', label: 'Partner Rank',     icon: 'workspace_premium' },
               ].map(({ value, label, icon }) => (
-                <div key={label} className="flex flex-col items-center py-3 text-center" style={{ background: BRANDING.colors.background }}>
+                <div key={label} className="flex flex-col items-center py-3 text-center" style={{ background: BRANDING.colors.surface }}>
                   <span className="material-symbols-outlined text-lg mb-0.5" style={{ color: PARTNER_CLUB.color, fontVariationSettings: "'FILL' 1" }}>{icon}</span>
                   <p className="text-lg font-bold text-white leading-none">{value}</p>
                   <p className="text-[9px] text-gray-500 mt-0.5 leading-tight">{label}</p>
@@ -468,7 +472,7 @@ export default function DashboardView({ address, balance }: Props) {
             <div className="flex items-center justify-center gap-3 mx-4 mb-4 py-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
               {PARTNER_CLUB.sourceClubs.map(({ logo, name }) => (
                 <div key={name} className="flex items-center gap-2">
-                  <img src={logo} alt={name} width={28} height={28} className="object-contain" />
+                  <Image unoptimized src={logo} alt={name} width={28} height={28} className="object-contain" />
                   <span className="text-[11px] text-gray-300 font-semibold">{name}</span>
                 </div>
               ))}
@@ -487,7 +491,7 @@ export default function DashboardView({ address, balance }: Props) {
                   color: '#fff',
                 }}
               >
-                <img src={PARTNER_CLUB.logo} alt="" width={20} height={20} className="rounded-full object-cover" />
+                <Image unoptimized src={PARTNER_CLUB.logo} alt="" width={20} height={20} className="rounded-full object-cover" />
                 View {PARTNER_CLUB.name} Team
                 <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
               </button>

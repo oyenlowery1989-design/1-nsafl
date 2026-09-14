@@ -68,7 +68,7 @@ function UserSearchContent() {
         const nsafl = Number(bal?.primary_asset_balance ?? 0)
         const tier = nsafl >= 2501 ? 'T4' : nsafl >= 1001 ? 'T3' : nsafl >= 501 ? 'T2' : nsafl >= 100 ? 'T1' : 'T0'
         return (
-          <div key={user.telegram_id} className="bg-[#0d1424] border border-white/8 rounded-xl p-4 space-y-3">
+          <div key={user.telegram_id} className="bg-surface border border-white/8 rounded-xl p-4 space-y-3">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-white font-bold">{user.telegram_first_name ?? '—'}{user.telegram_username ? ` @${user.telegram_username}` : ''}</p>

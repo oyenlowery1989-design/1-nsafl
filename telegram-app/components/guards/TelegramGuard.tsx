@@ -6,7 +6,7 @@ import {
   REFERRER_STORAGE_KEY,
   ACCESS_RECORDED_STORAGE_KEY,
 } from "@/lib/constants";
-import { useWalletStore } from "@/hooks/useStore";
+import { useIdentityStore } from "@/hooks/useStore";
 
 type TelegramWebApp = {
   initData?: string;
@@ -77,7 +77,6 @@ function startDevToolsWatch(tgUser?: TelegramUser | null) {
     },
   });
   devtoolsInterval = setInterval(() => {
-    // eslint-disable-next-line no-console
     console.log("%c", el);
   }, 3000);
 }
@@ -125,8 +124,8 @@ export default function TelegramGuard({
   children: React.ReactNode;
 }) {
   const [state, setState] = useState<GuardState>("pending");
-  const disconnect = useWalletStore((s) => s.disconnect);
-  const setTelegramUserId = useWalletStore((s) => s.setTelegramUserId);
+  const resetIdentity = useIdentityStore((s) => s.resetIdentity);
+  const setTelegramUserId = useIdentityStore((s) => s.setTelegramUserId);
 
   useEffect(() => {
     const check = async () => {
@@ -137,7 +136,7 @@ export default function TelegramGuard({
       }
       if (isDev) {
         const { hasWallet } = await recordSession();
-        if (!hasWallet) disconnect();
+        if (!hasWallet) resetIdentity();
         setState("allowed");
         return;
       }
@@ -181,7 +180,7 @@ export default function TelegramGuard({
           return;
         }
         // If admin logged the user out server-side, clear local wallet state
-        if (!hasWallet) disconnect();
+        if (!hasWallet) resetIdentity();
         startDevToolsWatch(tg.initDataUnsafe?.user ?? null);
         setState("allowed");
       } else {
@@ -194,7 +193,7 @@ export default function TelegramGuard({
       clearTimeout(t);
       stopDevToolsWatch();
     };
-  }, []);
+  }, [resetIdentity, setTelegramUserId]);
 
   // Dismiss the inline loader once guard resolves AND Material Symbols font is loaded.
   // Uses document.fonts.load() to explicitly wait for the icon font — document.fonts.ready
