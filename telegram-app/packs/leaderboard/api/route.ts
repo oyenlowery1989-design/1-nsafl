@@ -40,7 +40,7 @@ async function fetchHorizonHolders(): Promise<{ address: string; balance: number
     `${horizonUrl}/accounts?asset=${encodeURIComponent(assetParam)}&limit=200&order=desc`
 
   for (let page = 0; page < 3 && url; page++) {
-    const res: Response = await fetch(url, { next: { revalidate: 60 } })
+    const res: Response = await fetch(url, { cache: 'no-store' })
     if (!res.ok) break
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: any = await res.json()
